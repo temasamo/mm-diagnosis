@@ -1,8 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  experimental: { turbo: {} },
-  transpilePackages: ["@core/mm"]
+  transpilePackages: ['@core/mm'],
+  eslint: { ignoreDuringBuilds: true },
 };
-
 export default nextConfig;

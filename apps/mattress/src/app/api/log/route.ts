@@ -1,20 +1,59 @@
-export const runtime = "nodejs";
-import { NextResponse } from "next/server";
-import { getServerSupabase } from "../_util/supabase";
+export const runtime = 'nodejs';
 
-export async function POST(req: Request) {
+import { NextRequest, NextResponse } from 'next/server';
+import { getServerSupabase } from '../_util/supabase';
+
+type ResultPayload = {
+  primaryGroup: string[];
+  secondaryGroup: string[];
+  reasons: string[];
+};
+
+type LogPayload = {
+  step: 'greet' | 'questions' | 'insights' | 'lastQuestion' | 'results' | string;
+  answers?: Record<string, unknown>;
+  result?: ResultPayload | null;
+  session_id?: string | null;
+  ab_bucket?: string | null;
+  latency_ms?: number | null;
+  mall_clicks?: Record<string, number> | null;
+};
+
+function isLogPayload(x: unknown): x is LogPayload {
+  if (typeof x !== 'object' || x === null) return false;
+  const o = x as Record<string, unknown>;
+  return typeof o.step === 'string';
+}
+
+export async function POST(req: NextRequest) {
   try {
-    const body = await req.json().catch(() => ({}));
+    const body = (await req.json()) as unknown;
+    if (!isLogPayload(body)) {
+      return NextResponse.json({ error: 'invalid payload' }, { status: 400 });
+    }
+
     const supabase = getServerSupabase();
-    const { error } = await supabase.from("diagnosis_events").insert({
-      app: process.env.NEXT_PUBLIC_APP_NAME ?? "unknown", // 任意
-      step: body.step ?? "unknown",
-      answers: body.answers ?? null,
-      result: body.result ?? null
-    });
-    if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
-    return NextResponse.json({ ok: true });
-  } catch (e: any) {
-    return NextResponse.json({ ok: false, error: e?.message ?? "unexpected" }, { status: 500 });
+    const { data, error } = await supabase
+      .from('diagnosis_events')
+      .insert({
+        step: body.step,
+        answers: body.answers ?? {},
+        result: body.result ?? null,
+        session_id: body.session_id ?? null,
+        ab_bucket: body.ab_bucket ?? null,
+        latency_ms: body.latency_ms ?? null,
+        mall_clicks: body.mall_clicks ?? null,
+        created_at: new Date().toISOString(),
+      })
+      .select()
+      .single();
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+    return NextResponse.json({ ok: true, id: data?.id ?? null });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 } 
