@@ -1,0 +1,37 @@
+{
+  "version": "0.1",
+  "items": [
+    {
+      "id": "body_weight",
+      "title": "体格（体重）に近いものは？",
+      "type": "single",
+      "choices": [
+        { "id": "light", "label": "軽め（〜55kg）", "weight": 1 },
+        { "id": "mid",   "label": "ふつう（55〜75kg）", "weight": 2 },
+        { "id": "heavy", "label": "重め（75kg〜）", "weight": 3 }
+      ],
+      "required": true
+    },
+    {
+      "id": "firmness",
+      "title": "好きな硬さは？",
+      "type": "single",
+      "choices": [
+        { "id": "soft", "label": "やわらかめ" },
+        { "id": "medium", "label": "ふつう" },
+        { "id": "hard", "label": "かため" }
+      ],
+      "required": true
+    },
+    {
+      "id": "heat",
+      "title": "寝ていて暑さが気になる？",
+      "type": "single",
+      "choices": [
+        { "id": "low", "label": "あまり気にならない" },
+        { "id": "mid", "label": "やや気になる" },
+        { "id": "high", "label": "かなり気になる" }
+      ]
+    }
+  ]
+} 

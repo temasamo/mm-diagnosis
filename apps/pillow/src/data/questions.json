@@ -1,0 +1,27 @@
+{
+  "version": "v1",
+  "items": [
+    {
+      "id": "sleep_pos",
+      "title": "主な寝姿勢は？",
+      "type": "single",
+      "required": true,
+      "choices": [
+        { "id": "back", "label": "仰向け", "weight": 1 },
+        { "id": "side", "label": "横向き", "weight": 1 },
+        { "id": "stomach", "label": "うつ伏せ", "weight": 1 }
+      ]
+    },
+    {
+      "id": "firm_pref",
+      "title": "マットレスの硬さの好みは？",
+      "type": "single",
+      "required": true,
+      "choices": [
+        { "id": "soft", "label": "やわらかめ", "weight": 1 },
+        { "id": "medium", "label": "ふつう", "weight": 1 },
+        { "id": "firm", "label": "かため", "weight": 1 }
+      ]
+    }
+  ]
+} 

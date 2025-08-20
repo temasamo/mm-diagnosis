@@ -1,0 +1,28 @@
+{
+    "version": "0.1",
+    "items": [
+      {
+        "id": "sleep_posture",
+        "title": "普段の寝姿勢は？",
+        "type": "single",
+        "choices": [
+          {"id":"back","label":"仰向け"},
+          {"id":"side","label":"横向き"},
+          {"id":"stomach","label":"うつ伏せ"}
+        ],
+        "required": true
+      },
+      {
+        "id": "neck_stiffness",
+        "title": "首・肩こりの強さは？",
+        "type": "single",
+        "choices": [
+          {"id":"low","label":"弱い","weight":1},
+          {"id":"mid","label":"ふつう","weight":2},
+          {"id":"high","label":"強い","weight":3}
+        ],
+        "required": true
+      }
+    ]
+  }
+  
