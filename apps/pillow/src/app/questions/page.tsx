@@ -8,7 +8,7 @@ export default function Page() {
   const data = JSON.parse(fs.readFileSync(file, "utf-8")) as Questionnaire;
   return (
     <main className="max-w-[720px] mx-auto my-10">
-      <h2 className="text-xl font-semibold">質問シート（マットレス）</h2>
+      <h2 className="text-xl font-semibold">質問シート（枕）</h2>
       <QuestionRenderer data={data} />
     </main>
   );

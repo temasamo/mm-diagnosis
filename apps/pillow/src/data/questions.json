@@ -14,7 +14,7 @@
     },
     {
       "id": "firm_pref",
-      "title": "マットレスの硬さの好みは？",
+      "title": "枕の硬さの好みは？",
       "type": "single",
       "required": true,
       "choices": [

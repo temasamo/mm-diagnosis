@@ -16,7 +16,7 @@ export default function Page(){
 
   return (
     <main className="max-w-[720px] mx-auto my-10">
-      <h2 className="text-xl font-semibold">一次診断（マットレス）</h2>
+      <h2 className="text-xl font-semibold">一次診断（枕）</h2>
       <p className="mt-2">{summary}</p>
       <p className="mt-2">仕上げに最後の1問だけ。</p>
       <Link href="/last" className="inline-block mt-4 underline">最後の質問へ →</Link>
