@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { StepId, nextStep, prevStep, Questionnaire } from "@core/mm";
 import data from "@/data/questions.json";
 import { Answers, makeInsights, finalizeResult } from "@/lib/logic/score";
@@ -28,7 +28,7 @@ export default function DiagnosisPage() {
   // components
   const Greet = () => (
     <section className="p-6 space-y-4">
-      <h1 className="text-2xl font-bold">枕診断へようこそ</h1>
+      <h1 className="text-2xl font-bold">マットレス診断へようこそ</h1>
       <p>いくつかの質問に答えるだけで、あなたに合う候補を提示します。</p>
       <div className="flex gap-2">
         <button className="px-3 py-2 rounded bg-white/10" onClick={goNext}>はじめる</button>
