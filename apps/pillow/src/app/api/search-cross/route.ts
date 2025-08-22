@@ -21,8 +21,8 @@ export async function GET(req: Request) {
 
   // 実アダプタ（存在しなければ安全に空配列）
   let rakuten: any, yahoo: any; // Removed amazon
-  try { rakuten = await import("../../../lib/malls/rakuten"); } catch {}
-  try { yahoo   = await import("../../../lib/malls/yahoo"); } catch {}
+  try { rakuten = await import("../../../../lib/malls/rakuten"); } catch {}
+  try { yahoo   = await import("../../../../lib/malls/yahoo"); } catch {}
 
   const jobs: Promise<any[]>[] = [];
   const tasks: { name: string; p: Promise<any[]> }[] = [];
