@@ -1,5 +1,5 @@
-import type { NextConfig } from 'next';
-const nextConfig: NextConfig = {
+/** @type {import('next').NextConfig} */
+const nextConfig = {
   transpilePackages: ['@core/mm'],
   eslint: { ignoreDuringBuilds: true },
   images: {
@@ -9,5 +9,11 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "**.yimg.jp" },
     ],
   },
+  async redirects() {
+    return [
+      { source: "/", destination: "/pillow", permanent: false },
+    ];
+  },
 };
-export default nextConfig;
+
+module.exports = nextConfig; 
