@@ -58,7 +58,11 @@ export async function searchRakuten(q: string, limit: number = 6): Promise<MallP
         title: item.itemName,
         url: item.itemUrl,
         image: httpsify(item.mediumImageUrls?.[0]?.imageUrl) || undefined,
-        price: item.itemPrice,
+        price: (() => {
+          const raw = item.itemPrice ?? item.minPrice ?? item.maxPrice;
+          const price = Number(String(raw).replace(/[^\d.]/g, ''));
+          return Number.isFinite(price) ? Math.round(price) : null;
+        })(),
         mall: "rakuten",
       };
     });

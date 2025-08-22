@@ -60,7 +60,11 @@ export async function searchYahoo(query: string, limit = 6): Promise<MallProduct
 
   const out: MallProduct[] = hits.map((h: any) => {
     const name = h?.name ?? "";
-    const price = Number(h?.price ?? h?.priceLabel?.rawPrice) || null;
+    const price = (() => {
+      const raw = h?.price ?? h?.priceLabel?.rawPrice ?? h?.minPrice ?? h?.maxPrice;
+      const price = Number(String(raw).replace(/[^\d.]/g, ''));
+      return Number.isFinite(price) ? Math.round(price) : null;
+    })();
     const url = h?.url ?? h?.urlOversea ?? "#";
     const img =
       h?.image?.medium ||
