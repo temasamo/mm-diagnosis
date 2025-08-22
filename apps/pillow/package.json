@@ -2,7 +2,9 @@
   "name": "@apps/pillow",
   "version": "0.1.0",
   "private": true,
-  "engines": { "node": ">=18.17 <21" },
+  "engines": {
+    "node": ">=18.17 <21"
+  },
   "scripts": {
     "prebuild": "pnpm -F @core/mm build",
     "dev": "next dev",
