@@ -3,14 +3,15 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useDiagStore } from "../../../../lib/state/diagStore";
 import { buildGroups, type GroupedRecommendations } from "../../../../lib/recommend/build_groups";
-import { applyBudget } from '@/lib/filters/applyBudget';
-import { normalizePriceJPY, readBudgetMaxJPY } from '@/lib/filters/budget';
+import { applyBudgetRange } from '@/lib/filters/applyBudget';
+import { normalizePriceJPY } from '@/lib/filters/budget';
 
 export default function Page() {
   const { provisional, answers } = useDiagStore();
   const [groups, setGroups] = useState<GroupedRecommendations | null>(null);
   const [loading, setLoading] = useState(false);
   const [usedBudgetFallback, setUsedBudgetFallback] = useState(false);
+  const [budgetRange, setBudgetRange] = useState<{ min: number | null; max: number | null }>({ min: null, max: null });
 
   useEffect(() => {
     (async () => {
@@ -20,15 +21,17 @@ export default function Page() {
         const g = await buildGroups(provisional.provisional, 6);
         
         // 予算フィルタを適用
-        const { items: primaryFiltered, usedBudgetFallback: primaryFallback } = applyBudget(
+        const { items: primaryFiltered, usedBudgetFallback: primaryFallback, range } = applyBudgetRange(
           g.primaryGroup.map(item => ({ product: item, score: 1 })),
           answers || {},
+          0.0,
           0.0
         );
         
-        const { items: secondaryFiltered, usedBudgetFallback: secondaryFallback } = applyBudget(
+        const { items: secondaryFiltered, usedBudgetFallback: secondaryFallback } = applyBudgetRange(
           g.secondaryGroup.map(item => ({ product: item, score: 1 })),
           answers || {},
+          0.0,
           0.0
         );
         
@@ -40,6 +43,7 @@ export default function Page() {
         
         setGroups(filteredGroups);
         setUsedBudgetFallback(primaryFallback || secondaryFallback);
+        setBudgetRange(range);
       } finally {
         setLoading(false);
       }
@@ -62,7 +66,12 @@ export default function Page() {
       {usedBudgetFallback && (
         <div className="mb-4 rounded-xl border border-yellow-600/50 bg-yellow-400/10 p-3 text-sm text-yellow-300">
           予算内の商品が見つからなかったため、予算外の商品を表示しています。
-          条件を少しゆるめると見つかる可能性があります。
+          {typeof budgetRange.min === 'number' || typeof budgetRange.max === 'number' ? (
+            <span className="ml-1">
+              （指定: {typeof budgetRange.min === 'number' ? `¥${budgetRange.min.toLocaleString()}` : '下限なし'}
+              〜{typeof budgetRange.max === 'number' ? `¥${budgetRange.max.toLocaleString()}` : '上限なし'}）
+            </span>
+          ) : null}
         </div>
       )}
       {!loading && groups && groups.primaryGroup.length===0 && groups.secondaryGroup.length===0 && (
@@ -84,9 +93,9 @@ export default function Page() {
                     <div className="text-sm mt-1 flex items-center">
                       ¥{p.price.toLocaleString()}
                       {(() => {
-                        const budgetMax = readBudgetMaxJPY(answers || {});
                         const price = normalizePriceJPY(p.price);
-                        const inBudget = (typeof budgetMax === 'number' && price != null) ? (price <= budgetMax) : null;
+                        const inBudget = (typeof budgetRange.max === 'number' && price != null) ? 
+                          (price >= (budgetRange.min || 0) && price <= budgetRange.max) : null;
                         return typeof inBudget === 'boolean' && (
                           <span className={`ml-2 rounded-md px-2 py-0.5 text-xs ${
                             inBudget ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-600/30'
@@ -117,9 +126,9 @@ export default function Page() {
                     <div className="text-sm mt-1 flex items-center">
                       ¥{p.price.toLocaleString()}
                       {(() => {
-                        const budgetMax = readBudgetMaxJPY(answers || {});
                         const price = normalizePriceJPY(p.price);
-                        const inBudget = (typeof budgetMax === 'number' && price != null) ? (price <= budgetMax) : null;
+                        const inBudget = (typeof budgetRange.max === 'number' && price != null) ? 
+                          (price >= (budgetRange.min || 0) && price <= budgetRange.max) : null;
                         return typeof inBudget === 'boolean' && (
                           <span className={`ml-2 rounded-md px-2 py-0.5 text-xs ${
                             inBudget ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-600/30'
