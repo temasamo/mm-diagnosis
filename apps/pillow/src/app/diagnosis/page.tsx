@@ -43,7 +43,7 @@ export default function DiagnosisPage() {
         <div key={q.id} className="space-y-2">
           <div className="font-medium">{q.title}{q.required ? " *" : ""}</div>
           <div className="flex flex-wrap gap-2">
-            {q.choices.map(c => {
+            {q.choices?.map(c => {
               const active = (answers[q.id] ?? []).includes(c.id);
               return (
                 <button
@@ -96,7 +96,7 @@ export default function DiagnosisPage() {
       <h2 className="text-xl font-semibold">最後の質問</h2>
       <div className="font-medium">{followUpQ.title}</div>
       <div className="flex flex-wrap gap-2">
-        {followUpQ.choices.map(c => {
+        {followUpQ.choices?.map(c => {
           const active = (answers[followUpQ.id] ?? []).includes(c.id);
           return (
             <button

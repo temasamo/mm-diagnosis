@@ -27,7 +27,7 @@ export default function QuestionRenderer({ data }: { data: Questionnaire }) {
         <section key={q.id} className="border rounded-xl p-4">
           <h3 className="font-semibold">{q.title}</h3>
           <div className="mt-2 space-y-1">
-            {q.choices.map(c => {
+            {q.choices?.map(c => {
               const checked = (answers[q.id] || []).includes(c.id);
               return (
                 <label key={c.id} className="flex items-center gap-2 cursor-pointer">

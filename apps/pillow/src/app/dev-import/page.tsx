@@ -4,7 +4,7 @@ import { StepId, nextStep, Questionnaire, FinalResult, DEFAULT_STEPS } from "@co
 
 export default function DevImportPage() {
   const step: StepId = "greet";
-  const q: Questionnaire = { version: "test", items: [] };
+  const q: Questionnaire = { version: "test", locale: "ja", title: "Test", items: [] };
   const fr: FinalResult = { primaryGroup: [], secondaryGroup: [], reasons: [] };
 
   return (
