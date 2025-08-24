@@ -3,15 +3,45 @@ import { CATEGORY_QUERIES, buildQueryWords } from "../catalog/category_query";
 import { searchAllMalls, type MallProduct } from "../catalog/mall_search";
 import type { Provisional } from "../scoring/engine";
 
-export type GroupedRecommendations = {
-  primaryGroup: MallProduct[];   // 第一候補
-  secondaryGroup: MallProduct[]; // 第二候補
-  rationale: {
-    categoryRanks: Array<{ id: CategoryId; label: string; score: number }>;
-    notes: string[];
-  }
+export type ProductItem = {
+  id: string;
+  title: string;
+  url: string;
+  image?: string | null;
+  price?: number | null;
+  mall?: "rakuten" | "yahoo" | string;
+  shop?: string | null;
 };
 
+export type GroupedRecommendations = {
+  primary: ProductItem[];               // 上位3件
+  secondaryBuckets: ProductItem[][];    // a,b,c の順（各最大3件）
+};
+
+function chunk<T>(arr: T[], size: number): T[][] {
+  const out: T[][] = [];
+  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
+  return out;
+}
+
+/**
+ * 診断結果順（既にスコア順で並んでいる前提）の配列 items を
+ * 1) primary: 先頭3件
+ * 2) secondaryBuckets: 残りを3件ずつ a,b,c に分割（最大3バケット）
+ */
+export function buildGroups(
+  items: ProductItem[],
+  primarySize = 3,
+  bucketSize = 3,
+  bucketCount = 3
+): GroupedRecommendations {
+  const primary = items.slice(0, primarySize);
+  const rest = items.slice(primarySize);
+  const buckets = chunk(rest, bucketSize).slice(0, bucketCount);
+  return { primary, secondaryBuckets: buckets };
+}
+
+// 既存のAPI呼び出し部分は残す（後方互換性のため）
 const PRODUCTS_PER_CATEGORY = 3;
 
 async function fetchByCategory(cat: CategoryId, budgetBandId?: string): Promise<MallProduct[]> {
@@ -47,7 +77,8 @@ async function fetchByCategory(cat: CategoryId, budgetBandId?: string): Promise<
   return uniq.slice(0, PRODUCTS_PER_CATEGORY);
 }
 
-export async function buildGroups(provisional: Provisional[], topN = 6, budgetBandId?: string): Promise<GroupedRecommendations> {
+// 既存のAPI呼び出し関数（後方互換性のため残す）
+export async function buildGroupsFromAPI(provisional: Provisional[], topN = 6, budgetBandId?: string): Promise<GroupedRecommendations> {
   const top = provisional.slice(0, topN);
   const firstCats = top.slice(0, Math.ceil(topN / 2));
   const secondCats = top.slice(Math.ceil(topN / 2), topN);
@@ -81,15 +112,8 @@ export async function buildGroups(provisional: Provisional[], topN = 6, budgetBa
     return out;
   };
 
-  return {
-    primaryGroup: flatten(firstProducts),
-    secondaryGroup: flatten(secondProducts),
-    rationale: {
-      categoryRanks: top.map(t => ({ id: t.category, label: CATEGORY_LABEL[t.category], score: t.score })),
-      notes: [
-        "スコアは一次診断（姿勢×寝返り＋症状/快適性/好み/予算）の合算を0..1正規化したものです。",
-        "各カテゴリの代表語でモール横断検索し、重複除去→上位を提示しています。",
-      ],
-    },
-  };
+  const allProducts = [...flatten(firstProducts), ...flatten(secondProducts)];
+  
+  // 新しいグルーピングロジックを使用
+  return buildGroups(allProducts);
 } 
