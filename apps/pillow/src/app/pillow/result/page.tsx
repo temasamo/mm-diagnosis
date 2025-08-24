@@ -5,7 +5,7 @@ import { useDiagStore } from "../../../../lib/state/diagStore";
 import { buildGroupsFromAPI, type GroupedRecommendations } from "../../../../lib/recommend/build_groups";
 import { buildProfileFromAnswers, type Profile } from "../../../../lib/diag/profile";
 import { computeMatchPercent } from "../../../../lib/match/score";
-import DiagnosisSummary from "../../../../src/components/DiagnosisSummary";
+import DiagnosisSummary from "../../../components/DiagnosisSummary";
 
 export default function Page() {
   const { provisional, answers } = useDiagStore();
@@ -93,7 +93,7 @@ export default function Page() {
         <section className="space-y-6">
           {/* マッチング度のハイライト */}
           <div className="rounded-2xl border border-white/10 p-4">
-            <div className="text-sm opacity-80">ご提案する枕のマッチング度（最大85%）</div>
+            <div className="text-sm opacity-80">ご提案する枕の適合度</div>
             <div className="mt-1 text-3xl font-semibold">{topMatch}%</div>
             <div className="mt-1 text-xs opacity-70">
               ※ 無料版の概算スコアです。詳細コンサル診断ではより精密に判定します。

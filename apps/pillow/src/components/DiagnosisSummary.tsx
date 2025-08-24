@@ -1,12 +1,17 @@
+"use client";
+import { useEffect, useState } from "react";
 import type { Profile } from "../../lib/diag/profile";
 
 function jpHeight(h?: Profile["height"]) {
-  return h === "low" ? "低め" : h === "high" ? "高め" : h === "adjustable" ? "高さ調整可能" : "標準";
+  if (!h) return null;
+  return h === "low" ? "低め" : h === "high" ? "高め" : h === "adjustable" ? "高さ調整可" : "標準";
 }
 function jpFirm(f?: Profile["firmness"]) {
-  return f === "soft" ? "柔らかめ" : f === "hard" ? "硬め" : "ふつう";
+  if (!f) return null;
+  return f === "soft" ? "柔らかめ" : f === "hard" ? "硬め" : "普通";
 }
 function jpMat(m?: Profile["material"]) {
+  if (!m || m === "unknown") return null;
   switch (m) {
     case "memory": return "低反発";
     case "latex": return "高反発（ラテックス）";
@@ -15,32 +20,76 @@ function jpMat(m?: Profile["material"]) {
     case "gel": return "ジェル/冷感";
     case "towel": return "タオル";
     case "poly": return "ポリエステル系";
-    default: return "（指定なし）";
+    default: return null;
   }
 }
 function jpPosture(p?: Profile["posture"]) {
-  return p === "supine" ? "仰向け" : p === "side" ? "横向き" : p === "prone" ? "うつ伏せ" : "（指定なし）";
+  if (!p) return null;
+  return p === "supine" ? "仰向け" : p === "side" ? "横向き" : p === "prone" ? "うつ伏せ" : null;
 }
 
 export default function DiagnosisSummary({ profile, answers }: { profile: Profile; answers: any }) {
-  const rec = `あなたにおすすめの枕は「${jpHeight(profile.height)}」「${jpFirm(profile.firmness)}」「${jpMat(profile.material)}」タイプです。主な寝姿勢は「${jpPosture(profile.posture)}」として最適化しています。`;
+  const parts: string[] = [];
+  const h = jpHeight(profile.height);
+  const f = jpFirm(profile.firmness);
+  const m = jpMat(profile.material);
+  const s = jpPosture(profile.posture);
 
-  const reasons: string[] = [];
-  if (profile.purchaseReason) reasons.push(`購入理由：${profile.purchaseReason}`);
-  if (profile.complaints?.length) reasons.push(`気になる点：${profile.complaints.join("／")}`);
-  if (profile.height) reasons.push(`高さの好み：${jpHeight(profile.height)}`);
-  if (profile.firmness) reasons.push(`硬さの好み：${jpFirm(profile.firmness)}`);
-  if (profile.material && profile.material !== "unknown") reasons.push(`素材の希望：${jpMat(profile.material)}`);
-  if (profile.posture) reasons.push(`主な寝姿勢：${jpPosture(profile.posture)}`);
+  if (h) parts.push(`「${h}」`);
+  if (f) parts.push(`「${f}」`);
+  if (m) parts.push(`「${m}」`);
+  const lead = parts.length ? `あなたにおすすめの枕は${parts.join("「」が重なる場合は削る")}タイプです。` : "";
+
+  const pos = s ? `主な寝姿勢は「${s}」として最適化しています。` : "";
+
+  // AIひとこと
+  const [brief, setBrief] = useState<string>("");
+  useEffect(() => {
+    const run = async () => {
+      try {
+        const r = await fetch("/api/diag/brief", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ profile }),
+          cache: "no-store",
+        });
+        const j = await r.json();
+        if (j?.comment) setBrief(j.comment);
+      } catch {}
+    };
+    run();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // 診断理由（あなたのお悩み）
+  const complaints: string[] = Array.isArray(profile.complaints) ? profile.complaints : [];
+  const purchase = profile.purchaseReason ? [`購入理由：${profile.purchaseReason}`] : [];
 
   return (
-    <div className="rounded-2xl border border-white/10 p-4">
-      <h3 className="mb-2 text-lg font-semibold">診断結果</h3>
-      <p className="leading-relaxed">{rec}</p>
-      {!!reasons.length && (
-        <ul className="mt-3 list-disc space-y-1 pl-5 text-sm opacity-90">
-          {reasons.map((r, i) => <li key={i}>{r}</li>)}
-        </ul>
+    <div className="space-y-4 rounded-2xl border border-white/10 p-4">
+      <h3 className="text-lg font-semibold">診断結果</h3>
+
+      {(lead || pos) && (
+        <p className="leading-relaxed">
+          {lead} {pos}
+        </p>
+      )}
+
+      {brief && (
+        <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm w-fit">
+          {brief}
+        </div>
+      )}
+
+      {(complaints.length > 0 || purchase.length > 0) && (
+        <div className="mt-2">
+          <div className="mb-2 font-semibold">診断理由（あなたのお悩み）</div>
+          <ul className="list-disc space-y-1 pl-5 text-sm opacity-90">
+            {[...purchase, ...complaints].map((r, i) => (
+              <li key={i}>{r}</li>
+            ))}
+          </ul>
+        </div>
       )}
     </div>
   );
