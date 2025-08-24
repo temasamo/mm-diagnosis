@@ -43,8 +43,15 @@ function toSnapshot(s: any) {
 }
 
 export default function Page() {
+  // 1) まずは全 Hooks を必ず呼び出す（レンダーごとに順序が同じになるように）
   const [hydrated, setHydrated] = useState(false);
-  useEffect(() => setHydrated(true), []);
+  const [groups, setGroups] = useState<GroupedRecommendations | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [showMore, setShowMore] = useState(false);
+  const [tab, setTab] = useState<"summary" | "proposals">("summary");
+  const [score, setScore] = useState<number | null>(null);
+  const [ai, setAi] = useState<string>("");
+  const [hasHydrated, setHasHydrated] = useState(false);
   
   const store = useDiagStore();
   const { provisional, answers } = store;
@@ -53,20 +60,18 @@ export default function Page() {
   // 新しいユーティリティでコメントとお悩みを生成
   const newComment = buildDiagnosisComment(store);
   const newProblems = buildProblems(store);
+
+  useEffect(() => { setHydrated(true); }, []);
   
-  if (!hydrated) return null;
-  const [groups, setGroups] = useState<GroupedRecommendations | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [showMore, setShowMore] = useState(false);
-  const [tab, setTab] = useState<"summary" | "proposals">("summary");
-  const [score, setScore] = useState<number | null>(null);
-  const [ai, setAi] = useState<string>("");
-  const [hasHydrated, setHasHydrated] = useState(false);
+  // 2) 描画を抑止したい場合は、"全 Hooks の後" に置く
+  if (!hydrated) return <></>;
 
   // 再水和完了後に同期計算
   useEffect(() => {
-    setHasHydrated(true);
-  }, []);
+    if (hydrated) {
+      setHasHydrated(true);
+    }
+  }, [hydrated]);
 
   useEffect(() => {
     (async () => {
@@ -100,7 +105,7 @@ export default function Page() {
     [itemsWithMatch]
   );
 
-  // スコア計算
+  // スコア計算（topMatch の後に配置）
   useEffect(() => {
     if (!hasHydrated) return;
     try {
