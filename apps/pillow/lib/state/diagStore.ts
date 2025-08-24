@@ -9,7 +9,7 @@ type Answers = Record<string, any>;
 type Provisional = any;
 type Groups = any;
 
-type DiagState = {
+export type DiagState = {
   // 購入理由
   purchaseReason: PurchaseReason | null;
   setPurchaseReason: (reason: PurchaseReason) => void;
@@ -18,6 +18,7 @@ type DiagState = {
   answers: Answers;
   provisional: Provisional | null;
   groups: Groups | null;
+  hasHydrated: boolean;
   setAnswers: (patch: Partial<Answers>) => void;
   setProvisional: (p: Provisional | null) => void;
   setGroups: (g: Groups | null) => void;
@@ -40,6 +41,7 @@ export const useDiagStore = create<DiagState>()(
       answers: {},
       provisional: null,
       groups: null,
+      hasHydrated: false,
       setAnswers: (patch) => set({ answers: { ...get().answers, ...patch } }),
       setProvisional: (p) => set({ provisional: p }),
       setGroups: (g) => set({ groups: g }),
@@ -47,13 +49,17 @@ export const useDiagStore = create<DiagState>()(
         purchaseReason: null,
         answers: {}, 
         provisional: null, 
-        groups: null 
+        groups: null,
+        hasHydrated: false
       }),
     }),
     { 
       name: "pillow-diag", 
       storage: createJSONStorage(() => sessionStorage),
       version: 2, // バージョンを上げてマイグレーション
+      onRehydrateStorage: () => (state) => {
+        state?.setState?.({ hasHydrated: true });
+      },
       migrate: (state: any, version) => {
         if (version === 1) {
           // バージョン1から2へのマイグレーション

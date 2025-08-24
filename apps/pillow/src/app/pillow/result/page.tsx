@@ -5,6 +5,7 @@ import { useDiagStore } from "../../../../lib/state/diagStore";
 import { buildGroupsFromAPI, type GroupedRecommendations } from "../../../../lib/recommend/build_groups";
 import { buildProfileFromAnswers, type Profile } from "../../../../lib/diag/profile";
 import { computeMatchPercent } from "../../../../lib/match/score";
+import { deriveProblems, buildDiagnosticComment } from "../../../../src/lib/diagnosis/summary";
 import DiagnosisSummary from "../../../components/DiagnosisSummary";
 
 export default function Page() {
@@ -13,6 +14,14 @@ export default function Page() {
   const [loading, setLoading] = useState(false);
   const [showMore, setShowMore] = useState(false);
   const [tab, setTab] = useState<"summary" | "proposals">("summary");
+  const [score, setScore] = useState<number | null>(null);
+  const [ai, setAi] = useState<string>("");
+  const [hasHydrated, setHasHydrated] = useState(false);
+
+  // 再水和完了後に同期計算
+  useEffect(() => {
+    setHasHydrated(true);
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -46,6 +55,30 @@ export default function Page() {
     [itemsWithMatch]
   );
 
+  // スコア計算
+  useEffect(() => {
+    if (!hasHydrated) return;
+    try {
+      const val = Math.min(85, Math.max(50, topMatch || 0)); // 0-100 を返す想定、内部で85%上限化してOK
+      setScore(val);
+    } catch {
+      setScore(null);
+    }
+  }, [hasHydrated, topMatch]);
+
+  const problems = useMemo(() => (hasHydrated ? deriveProblems(answers) : { bullets: [] }), [hasHydrated, answers]);
+  const comment = useMemo(() => (hasHydrated ? buildDiagnosticComment(answers) : ""), [hasHydrated, answers]);
+
+  // AIコメント（15〜20字）取得：brief には簡単な要約
+  useEffect(() => {
+    if (!hasHydrated) return;
+    const brief = `高さ:${answers?.prefHeight ?? "不明"} 硬さ:${answers?.prefFirmness ?? "不明"} 主訴:${problems.bullets[0] ?? "なし"}`;
+    fetch("/api/ai/comment", { method: "POST", body: JSON.stringify({ brief }) })
+      .then(r => r.json())
+      .then(j => setAi(j.text ?? "首圧分散を優先"))
+      .catch(() => setAi("首圧分散を優先"));
+  }, [hasHydrated, answers, problems.bullets]);
+
   if (!provisional) {
     return (
       <main className="max-w-3xl mx-auto p-6">
@@ -74,7 +107,7 @@ export default function Page() {
           className={`rounded-2xl px-4 py-2 ${tab==="summary" ? "bg-white/10" : "bg-white/5 hover:bg-white/10"}`}
           onClick={() => setTab("summary")}
         >
-          診断結果
+          診断内容
         </button>
         <button
           className={`rounded-2xl px-4 py-2 ${tab==="proposals" ? "bg-white/10" : "bg-white/5 hover:bg-white/10"}`}
@@ -91,17 +124,43 @@ export default function Page() {
 
       {tab === "summary" ? (
         <section className="space-y-6">
-          {/* マッチング度のハイライト */}
-          <div className="rounded-2xl border border-white/10 p-4">
-            <div className="text-sm opacity-80">ご提案する枕の適合度</div>
-            <div className="mt-1 text-3xl font-semibold">{topMatch}%</div>
-            <div className="mt-1 text-xs opacity-70">
-              ※ 無料版の概算スコアです。詳細コンサル診断ではより精密に判定します。
-            </div>
-          </div>
+          {/* 適合度カード */}
+          {hasHydrated && typeof score === "number" && (
+            <section className="rounded-2xl border p-5">
+              <h3 className="text-lg mb-2">ご提案する枕の適合性</h3>
+              <div className="text-5xl font-bold font-mono">{score} <span className="text-2xl">%</span></div>
+              <p className="text-sm mt-3 opacity-80">
+                ※ 無料版のわかりやすいスコアです。詳細コンサル診断ではより精密に判定します。
+              </p>
+            </section>
+          )}
 
-          {/* 診断結果コメント */}
-          <DiagnosisSummary profile={profile} answers={answers} />
+          {/* 診断内容 */}
+          <section className="rounded-2xl border p-5">
+            <h3 className="text-2xl font-semibold mb-4">診断内容</h3>
+
+            {/* あなたのお悩み（空なら非表示） */}
+            {problems.bullets.length > 0 && (
+              <div className="mb-5">
+                <div className="text-base font-medium mb-2">あなたのお悩み</div>
+                <ul className="list-disc ml-5 space-y-1">
+                  {problems.bullets.map((t, i) => <li key={i}>{t}</li>)}
+                </ul>
+              </div>
+            )}
+
+            {/* 診断コメント＋アドバイス */}
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="rounded-xl border p-4">
+                <div className="text-sm opacity-80 mb-1">診断コメント</div>
+                <div className="text-base">{comment || "※回答から自動生成"}</div>
+              </div>
+              <div className="rounded-xl border p-4">
+                <div className="text-sm opacity-80 mb-1">アドバイス（AI）</div>
+                <div className="text-base">{ai || "首圧分散を優先"}</div>
+              </div>
+            </div>
+          </section>
         </section>
       ) : (
         <section className="space-y-8">
