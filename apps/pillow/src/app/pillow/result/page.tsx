@@ -6,6 +6,7 @@ import { buildGroupsFromAPI, type GroupedRecommendations } from "../../../../lib
 import { buildProfileFromAnswers, type Profile } from "../../../../lib/diag/profile";
 import { computeMatchPercent } from "../../../../lib/match/score";
 import { deriveProblems, buildDiagnosticComment } from "../../../../src/lib/diagnosis/summary";
+import { buildDiagnosisComment, buildProblems } from "../../../../src/lib/result/comment";
 import DiagnosisSummary from "../../../components/DiagnosisSummary";
 
 // store → 診断用スナップショットへ正規化する小関数（キー名が揺れても耐性）
@@ -42,9 +43,18 @@ function toSnapshot(s: any) {
 }
 
 export default function Page() {
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => setHydrated(true), []);
+  
   const store = useDiagStore();
   const { provisional, answers } = store;
   const snap = toSnapshot(store);
+  
+  // 新しいユーティリティでコメントとお悩みを生成
+  const newComment = buildDiagnosisComment(store);
+  const newProblems = buildProblems(store);
+  
+  if (!hydrated) return null;
   const [groups, setGroups] = useState<GroupedRecommendations | null>(null);
   const [loading, setLoading] = useState(false);
   const [showMore, setShowMore] = useState(false);
@@ -101,28 +111,28 @@ export default function Page() {
     }
   }, [hasHydrated, topMatch]);
 
-  const problems = useMemo(() => (hasHydrated ? deriveProblems(snap) : { bullets: [] }), [hasHydrated, snap]);
-  const comment = useMemo(() => (hasHydrated ? buildDiagnosticComment(snap) : ""), [hasHydrated, snap]);
+  const oldProblems = useMemo(() => (hasHydrated ? deriveProblems(snap) : { bullets: [] }), [hasHydrated, snap]);
+  const oldComment = useMemo(() => (hasHydrated ? buildDiagnosticComment(snap) : ""), [hasHydrated, snap]);
 
   // デバッグ用ログ（一時的）
   useEffect(() => {
     if (hasHydrated) {
       console.log("[diag] raw store", store);
       console.log("[diag] snapshot", snap);
-      console.log("[diag] problems", problems);
-      console.log("[diag] comment", comment);
+      console.log("[diag] newProblems", newProblems);
+      console.log("[diag] newComment", newComment);
     }
-  }, [hasHydrated, store, snap, problems, comment]);
+  }, [hasHydrated, store, snap, newProblems, newComment]);
 
   // AIコメント（15〜20字）取得：brief には簡単な要約
   useEffect(() => {
     if (!hasHydrated) return;
-    const brief = `高さ:${answers?.prefHeight ?? "不明"} 硬さ:${answers?.prefFirmness ?? "不明"} 主訴:${problems.bullets[0] ?? "なし"}`;
+    const brief = `高さ:${answers?.prefHeight ?? "不明"} 硬さ:${answers?.prefFirmness ?? "不明"} 主訴:${newProblems[0] ?? "なし"}`;
     fetch("/api/ai/comment", { method: "POST", body: JSON.stringify({ brief }) })
       .then(r => r.json())
       .then(j => setAi(j.text ?? "首圧分散を優先"))
       .catch(() => setAi("首圧分散を優先"));
-  }, [hasHydrated, answers, problems.bullets]);
+  }, [hasHydrated, answers, newProblems]);
 
   if (!provisional) {
     return (
@@ -185,28 +195,22 @@ export default function Page() {
             <h3 className="text-2xl font-semibold mb-4">診断内容</h3>
 
             {/* あなたのお悩み（空なら非表示） */}
-            {problems.bullets.length > 0 && (
+            {newProblems.length > 0 && (
               <div className="rounded-xl border p-4 mb-4">
                 <div className="text-sm opacity-80 mb-2">あなたのお悩み</div>
                 <ul className="list-disc ml-5 space-y-1">
-                  {problems.bullets.map((t, i) => <li key={i}>{t}</li>)}
+                  {newProblems.map((t: string, i: number) => <li key={i}>{t}</li>)}
                 </ul>
               </div>
             )}
 
-            {/* 診断コメント＋アドバイス */}
-            <div className="grid md:grid-cols-2 gap-4">
-              {comment && (
-                <div className="rounded-xl border p-4">
-                  <div className="text-sm opacity-80 mb-1">診断コメント</div>
-                  <div className="text-base">{comment}</div>
-                </div>
-              )}
+            {/* 診断コメント */}
+            {newComment && (
               <div className="rounded-xl border p-4">
-                <div className="text-sm opacity-80 mb-1">アドバイス（AI）</div>
-                <div className="text-base">{ai || "首圧分散を優先"}</div>
+                <div className="text-sm opacity-80 mb-1">診断コメント</div>
+                <div className="text-base">{newComment}</div>
               </div>
-            </div>
+            )}
           </section>
         </section>
       ) : (
