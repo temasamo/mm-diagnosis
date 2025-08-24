@@ -7,8 +7,8 @@ import { useDiagStore } from "../../../../lib/state/diagStore";
 
 export default function Page() {
   const [q, setQ] = useState<Questionnaire | null>(null);
-  const answers = useDiagStore(s => s.answers);
-  const setAnswers = useDiagStore(s => s.setAnswers);
+  const answers = useDiagStore((s: any) => s.answers);
+  const setAnswers = useDiagStore((s: any) => s.setAnswers);
 
   useEffect(() => {
     fetch("/questions.pillow.v2.json").then(r => r.json()).then(setQ).catch(console.error);

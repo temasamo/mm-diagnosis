@@ -4,9 +4,14 @@ const nextConfig = {
   eslint: { ignoreDuringBuilds: true },
   images: {
     remotePatterns: [
-      { protocol: "https", hostname: "**.rakuten.co.jp" },
-      { protocol: "https", hostname: "shopping.c.yimg.jp" },
-      { protocol: "https", hostname: "**.yimg.jp" },
+      // 楽天
+      { protocol: 'https', hostname: 'thumbnail.image.rakuten.co.jp' },
+      { protocol: 'https', hostname: 'image.rakuten.co.jp' },
+      { protocol: 'https', hostname: '**.rakuten.co.jp' },
+      // Yahoo
+      { protocol: 'https', hostname: 'shopping.c.yimg.jp' },
+      { protocol: 'https', hostname: 'item-shopping.c.yimg.jp' },
+      { protocol: 'https', hostname: '**.yimg.jp' },
     ],
   },
   async redirects() {

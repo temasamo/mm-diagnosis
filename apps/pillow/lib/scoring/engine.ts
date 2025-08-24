@@ -1,6 +1,6 @@
 import {
   BASE_WEIGHTS, POSTURE_ROLLOVER_WEIGHTS, NECK_SHOULDER_WEIGHTS,
-  COMFORT_WEIGHTS, PREF_WEIGHTS, BUDGET_WEIGHTS, GIFT_DEFAULT,
+  COMFORT_WEIGHTS, PREF_WEIGHTS, BUDGET_WEIGHTS,
   CATEGORY_LABEL, type CategoryId
 } from "./config";
 
@@ -86,12 +86,7 @@ export function computeProvisional(answers: Answers): ProvisionalResult {
   const budget = answers.budget;
   if (budget && BUDGET_WEIGHTS[budget as keyof typeof BUDGET_WEIGHTS]) sumWeights(BUDGET_WEIGHTS[budget as keyof typeof BUDGET_WEIGHTS], scores, "予算レンジの現実解", reasons);
 
-  // ギフト分岐（十分な本人情報が無い場合の安全解）
-  if (answers.purchase_reason === "gift") {
-    for (const cat of GIFT_DEFAULT) {
-      sumWeights({ [cat]: 0.25 }, scores, "ギフト適性（汎用・失敗しにくい）", reasons);
-    }
-  }
+
 
   // 正規化（0..1）
   const maxScore = Math.max(0.001, ...Array.from(scores.values()));

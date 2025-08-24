@@ -1,73 +1,48 @@
-export const runtime = "nodejs"; // Edgeだと一部fetch挙動が不安定なため
-export const dynamic = "force-dynamic"; // 常に生リクエスト
+import { NextRequest, NextResponse } from 'next/server';
+import { searchRakuten } from '../../../../lib/malls/rakuten';
+import { searchYahoo } from '../../../../lib/malls/yahoo';
+import { cacheGet, cacheSet } from '../../../../lib/cache';
+import { dedupeAndPickCheapest } from '../../../../lib/dedupe';
+import type { SearchItem } from '../../../../lib/malls/types';
 
-import { NextResponse } from "next/server";
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
-function withTimeout<T>(p: Promise<T>, ms = 7000) {
-  return Promise.race([
-    p,
-    new Promise<T>((_, rej) => setTimeout(() => rej(new Error("timeout")), ms)),
-  ]) as Promise<T>;
-}
+const TTL_MS = 15 * 60 * 1000;
 
-export async function GET(req: Request) {
-  const { searchParams } = new URL(req.url);
-  const q = searchParams.get("q") || "";
-  const limit = Number(searchParams.get("limit") || "6");
-  const debug = searchParams.get("debug") === "1" || process.env.NEXT_PUBLIC_DEBUG_MALL === "1";
-  const mallFilter = (searchParams.get("mall") || "").toLowerCase(); // "rakuten" | "yahoo" | "amazon" | ""
+export async function GET(req: NextRequest) {
+  const q = req.nextUrl.searchParams.get('q') || '';
+  const limit = Number(req.nextUrl.searchParams.get('limit') || 30);
+  const key = `cross:${q}:${limit}`;
 
-  const enableAmazon = process.env.ENABLE_AMAZON === "1";
+  const debug = !!(process.env.MALLS_DEBUG || process.env.NEXT_PUBLIC_DEBUG_MALLS);
 
-  // 実アダプタ（存在しなければ安全に空配列）
-  let rakuten: any, yahoo: any; // Removed amazon
-  try { rakuten = await import("../../../../lib/malls/rakuten"); } catch {}
-  try { yahoo   = await import("../../../../lib/malls/yahoo"); } catch {}
+  if (!q) return NextResponse.json([], { status: 200 });
 
-  const jobs: Promise<any[]>[] = [];
-  const tasks: { name: string; p: Promise<any[]> }[] = [];
-  if (rakuten?.searchRakuten && (!mallFilter || mallFilter === "rakuten"))
-    tasks.push({ name: "rakuten", p: rakuten.searchRakuten(q, limit) });
-  if (yahoo?.searchYahoo && (!mallFilter || mallFilter === "yahoo"))
-    tasks.push({ name: "yahoo",   p: yahoo.searchYahoo(q, limit) });
-  // Removed amazon?.searchAmazon
-  for (const t of tasks) jobs.push(t.p);
+  const cached = cacheGet<SearchItem[]>(key);
+  if (cached) return NextResponse.json(cached, { status: 200 });
 
-  if (jobs.length === 0) {
-    // 何も無ければモックを返す（開発継続用）
-    const slug = q.replace(/\s+/g, "-").slice(0, 40) || "q";
-    const mock = Array.from({ length: limit }).map((_, i) => ({
-      id: `mock-${slug}-${i}`,
-      title: `[mock] ${q} #${i + 1}`,
-      url: `https://example.com/mock?q=${encodeURIComponent(q)}&i=${i}`,
-      image: null,
-      price: null,
-      mall: "mock",
-      shop: null,
-    }));
-    return NextResponse.json(mock);
+  if (debug) console.time('[search-cross total]');
+
+  const [rkt, yho] = await Promise.allSettled([
+    searchRakuten(q, limit),
+    searchYahoo(q, limit),
+  ]);
+
+  const items: SearchItem[] = [
+    ...(rkt.status === 'fulfilled' ? rkt.value : []),
+    ...(yho.status === 'fulfilled' ? yho.value : []),
+  ];
+
+  const merged = dedupeAndPickCheapest(items).sort((a,b) => a.price - b.price);
+
+  if (debug) {
+    console.log('[search-cross] rakuten:', rkt.status === 'fulfilled' ? rkt.value.length : `ERR:${(rkt as any).reason}`);
+    console.log('[search-cross] yahoo  :', yho.status === 'fulfilled' ? yho.value.length : `ERR:${(yho as any).reason}`);
+    console.log('[search-cross] merged :', merged.length);
+    console.timeEnd('[search-cross total]');
   }
 
-  const settled = await Promise.allSettled(jobs.map(j => withTimeout(j, 7000)));
-  const items = settled.flatMap((s, i) => {
-    const name = tasks[i]?.name ?? `m${i}`;
-    if (s.status === "fulfilled") {
-      if (debug) console.log(`[search-cross] ${name}: ${s.value.length} items for "${q}"`);
-      return s.value;
-    } else {
-      console.warn(`[search-cross] ${name} failed:`, s.reason);
-      return [];
-    }
-  });
-
-  // デデュープ
-  const seen = new Set<string>();
-  const uniq = items.filter((p: any) => {
-    const k = p.url || p.title;
-    if (seen.has(k)) return false;
-    seen.add(k);
-    return true;
-  });
-
-  return NextResponse.json(uniq.slice(0, limit));
+  cacheSet(key, merged, TTL_MS);
+  return NextResponse.json(merged, { status: 200 });
 } 

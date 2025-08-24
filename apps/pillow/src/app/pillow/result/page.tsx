@@ -49,7 +49,13 @@ export default function Page() {
                    className="rounded-xl border p-3 hover:shadow-sm">
                   <div className="text-sm text-gray-500">{p.mall.toUpperCase()}</div>
                   <div className="font-medium line-clamp-2">{p.title}</div>
-                  {p.image && <img src={p.image} alt="" className="w-full h-28 object-cover rounded-lg mt-2" />}
+                  <img 
+                    src={p.image ?? "/images/mall-placeholder.svg"} 
+                    alt={p.title}
+                    loading="lazy"
+                    onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/images/mall-placeholder.svg'; }}
+                    className="w-full h-28 object-cover rounded-lg mt-2" 
+                  />
                   {p.price != null && <div className="text-sm mt-1">¥{p.price.toLocaleString()}</div>}
                 </a>
               ))}
@@ -65,7 +71,13 @@ export default function Page() {
                    className="rounded-xl border p-3 hover:shadow-sm">
                   <div className="text-sm text-gray-500">{p.mall.toUpperCase()}</div>
                   <div className="font-medium line-clamp-2">{p.title}</div>
-                  {p.image && <img src={p.image} alt="" className="w-full h-28 object-cover rounded-lg mt-2" />}
+                  <img 
+                    src={p.image ?? "/images/mall-placeholder.svg"} 
+                    alt={p.title}
+                    loading="lazy"
+                    onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/images/mall-placeholder.svg'; }}
+                    className="w-full h-28 object-cover rounded-lg mt-2" 
+                  />
                   {p.price != null && <div className="text-sm mt-1">¥{p.price.toLocaleString()}</div>}
                 </a>
               ))}
