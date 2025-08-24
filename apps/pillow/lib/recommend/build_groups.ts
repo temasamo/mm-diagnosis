@@ -14,19 +14,19 @@ export type GroupedRecommendations = {
 
 const PRODUCTS_PER_CATEGORY = 3;
 
-async function fetchByCategory(cat: CategoryId): Promise<MallProduct[]> {
+async function fetchByCategory(cat: CategoryId, budgetBandId?: string): Promise<MallProduct[]> {
   const spec = CATEGORY_QUERIES[cat];
   if (!spec) return [];
   const queries = buildQueryWords(spec);
   let collected: MallProduct[] = [];
   for (const phrase of queries) {
-    const items = await searchAllMalls(phrase, PRODUCTS_PER_CATEGORY);
+    const items = await searchAllMalls(phrase, PRODUCTS_PER_CATEGORY, budgetBandId);
     collected = [...collected, ...items];
     if (collected.length >= PRODUCTS_PER_CATEGORY) break;
   }
   if (collected.length < PRODUCTS_PER_CATEGORY && spec.fallback?.length) {
     for (const phrase of spec.fallback) {
-      const items = await searchAllMalls(phrase, PRODUCTS_PER_CATEGORY);
+      const items = await searchAllMalls(phrase, PRODUCTS_PER_CATEGORY, budgetBandId);
       collected = [...collected, ...items];
       if (collected.length >= PRODUCTS_PER_CATEGORY) break;
     }
@@ -47,21 +47,21 @@ async function fetchByCategory(cat: CategoryId): Promise<MallProduct[]> {
   return uniq.slice(0, PRODUCTS_PER_CATEGORY);
 }
 
-export async function buildGroups(provisional: Provisional[], topN = 6): Promise<GroupedRecommendations> {
+export async function buildGroups(provisional: Provisional[], topN = 6, budgetBandId?: string): Promise<GroupedRecommendations> {
   const top = provisional.slice(0, topN);
   const firstCats = top.slice(0, Math.ceil(topN / 2));
   const secondCats = top.slice(Math.ceil(topN / 2), topN);
 
   const [firstProducts, secondProducts] = await Promise.all([
-    Promise.all(firstCats.map(p => fetchByCategory(p.category))),
-    Promise.all(secondCats.map(p => fetchByCategory(p.category))),
+    Promise.all(firstCats.map(p => fetchByCategory(p.category, budgetBandId))),
+    Promise.all(secondCats.map(p => fetchByCategory(p.category, budgetBandId))),
   ]);
 
   const ensure = (xs: MallProduct[][]) => {
     const flat = xs.flat();
     if (flat.length === 0) {
       // フェイルセーフ：調整系を追加で叩く
-      return Promise.all([fetchByCategory("adjustable" as any)]);
+      return Promise.all([fetchByCategory("adjustable" as any, budgetBandId)]);
     }
     return xs;
   };
