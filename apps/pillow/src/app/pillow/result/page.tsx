@@ -8,8 +8,43 @@ import { computeMatchPercent } from "../../../../lib/match/score";
 import { deriveProblems, buildDiagnosticComment } from "../../../../src/lib/diagnosis/summary";
 import DiagnosisSummary from "../../../components/DiagnosisSummary";
 
+// store → 診断用スナップショットへ正規化する小関数（キー名が揺れても耐性）
+function toSnapshot(s: any) {
+  // 既存の回答どり（例：s.answers?.xxx）に合わせて拾ってください
+  const h =
+    s.prefHeight ||
+    s.heightFeel ||                   // 例: "低い/普通/高い"
+    s.answers?.heightFeel ||
+    "指定なし";
+  const f =
+    s.prefFirmness ||
+    s.firmnessFeel ||
+    s.answers?.firmnessFeel ||
+    "指定なし";
+  const m =
+    s.prefMaterial ||
+    s.answers?.material ||
+    "指定なし";
+
+  return {
+    prefHeight: h,       // "low/mid/high" or "低い/普通/高い"
+    prefFirmness: f,     // "soft/medium/hard" or "柔/普/硬"
+    prefMaterial: m,     // e.g. "低反発/高反発/羽毛/そば殻/指定なし"
+    // ↓ お悩み系フラグ（存在すれば拾う）
+    neckOrShoulderPain: s.neckOrShoulderPain || s.answers?.neckPain || false,
+    pillowTooHigh:      s.pillowTooHigh      || s.answers?.tooHigh   || false,
+    pillowTooLow:       s.pillowTooLow       || s.answers?.tooLow    || false,
+    pillowTooHard:      s.pillowTooHard      || s.answers?.tooHard   || false,
+    pillowTooSoft:      s.pillowTooSoft      || s.answers?.tooSoft   || false,
+    getsHot:            s.getsHot            || s.answers?.hot       || false,
+    materialMismatch:   s.materialMismatch   || s.answers?.matMis    || false,
+  };
+}
+
 export default function Page() {
-  const { provisional, answers } = useDiagStore();
+  const store = useDiagStore();
+  const { provisional, answers } = store;
+  const snap = toSnapshot(store);
   const [groups, setGroups] = useState<GroupedRecommendations | null>(null);
   const [loading, setLoading] = useState(false);
   const [showMore, setShowMore] = useState(false);
@@ -66,8 +101,18 @@ export default function Page() {
     }
   }, [hasHydrated, topMatch]);
 
-  const problems = useMemo(() => (hasHydrated ? deriveProblems(answers) : { bullets: [] }), [hasHydrated, answers]);
-  const comment = useMemo(() => (hasHydrated ? buildDiagnosticComment(answers) : ""), [hasHydrated, answers]);
+  const problems = useMemo(() => (hasHydrated ? deriveProblems(snap) : { bullets: [] }), [hasHydrated, snap]);
+  const comment = useMemo(() => (hasHydrated ? buildDiagnosticComment(snap) : ""), [hasHydrated, snap]);
+
+  // デバッグ用ログ（一時的）
+  useEffect(() => {
+    if (hasHydrated) {
+      console.log("[diag] raw store", store);
+      console.log("[diag] snapshot", snap);
+      console.log("[diag] problems", problems);
+      console.log("[diag] comment", comment);
+    }
+  }, [hasHydrated, store, snap, problems, comment]);
 
   // AIコメント（15〜20字）取得：brief には簡単な要約
   useEffect(() => {
