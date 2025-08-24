@@ -1,14 +1,18 @@
 "use client";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useDiagStore } from "../../../../lib/state/diagStore";
 import { buildGroupsFromAPI, type GroupedRecommendations } from "../../../../lib/recommend/build_groups";
+import { buildProfileFromAnswers, type Profile } from "../../../../lib/diag/profile";
+import { computeMatchPercent } from "../../../../lib/match/score";
+import DiagnosisSummary from "../../../../src/components/DiagnosisSummary";
 
 export default function Page() {
   const { provisional, answers } = useDiagStore();
   const [groups, setGroups] = useState<GroupedRecommendations | null>(null);
   const [loading, setLoading] = useState(false);
   const [showMore, setShowMore] = useState(false);
+  const [tab, setTab] = useState<"summary" | "proposals">("summary");
 
   useEffect(() => {
     (async () => {
@@ -24,6 +28,23 @@ export default function Page() {
       }
     })();
   }, [provisional, answers]);
+
+  // プロファイル作成とマッチング度計算
+  const profile = useMemo(() => buildProfileFromAnswers(answers), [answers]);
+  
+  const itemsWithMatch = useMemo(() => {
+    if (!groups) return [];
+    const allItems = [...groups.primary, ...groups.secondaryBuckets.flat()];
+    return allItems.map(item => {
+      const { score } = computeMatchPercent(item.title ?? "", profile);
+      return { ...item, match: score };
+    });
+  }, [groups, profile]);
+
+  const topMatch = useMemo(
+    () => Math.max(...itemsWithMatch.map(i => i.match ?? 0), 0),
+    [itemsWithMatch]
+  );
 
   if (!provisional) {
     return (
@@ -46,12 +67,45 @@ export default function Page() {
   return (
     <main className="max-w-3xl mx-auto p-6 space-y-6">
       <h1 className="text-2xl font-bold">診断結果 ＋ 商品提案</h1>
+      
+      {/* タブ */}
+      <div className="flex gap-2">
+        <button
+          className={`rounded-2xl px-4 py-2 ${tab==="summary" ? "bg-white/10" : "bg-white/5 hover:bg-white/10"}`}
+          onClick={() => setTab("summary")}
+        >
+          診断結果
+        </button>
+        <button
+          className={`rounded-2xl px-4 py-2 ${tab==="proposals" ? "bg-white/10" : "bg-white/5 hover:bg-white/10"}`}
+          onClick={() => setTab("proposals")}
+        >
+          商品提案
+        </button>
+      </div>
+
       {loading && <div>商品候補を取得中...</div>}
       {!loading && groups && groups.primary.length===0 && groups.secondaryBuckets.every(b => b.length === 0) && (
         <div className="text-sm text-gray-400">候補を取得できませんでした。キーワードを緩めるか、少し時間をおいてお試しください。</div>
       )}
-      {groups && (
-        <>
+
+      {tab === "summary" ? (
+        <section className="space-y-6">
+          {/* マッチング度のハイライト */}
+          <div className="rounded-2xl border border-white/10 p-4">
+            <div className="text-sm opacity-80">ご提案する枕のマッチング度（最大85%）</div>
+            <div className="mt-1 text-3xl font-semibold">{topMatch}%</div>
+            <div className="mt-1 text-xs opacity-70">
+              ※ 無料版の概算スコアです。詳細コンサル診断ではより精密に判定します。
+            </div>
+          </div>
+
+          {/* 診断結果コメント */}
+          <DiagnosisSummary profile={profile} answers={answers} />
+        </section>
+      ) : (
+        <section className="space-y-8">
+          {/* 予算外メッセージ */}
           {!primaryHasInBudget && (
             <div className="mb-4 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-amber-200">
               予算に合う商品がなかったため、予算外の商品をご提案しております。
@@ -62,7 +116,7 @@ export default function Page() {
           <section className="rounded-2xl border p-4 space-y-3">
             <div className="text-lg font-semibold">第一候補グループ</div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {groups.primary.map((p, i) => (
+              {groups?.primary.map((p, i) => (
                 <ProductCard key={`primary-${p.url}-${i}`} item={p} />
               ))}
             </div>
@@ -73,7 +127,7 @@ export default function Page() {
             <section className="rounded-2xl border p-4 space-y-3">
               <div className="text-lg font-semibold">第二候補グループ a</div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {groups.secondaryBuckets[0].map((p, i) => (
+                {groups?.secondaryBuckets[0].map((p, i) => (
                   <ProductCard key={`secondary-a-${p.url}-${i}`} item={p} />
                 ))}
               </div>
@@ -98,7 +152,7 @@ export default function Page() {
                 <section className="rounded-2xl border p-4 space-y-3">
                   <div className="text-lg font-semibold">第二候補グループ b</div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {groups.secondaryBuckets[1].map((p, i) => (
+                    {groups?.secondaryBuckets[1].map((p, i) => (
                       <ProductCard key={`secondary-b-${p.url}-${i}`} item={p} />
                     ))}
                   </div>
@@ -108,7 +162,7 @@ export default function Page() {
                 <section className="rounded-2xl border p-4 space-y-3">
                   <div className="text-lg font-semibold">第二候補グループ c</div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {groups.secondaryBuckets[2].map((p, i) => (
+                    {groups?.secondaryBuckets[2].map((p, i) => (
                       <ProductCard key={`secondary-c-${p.url}-${i}`} item={p} />
                     ))}
                   </div>
@@ -116,8 +170,9 @@ export default function Page() {
               )}
             </>
           )}
-        </>
+        </section>
       )}
+      
       <div className="flex justify-end">
         <Link href="/pillow" className="px-4 py-2 rounded-xl border">最初に戻る</Link>
       </div>
@@ -155,6 +210,12 @@ function ProductCard({ item }: { item: any }) {
       <div className="mt-2 text-center text-[10px] uppercase tracking-[0.08em] opacity-80">
         {mallLabel}
       </div>
+      {/* 適合度表示 */}
+      {typeof (item as any).match === "number" && (
+        <div className="mt-1 text-center text-[11px] opacity-80">
+          適合度 <span className="font-semibold">{(item as any).match}%</span>
+        </div>
+      )}
       {item.price != null && <div className="text-sm mt-1">¥{item.price.toLocaleString()}</div>}
     </a>
   );
