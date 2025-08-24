@@ -141,8 +141,8 @@ export default function Page() {
 
             {/* あなたのお悩み（空なら非表示） */}
             {problems.bullets.length > 0 && (
-              <div className="mb-5">
-                <div className="text-base font-medium mb-2">あなたのお悩み</div>
+              <div className="rounded-xl border p-4 mb-4">
+                <div className="text-sm opacity-80 mb-2">あなたのお悩み</div>
                 <ul className="list-disc ml-5 space-y-1">
                   {problems.bullets.map((t, i) => <li key={i}>{t}</li>)}
                 </ul>
@@ -151,10 +151,12 @@ export default function Page() {
 
             {/* 診断コメント＋アドバイス */}
             <div className="grid md:grid-cols-2 gap-4">
-              <div className="rounded-xl border p-4">
-                <div className="text-sm opacity-80 mb-1">診断コメント</div>
-                <div className="text-base">{comment || "※回答から自動生成"}</div>
-              </div>
+              {comment && (
+                <div className="rounded-xl border p-4">
+                  <div className="text-sm opacity-80 mb-1">診断コメント</div>
+                  <div className="text-base">{comment}</div>
+                </div>
+              )}
               <div className="rounded-xl border p-4">
                 <div className="text-sm opacity-80 mb-1">アドバイス（AI）</div>
                 <div className="text-base">{ai || "首圧分散を優先"}</div>
