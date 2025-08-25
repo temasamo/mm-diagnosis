@@ -98,9 +98,4 @@ export const BUDGET_WEIGHTS = {
   "30k+":    { "cooling": 0.1, "firm-support": 0.1, "back-contour": 0.1 },
 };
 
-// ギフト分岐の汎用（情報不足時の安全解）
-export const GIFT_DEFAULT = [
-  "adjustable",
-  "mid-loft",
-  "soft-plush",
-] as CategoryId[]; 
+ 

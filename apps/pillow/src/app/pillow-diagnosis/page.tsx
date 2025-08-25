@@ -7,7 +7,7 @@ import { CATEGORY_LABEL } from "../../../lib/scoring/config";
 import { generateProductRecommendations, filterByBudget } from "../../../lib/scoring/product-recommendations";
 import { generatePersonalizedExplanation } from "../../../lib/scoring/explanations";
 import { generateSearchQueries } from "../../../lib/scoring/search-queries";
-import { buildGroups, type GroupedRecommendations } from "../../../lib/recommend/build_groups";
+import { buildGroupsFromAPI, type GroupedRecommendations } from "../../../lib/recommend/build_groups";
 
 export default function Page() {
   const [q, setQ] = useState<Questionnaire | null>(null);
@@ -29,7 +29,7 @@ export default function Page() {
       filterByBudget(recommendations, answers.budget) : recommendations;
     
     // 新しいグループ化機能を追加
-    const groupedRecommendations = await buildGroups(r.provisional);
+    const groupedRecommendations = await buildGroupsFromAPI(r.provisional);
     
     // 拡張結果を設定
     const extendedResult = {

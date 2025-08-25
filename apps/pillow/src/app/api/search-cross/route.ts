@@ -1,60 +1,98 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from 'next/server';
+import { searchRakuten } from '../../../../lib/malls/rakuten';
+import { searchYahoo } from '../../../../lib/malls/yahoo';
+import { cacheGet, cacheSet } from '../../../../lib/cache';
+import { dedupeAndPickCheapest } from '../../../../lib/dedupe';
+import { getBandById, inBand } from '../../../../lib/budget';
+import { priceDistanceToBand } from '../../../../lib/price';
+import type { SearchItem } from '../../../../lib/malls/types';
 
-export async function GET(req: Request) {
-  const { searchParams } = new URL(req.url);
-  const q = searchParams.get("q") || "";
-  const limit = Number(searchParams.get("limit") || "6");
-  const debug = searchParams.get("debug") === "1" || process.env.NEXT_PUBLIC_DEBUG_MALL === "1";
-  const mallFilter = (searchParams.get("mall") || "").toLowerCase(); // "rakuten" | "yahoo" | "amazon" | ""
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
-  // 実アダプタ（存在しなければ安全に空配列）
-  let rakuten: any, yahoo: any;
-  try { rakuten = await import("../../../../lib/malls/rakuten"); } catch {}
-  try { yahoo   = await import("../../../../lib/malls/yahoo"); } catch {}
+const TTL_MS = 15 * 60 * 1000;
 
-  const jobs: Promise<any[]>[] = [];
-  const tasks: { name: string; p: Promise<any[]> }[] = [];
-  if (rakuten?.searchRakuten && (!mallFilter || mallFilter === "rakuten"))
-    tasks.push({ name: "rakuten", p: rakuten.searchRakuten(q, limit) });
-  if (yahoo?.searchYahoo && (!mallFilter || mallFilter === "yahoo"))
-    tasks.push({ name: "yahoo",   p: yahoo.searchYahoo(q, limit) });
-  for (const t of tasks) jobs.push(t.p);
+export async function GET(req: NextRequest) {
+  const q = req.nextUrl.searchParams.get('q') || '';
+  const limit = Number(req.nextUrl.searchParams.get('limit') || 30);
+  const bandId = req.nextUrl.searchParams.get('band');
+  const band = bandId ? getBandById(bandId) : null;
+  const key = `cross:${q}:${limit}:${bandId || 'none'}`;
 
-  if (jobs.length === 0) {
-    // 何も無ければモックを返す（開発継続用）
-    const slug = q.replace(/\s+/g, "-").slice(0, 40) || "q";
-    const mock = Array.from({ length: limit }).map((_, i) => ({
-      id: `mock-${slug}-${i}`,
-      title: `[mock] ${q} #${i + 1}`,
-      url: `https://example.com/mock?q=${encodeURIComponent(q)}&i=${i}`,
-      image: null,
-      price: null,
-      mall: "mock",
-      shop: null,
-    }));
-    return NextResponse.json(mock);
+  const debug = !!(process.env.MALLS_DEBUG || process.env.NEXT_PUBLIC_DEBUG_MALLS);
+
+  if (!q) return NextResponse.json([], { status: 200 });
+
+  const cached = cacheGet<SearchItem[]>(key);
+  if (cached) return NextResponse.json(cached, { status: 200 });
+
+  if (debug) console.time('[search-cross total]');
+
+  // 1) 取得
+  const [rkt, yho] = await Promise.allSettled([
+    searchRakuten(q, limit * 2), // 余裕めに取る
+    searchYahoo(q, limit * 2),
+  ]);
+
+  // 正規化済み: { id, mall, title, url, price:number|null, image, shop }
+  const all: SearchItem[] = [
+    ...(rkt.status === 'fulfilled' ? rkt.value : []),
+    ...(yho.status === 'fulfilled' ? yho.value : []),
+  ];
+
+  // 2) 予算で厳密フィルタ
+  let inBudgetItems = band ? all.filter(i => i.price != null && inBand(i.price!, band)) : all;
+  // 価格が近い順に並べておく（同額帯の中での並び安定）
+  if (band) {
+    const center = (band.min + band.max) / 2;
+    inBudgetItems = inBudgetItems.sort(
+      (a, b) => Math.abs((a.price ?? center) - center) - Math.abs((b.price ?? center) - center)
+    );
   }
 
-  const settled = await Promise.allSettled(jobs);
-  const items = settled.flatMap((s, i) => {
-    const name = tasks[i]?.name ?? `m${i}`;
-    if (s.status === "fulfilled") {
-      if (debug) console.log(`[search-cross] ${name}: ${s.value.length} items for "${q}"`);
-      return s.value;
-    } else {
-      console.warn(`[search-cross] ${name} failed:`, s.reason);
-      return [];
+  // 3) 足りないぶんは予算外から距離の近い順に補充
+  let picked = inBudgetItems.slice(0, limit);
+  const inBudgetHits = inBudgetItems.length;
+
+  if (picked.length < limit && band) {
+    const out = all
+      .filter(i => i.price == null || !inBand(i.price!, band))
+      .map(i => {
+        const distance = priceDistanceToBand(i.price, band);
+        const budgetDirection =
+          i.price == null ? "unknown" : i.price < band.min ? "under" : "over";
+        return { ...i, _distance: distance, outOfBudget: true, budgetDirection };
+      })
+      .sort((a, b) => a._distance - b._distance);
+
+    for (const i of out) {
+      if (picked.length >= limit) break;
+      picked.push(i);
     }
-  });
+  }
 
-  // デデュープ
-  const seen = new Set<string>();
-  const uniq = items.filter((p: any) => {
-    const k = p.url || p.title;
-    if (seen.has(k)) return false;
-    seen.add(k);
-    return true;
-  });
+  // 4) ヘッダで状況通知
+  const fallbackUsed = band ? picked.every(i => (i as any).outOfBudget === true) : false;
+  const headers = new Headers();
+  headers.set("x-budget-hits", String(inBudgetHits));
+  headers.set("x-budget-fallback", fallbackUsed ? "1" : "0");
 
-  return NextResponse.json(uniq.slice(0, limit));
+  // クライアントで使いやすいように内部フィールドは除去
+  picked = picked.map(({ _distance, ...rest }: any) => rest);
+
+  if (debug) {
+    console.log('[search-cross] rakuten:', rkt.status === 'fulfilled' ? rkt.value.length : `ERR:${(rkt as any).reason}`);
+    console.log('[search-cross] yahoo  :', yho.status === 'fulfilled' ? yho.value.length : `ERR:${(yho as any).reason}`);
+    console.log('[search-cross] merged :', picked.length);
+    console.log('[search-cross] budget hits:', inBudgetHits);
+    console.log('[search-cross] fallback used:', fallbackUsed);
+    console.timeEnd('[search-cross total]');
+  }
+
+  cacheSet(key, picked, TTL_MS);
+  
+  return new NextResponse(JSON.stringify(picked), {
+    status: 200,
+    headers,
+  });
 } 

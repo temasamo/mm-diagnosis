@@ -2,18 +2,24 @@
   "name": "@apps/pillow",
   "version": "0.1.0",
   "private": true,
-  "engines": { "node": ">=18.17 <23" },
+  "engines": {
+    "node": ">=18.17 <21"
+  },
   "scripts": {
     "prebuild": "pnpm -F @core/mm build",
-    "dev": "next dev",
+    "dev": "next dev --port 3001",
+    "dev:3000": "next dev -p 3000",
+    "dev:3001": "next dev -p 3001",
     "build": "next build",
-    "start": "next start",
+    "start": "next start --port 3001",
     "lint": "next lint"
   },
   "dependencies": {
     "@core/mm": "workspace:*",
     "@supabase/supabase-js": "^2.55.0",
+    "cheerio": "^1.1.2",
     "next": "15.4.7",
+    "openai": "^5.15.0",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "zustand": "^5.0.8"

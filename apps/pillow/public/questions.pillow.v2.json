@@ -42,19 +42,11 @@
       "required": true,
       "choices": [
         { "id": "mismatch", "label": "使っている枕が合わない" },
-        { "id": "upgrade", "label": "より質の良いものを探したい" },
-        { "id": "gift", "label": "プレゼント用" }
+        { "id": "upgrade", "label": "より質の良いものを探したい" }
       ],
       "meta": { "group": "基本情報", "order": 3 }
     },
-    {
-      "id": "cur_brand",
-      "title": "（任意）お使いの枕のブランド/商品名",
-      "type": "text",
-      "required": false,
-      "visibleIf": { "anyOf": [["purchase_reason","!=","gift"]] },
-      "meta": { "group": "現在の枕", "order": 4 }
-    },
+
     {
       "id": "cur_years",
       "title": "使用年数",
@@ -66,32 +58,57 @@
         { "id": "2-3y", "label": "2〜3年" },
         { "id": "3p", "label": "3年以上" }
       ],
-      "visibleIf": { "anyOf": [["purchase_reason","!=","gift"]] },
       "meta": { "group": "現在の枕", "order": 5 }
     },
     {
       "id": "cur_height_feel",
-      "title": "枕の高さの感じ方",
+      "title": "今の枕の高さはどうですか？",
       "type": "single",
       "choices": [
         { "id": "low", "label": "低い" },
         { "id": "just", "label": "ちょうど良い" },
-        { "id": "high", "label": "高い" }
+        { "id": "high", "label": "高い" },
+        { "id": "unknown", "label": "不明 / 指定なし" }
       ],
-      "visibleIf": { "anyOf": [["purchase_reason","!=","gift"]] },
       "meta": { "group": "現在の枕", "order": 6 }
     },
     {
       "id": "cur_firm",
-      "title": "枕の硬さの感じ方",
+      "title": "今の枕の硬さはどうですか？",
       "type": "single",
       "choices": [
         { "id": "soft", "label": "柔らかい" },
         { "id": "mid", "label": "普通" },
-        { "id": "hard", "label": "硬い" }
+        { "id": "hard", "label": "硬い" },
+        { "id": "unknown", "label": "不明 / 指定なし" }
       ],
-      "visibleIf": { "anyOf": [["purchase_reason","!=","gift"]] },
       "meta": { "group": "現在の枕", "order": 7 }
+    },
+    {
+      "id": "current_pillow_size",
+      "title": "今の枕のサイズは？（わかれば）",
+      "type": "single",
+      "choices": [
+        { "id": "s", "label": "S" },
+        { "id": "m", "label": "M" },
+        { "id": "l", "label": "L" },
+        { "id": "unknown", "label": "不明 / 指定なし" }
+      ],
+      "meta": { "group": "現在の枕", "order": 8 }
+    },
+    {
+      "id": "current_pillow_material",
+      "title": "今の枕の素材は？（わかれば）",
+      "type": "single",
+      "choices": [
+        { "id": "urethane", "label": "ウレタン" },
+        { "id": "pipe", "label": "パイプ" },
+        { "id": "buckwheat", "label": "そば殻" },
+        { "id": "feather", "label": "羽根" },
+        { "id": "other", "label": "その他" },
+        { "id": "unknown", "label": "不明 / 指定なし" }
+      ],
+      "meta": { "group": "現在の枕", "order": 9 }
     },
     {
       "id": "cur_size_material_known",
@@ -107,7 +124,6 @@
         { "id": "buckwheat", "label": "そば殻" },
         { "id": "other", "label": "その他/不明" }
       ],
-      "visibleIf": { "anyOf": [["purchase_reason","!=","gift"]] },
       "meta": { "group": "現在の枕", "order": 8 }
     },
     {
@@ -121,55 +137,9 @@
         { "id": "hot", "label": "蒸れる" },
         { "id": "sag", "label": "へたる" }
       ],
-      "visibleIf": { "anyOf": [["purchase_reason","!=","gift"]] },
       "meta": { "group": "現在の枕", "order": 9 }
     },
-    {
-      "id": "cur_improve_free",
-      "title": "改善したい点（任意・自由記述）",
-      "type": "text",
-      "visibleIf": { "anyOf": [["purchase_reason","!=","gift"]] },
-      "meta": { "group": "現在の枕", "order": 10 }
-    },
-    {
-      "id": "gift_age",
-      "title": "贈る相手の年齢層",
-      "type": "single",
-      "required": true,
-      "choices": [
-        { "id": "20s", "label": "20代" },
-        { "id": "30-40s", "label": "30〜40代" },
-        { "id": "50p", "label": "50代以上" }
-      ],
-      "visibleIf": { "allOf": [["purchase_reason","=","gift"]] },
-      "meta": { "group": "贈答情報", "order": 11 }
-    },
-    {
-      "id": "gift_lifestyle",
-      "title": "贈る相手のライフスタイルに近いもの",
-      "type": "single",
-      "choices": [
-        { "id": "desk", "label": "デスクワーク多め" },
-        { "id": "active", "label": "アクティブ" },
-        { "id": "senior_stiff", "label": "高齢・肩こりあり" },
-        { "id": "unknown", "label": "不明" }
-      ],
-      "visibleIf": { "allOf": [["purchase_reason","=","gift"]] },
-      "meta": { "group": "贈答情報", "order": 12 }
-    },
-    {
-      "id": "gift_scene",
-      "title": "贈るシーン",
-      "type": "single",
-      "choices": [
-        { "id": "birthday", "label": "誕生日" },
-        { "id": "wedding", "label": "結婚祝い" },
-        { "id": "health", "label": "健康配慮のギフト" },
-        { "id": "other", "label": "その他" }
-      ],
-      "visibleIf": { "allOf": [["purchase_reason","=","gift"]] },
-      "meta": { "group": "贈答情報", "order": 13 }
-    },
+
     {
       "id": "posture",
       "title": "主な寝姿勢",
@@ -178,7 +148,8 @@
       "choices": [
         { "id": "supine", "label": "仰向け" },
         { "id": "side", "label": "横向き" },
-        { "id": "prone", "label": "うつ伏せ" }
+        { "id": "prone", "label": "うつ伏せ" },
+        { "id": "unknown", "label": "不明 / 指定なし" }
       ],
       "meta": { "group": "睡眠スタイル", "order": 20, "notes": "姿勢×寝返りが高さに影響" }
     },
@@ -190,7 +161,8 @@
       "choices": [
         { "id": "low", "label": "少ない" },
         { "id": "mid", "label": "普通" },
-        { "id": "high", "label": "多い" }
+        { "id": "high", "label": "多い" },
+        { "id": "unknown", "label": "不明 / 指定なし" }
       ],
       "meta": { "group": "睡眠スタイル", "order": 21 }
     },
@@ -214,7 +186,8 @@
       "choices": [
         { "id": "often", "label": "よくかく" },
         { "id": "sometimes", "label": "時々" },
-        { "id": "rarely", "label": "ほぼない" }
+        { "id": "rarely", "label": "ほぼない" },
+        { "id": "unknown", "label": "不明 / 指定なし" }
       ],
       "meta": { "group": "健康・快適性", "order": 40 }
     },
@@ -225,7 +198,8 @@
       "choices": [
         { "id": "remain", "label": "疲れが残る" },
         { "id": "normal", "label": "普通" },
-        { "id": "clear", "label": "スッキリ" }
+        { "id": "clear", "label": "スッキリ" },
+        { "id": "unknown", "label": "不明 / 指定なし" }
       ],
       "meta": { "group": "健康・快適性", "order": 41 }
     },
@@ -246,7 +220,8 @@
       "choices": [
         { "id": "soft", "label": "柔らかめ" },
         { "id": "mid", "label": "普通" },
-        { "id": "firm", "label": "硬め" }
+        { "id": "firm", "label": "硬め" },
+        { "id": "unknown", "label": "不明 / 指定なし" }
       ],
       "meta": { "group": "環境・好み", "order": 50 }
     },
@@ -269,7 +244,8 @@
         { "id": "hp", "label": "高反発" },
         { "id": "feather", "label": "羽毛" },
         { "id": "buckwheat", "label": "そば殻" },
-        { "id": "none", "label": "特になし" }
+        { "id": "none", "label": "特になし" },
+        { "id": "unknown", "label": "不明 / 指定なし" }
       ],
       "meta": { "group": "環境・好み", "order": 52 }
     },
@@ -321,11 +297,5 @@
       ],
       "meta": { "group": "予算・購入意欲", "order": 71 }
     }
-  ],
-  "logic": {
-    "notes": "visibleIf は [questionId, op, value]。op は '=' | '!=' | 'in' | 'not-in' を想定",
-    "examples": [
-      { "when": [["purchase_reason","=","gift"]], "show": ["gift_age","gift_lifestyle","gift_scene"], "hide": ["cur_brand","cur_years","cur_height_feel","cur_firm","cur_size_material_known","cur_issues","cur_improve_free"] }
-    ]
-  }
-} 
+  ]
+}

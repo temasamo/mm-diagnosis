@@ -1,69 +1,60 @@
-/**
- * 楽天市場 商品検索 API アダプタ
- * https://app.rakuten.co.jp/services/api/IchibaItem/Search/20170706
- * 必須: RAKUTEN_APP_ID
- * 任意: RAKUTEN_AFFILIATE_ID
- */
-export type MallProduct = {
-  id: string;
-  title: string;
-  url: string;
-  image: string | null;
-  price: number | null;
-  mall: "rakuten";
-  shop?: string | null;
-};
+import { fetchJsonWithRetry } from '../http';
+import { normalizePriceToNumber } from '../price';
+import type { SearchItem } from './types';
 
-const API = "https://app.rakuten.co.jp/services/api/IchibaItem/Search/20220601";
+const RAKUTEN_ENDPOINT = 'https://app.rakuten.co.jp/services/api/IchibaItem/Search/20220601';
 
-function httpsify(u?: string | null): string | null {
-  if (!u) return null;
-  return u.replace(/^http:/, "https:");
+function toSafeImageUrl(u?: string): string | undefined {
+  if (!u) return undefined;
+  try {
+    const url = new URL(u.replace(/^http:/, "https:"));
+    // サムネイルの `_ex=` を 300x300 に揃える
+    url.searchParams.set('_ex', '300x300');
+    return url.toString();
+  } catch {
+    return undefined;
+  }
 }
 
-export async function searchRakuten(q: string, limit: number = 6): Promise<MallProduct[]> {
+function pickImage(urls?: { imageUrl: string }[] | null): string | null {
+  const u = urls?.[0]?.imageUrl || null;
+  if (!u) return null;
+  return toSafeImageUrl(u) || null;
+}
+
+export async function searchRakuten(query: string, limit: number): Promise<SearchItem[]> {
   const appId = process.env.RAKUTEN_APP_ID;
-  if (!appId) {
-    console.error("Rakuten: Missing RAKUTEN_APP_ID in env");
-    return [];
-  }
+  if (!appId) return [];
 
-  const url = new URL(API);
-  url.searchParams.set("applicationId", appId);
-  url.searchParams.set("format", "json");
-  url.searchParams.set("keyword", q);
-  url.searchParams.set("hits", String(limit));
-  url.searchParams.set("imageFlag", "1"); // 画像必須
+  const url = new URL(RAKUTEN_ENDPOINT);
+  url.searchParams.set('applicationId', appId);
+  url.searchParams.set('keyword', query);
+  url.searchParams.set('hits', String(Math.min(Math.max(limit, 1), 30)));
+  url.searchParams.set('imageFlag', '1');
+  url.searchParams.set('availability', '1'); // 在庫あり
 
-  if (process.env.DEBUG) {
-    console.log("[rakuten] url:", url.toString());
-  }
+  type R = {
+    Items: { Item: {
+      itemCode: string;
+      itemName: string;
+      itemUrl: string;
+      mediumImageUrls?: { imageUrl: string }[];
+      smallImageUrls?: { imageUrl: string }[];
+      shopName?: string;
+      itemPrice?: number | string;
+    }}[];
+  };
 
-  try {
-    const res = await fetch(url.toString(), { cache: "no-store" });
-    if (!res.ok) {
-      console.error("[rakuten] bad response:", res.status, await res.text());
-      return [];
-    }
-    const json = await res.json();
-    if (!json.Items) {
-      console.warn("[rakuten] no items:", json);
-      return [];
-    }
+  const data = await fetchJsonWithRetry<R>(url.toString());
+  const items: SearchItem[] = (data.Items || []).map(({ Item }) => ({
+    id: Item.itemCode || Item.itemUrl,
+    mall: 'rakuten' as const,
+    title: Item.itemName,
+    url: Item.itemUrl,
+    image: pickImage(Item.mediumImageUrls || Item.smallImageUrls || null),
+    price: normalizePriceToNumber(Item.itemPrice),
+    shop: Item.shopName ?? null,
+  })).filter(i => i.price > 0);
 
-    return json.Items.map((it: any, i: number) => {
-      const item = it.Item;
-      return {
-        id: `rakuten-${item.itemCode || i}`,
-        title: item.itemName,
-        url: item.itemUrl,
-        image: httpsify(item.mediumImageUrls?.[0]?.imageUrl) || undefined,
-        price: item.itemPrice,
-        mall: "rakuten",
-      };
-    });
-  } catch (err) {
-    console.error("[rakuten] fetch error:", err);
-    return [];
-  }
+  return items;
 } 
