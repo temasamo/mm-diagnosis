@@ -321,9 +321,9 @@ export default function ResultPage() {
       {activeTab === "diagnosis" ? (
         <section className="space-y-6">
           {/* --- Suitability(適合度) Card: TEMP OFF --- */}
-          {false && (
+          {/* {false && (
             <section aria-label="suitability-card">
-              {typeof score === "number" && score > 0 && (
+              {score !== null && typeof score === "number" && score > 0 && (
                 <section className="rounded-2xl border p-5">
                   <h3 className="text-lg mb-2">ご提案する枕の適合性</h3>
                   <div className="text-5xl font-bold font-mono">
@@ -335,7 +335,7 @@ export default function ResultPage() {
                 </section>
               )}
             </section>
-          )}
+          )} */}
           {/* 診断内容（answers だけで描画可能） */}
           <UserView
             scores={scores}
