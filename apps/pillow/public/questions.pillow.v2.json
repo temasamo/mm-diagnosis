@@ -62,25 +62,53 @@
     },
     {
       "id": "cur_height_feel",
-      "title": "枕の高さの感じ方",
+      "title": "今の枕の高さはどうですか？",
       "type": "single",
       "choices": [
         { "id": "low", "label": "低い" },
         { "id": "just", "label": "ちょうど良い" },
-        { "id": "high", "label": "高い" }
+        { "id": "high", "label": "高い" },
+        { "id": "unknown", "label": "不明 / 指定なし" }
       ],
       "meta": { "group": "現在の枕", "order": 6 }
     },
     {
       "id": "cur_firm",
-      "title": "枕の硬さの感じ方",
+      "title": "今の枕の硬さはどうですか？",
       "type": "single",
       "choices": [
         { "id": "soft", "label": "柔らかい" },
         { "id": "mid", "label": "普通" },
-        { "id": "hard", "label": "硬い" }
+        { "id": "hard", "label": "硬い" },
+        { "id": "unknown", "label": "不明 / 指定なし" }
       ],
       "meta": { "group": "現在の枕", "order": 7 }
+    },
+    {
+      "id": "current_pillow_size",
+      "title": "今の枕のサイズは？（わかれば）",
+      "type": "single",
+      "choices": [
+        { "id": "s", "label": "S" },
+        { "id": "m", "label": "M" },
+        { "id": "l", "label": "L" },
+        { "id": "unknown", "label": "不明 / 指定なし" }
+      ],
+      "meta": { "group": "現在の枕", "order": 8 }
+    },
+    {
+      "id": "current_pillow_material",
+      "title": "今の枕の素材は？（わかれば）",
+      "type": "single",
+      "choices": [
+        { "id": "urethane", "label": "ウレタン" },
+        { "id": "pipe", "label": "パイプ" },
+        { "id": "buckwheat", "label": "そば殻" },
+        { "id": "feather", "label": "羽根" },
+        { "id": "other", "label": "その他" },
+        { "id": "unknown", "label": "不明 / 指定なし" }
+      ],
+      "meta": { "group": "現在の枕", "order": 9 }
     },
     {
       "id": "cur_size_material_known",
@@ -120,7 +148,8 @@
       "choices": [
         { "id": "supine", "label": "仰向け" },
         { "id": "side", "label": "横向き" },
-        { "id": "prone", "label": "うつ伏せ" }
+        { "id": "prone", "label": "うつ伏せ" },
+        { "id": "unknown", "label": "不明 / 指定なし" }
       ],
       "meta": { "group": "睡眠スタイル", "order": 20, "notes": "姿勢×寝返りが高さに影響" }
     },
@@ -132,7 +161,8 @@
       "choices": [
         { "id": "low", "label": "少ない" },
         { "id": "mid", "label": "普通" },
-        { "id": "high", "label": "多い" }
+        { "id": "high", "label": "多い" },
+        { "id": "unknown", "label": "不明 / 指定なし" }
       ],
       "meta": { "group": "睡眠スタイル", "order": 21 }
     },
@@ -156,7 +186,8 @@
       "choices": [
         { "id": "often", "label": "よくかく" },
         { "id": "sometimes", "label": "時々" },
-        { "id": "rarely", "label": "ほぼない" }
+        { "id": "rarely", "label": "ほぼない" },
+        { "id": "unknown", "label": "不明 / 指定なし" }
       ],
       "meta": { "group": "健康・快適性", "order": 40 }
     },
@@ -167,7 +198,8 @@
       "choices": [
         { "id": "remain", "label": "疲れが残る" },
         { "id": "normal", "label": "普通" },
-        { "id": "clear", "label": "スッキリ" }
+        { "id": "clear", "label": "スッキリ" },
+        { "id": "unknown", "label": "不明 / 指定なし" }
       ],
       "meta": { "group": "健康・快適性", "order": 41 }
     },
@@ -188,7 +220,8 @@
       "choices": [
         { "id": "soft", "label": "柔らかめ" },
         { "id": "mid", "label": "普通" },
-        { "id": "firm", "label": "硬め" }
+        { "id": "firm", "label": "硬め" },
+        { "id": "unknown", "label": "不明 / 指定なし" }
       ],
       "meta": { "group": "環境・好み", "order": 50 }
     },
@@ -211,7 +244,8 @@
         { "id": "hp", "label": "高反発" },
         { "id": "feather", "label": "羽毛" },
         { "id": "buckwheat", "label": "そば殻" },
-        { "id": "none", "label": "特になし" }
+        { "id": "none", "label": "特になし" },
+        { "id": "unknown", "label": "不明 / 指定なし" }
       ],
       "meta": { "group": "環境・好み", "order": 52 }
     },

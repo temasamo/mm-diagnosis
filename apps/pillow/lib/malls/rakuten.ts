@@ -4,15 +4,22 @@ import type { SearchItem } from './types';
 
 const RAKUTEN_ENDPOINT = 'https://app.rakuten.co.jp/services/api/IchibaItem/Search/20220601';
 
-function pickImage(urls?: { imageUrl: string }[] | null): string | null {
-  const u = urls?.[0]?.imageUrl || null;
-  if (!u) return null;
+function toSafeImageUrl(u?: string): string | undefined {
+  if (!u) return undefined;
   try {
-    const url = new URL(u);
+    const url = new URL(u.replace(/^http:/, "https:"));
     // サムネイルの `_ex=` を 300x300 に揃える
     url.searchParams.set('_ex', '300x300');
     return url.toString();
-  } catch { return u; }
+  } catch {
+    return undefined;
+  }
+}
+
+function pickImage(urls?: { imageUrl: string }[] | null): string | null {
+  const u = urls?.[0]?.imageUrl || null;
+  if (!u) return null;
+  return toSafeImageUrl(u) || null;
 }
 
 export async function searchRakuten(query: string, limit: number): Promise<SearchItem[]> {

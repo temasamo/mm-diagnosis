@@ -1,88 +1,190 @@
 "use client";
 import Link from "next/link";
-import { useDiagStore } from "../../../../lib/state/diagStore";
-import { computeProvisional } from "../../../../lib/scoring/engine";
-import { CATEGORY_LABEL } from "../../../../lib/scoring/config";
-import { needLastQuestion, pickLastQuestion, applyLastAnswer } from "../../../../lib/lastq/engine";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useDiagStore } from "@lib/state/diagStore";
+import { computeProvisional } from "@lib/scoring/engine";
+import { formatSummary } from "@/app/pillow/components/result/presenters";
 
-export default function Page() {
-  const { answers, provisional, setProvisional } = useDiagStore();
-  const [local, setLocal] = useState<any>(provisional);
-  const [lastQ, setLastQ] = useState<any>(null);
-  const [lastAnswer, setLastAnswer] = useState<string | null>(null);
+// お悩みの堅牢化ヘルパー
+function deriveProblems(answers: any): string[] {
+  // 複数のソースからお悩みを取得
+  const problems = [];
+  
+  // 1. neck_shoulder_issues から
+  if (answers?.neck_shoulder_issues) {
+    const issues = Array.isArray(answers.neck_shoulder_issues) 
+      ? answers.neck_shoulder_issues 
+      : [answers.neck_shoulder_issues];
+    
+    const issueMap: Record<string, string> = {
+      am_neck_pain: "朝起きると首が痛い",
+      shoulder_stiff: "肩こりがひどい", 
+      headache: "頭痛・偏頭痛持ち",
+      straight_neck: "ストレートネック",
+    };
+    
+    issues.forEach((issue: string) => {
+      if (issueMap[issue]) {
+        problems.push(issueMap[issue]);
+      }
+    });
+  }
+  
+  // 2. concerns から
+  if (answers?.concerns && Array.isArray(answers.concerns)) {
+    problems.push(...answers.concerns);
+  }
+  
+  // 3. その他の悩み関連フィールド
+  if (answers?.sleep_issues) {
+    problems.push("睡眠の質が悪い");
+  }
+  
+  return problems.filter(Boolean);
+}
 
+// --- 小さなヘルパ: 回答→高さ/硬さの日本語 ---
+function toHeightLabel(v?: string) {
+  if (v === "low") return "低め";
+  if (v === "high") return "高め";
+  return "中くらい";
+}
+function toSoftnessLabel(v?: string) {
+  if (v === "soft") return "やわらかめ";
+  if (v === "hard") return "硬め";
+  return "標準";
+}
+
+// 回答から最低限のカテゴリスコアを作る（既に store.scores があれば使う）
+function deriveScores(ans: any) {
+  const s: Record<string, number> = {};
+  const h = ans?.prefHeight ?? ans?.heightFeel ?? ans?.cur_height_feel;
+  const f = ans?.prefFirmness ?? ans?.firmnessFeel ?? ans?.cur_firm;
+  // 高さ系
+  if (h === "high") s.high_height = 1;
+  else if (h === "low") s.low_height = 1;
+  else s.middle_height = 1;
+  // 硬さ系
+  if (f === "hard") s.firm_support = 1;
+  else if (f === "soft") s.soft_feel = 1;
+  // 代表的なタイプも少しだけ点火（UI 用なので 0.75 で十分）
+  if (s.high_height) s.adjustable_height = 0.75;
+  return s;
+}
+
+export default function PreviewPage() {
+  const store = useDiagStore();
+  const answers = store.answers ?? {};
+  const [ready, setReady] = useState(false);
+
+  const height = toHeightLabel(
+    answers?.prefHeight ?? answers?.heightFeel ?? answers?.cur_height_feel
+  );
+  const soft = toSoftnessLabel(
+    answers?.prefFirmness ?? answers?.firmnessFeel ?? answers?.cur_firm
+  );
+  const summary = formatSummary(height, soft);
+
+  // お悩みの堅牢化
+  const problems = deriveProblems(answers);
+
+  // TOP3 は scores が無ければ derive
+  const scores: Record<string, number> =
+    (store as any).scores && Object.keys((store as any).scores).length
+      ? (store as any).scores
+      : deriveScores(answers);
+
+  const top3 = useMemo(() => {
+    return Object.entries(scores)
+      .sort((a, b) => (b[1] ?? 0) - (a[1] ?? 0))
+      .slice(0, 3);
+  }, [scores]);
+
+  // 初回: provisional を必ず作る & scores を store に格納、スナップショット保存
   useEffect(() => {
-    if (!local) {
-      const p = computeProvisional(answers);
-      setProvisional(p);
-      setLocal(p);
-    }
-  }, [answers, local, setProvisional]);
-
-  useEffect(() => {
-    if (local?.provisional) {
-      const q = pickLastQuestion(local.provisional);
-      console.log("[lastQ] top2:", local.provisional.slice(0,2), "picked:", q);
-      setLastQ(q);
-    }
-  }, [local]);
-
-  const applyAnswer = () => {
-    if (!local || !lastQ || !lastAnswer) return;
-    const updated = applyLastAnswer(local.provisional, lastQ, lastAnswer);
-    const next = { ...local, provisional: updated };
-    setLocal(next);
-    setProvisional(next);
-    setLastQ(null); // 1問だけ
-  };
-
-  if (!local) return <div className="p-6">一次診断を計算中...</div>;
+    let cancelled = false;
+    (async () => {
+      try {
+        if (!store.provisional && answers) {
+          const provisional = await computeProvisional(answers);
+          if (!cancelled) {
+            // zustand の setter があればそれで。無ければ直接代入でも可。
+            (store as any).setProvisional
+              ? (store as any).setProvisional({ provisional })
+              : ((store as any).provisional = { provisional });
+          }
+        }
+        if ((store as any).setScores) {
+          (store as any).setScores(scores);
+        }
+        // 保険: セッション保存（結果側で復旧可能に）
+        sessionStorage.setItem(
+          "pillow_snapshot",
+          JSON.stringify({ answers, scores })
+        );
+        if (!cancelled) setReady(true);
+      } catch {
+        if (!cancelled) setReady(!!store.provisional);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [answers, store, scores]);
 
   return (
-    <main className="max-w-3xl mx-auto p-6 space-y-6">
-      <h1 className="text-2xl font-bold">一次診断結果</h1>
-      <p className="text-sm text-gray-600">{local.insight.summary}</p>
-      <ul className="list-disc pl-5 text-sm">
-        {local.insight.reasons.map((r: string, i: number) => <li key={i}>{r}</li>)}
-      </ul>
+    <main className="max-w-3xl mx-auto p-6 space-y-8">
+      <h1 className="text-3xl md:text-4xl font-bold mb-6">一次診断</h1>
+      
+      <section className="rounded-2xl border p-6">
+        <h2 className="text-xl md:text-2xl font-semibold">あなたの診断サマリー</h2>
+        <p className="leading-relaxed">
+          あなたにおすすめの枕は「{summary}」タイプです。
+        </p>
+      </section>
 
-      <div className="rounded-2xl border p-4">
-        <div className="font-semibold mb-2">上位カテゴリ</div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {local.provisional.slice(0,6).map((p: any) => (
-            <div key={p.category} className="rounded-xl border p-3">
-              <div className="font-medium">{CATEGORY_LABEL[p.category as keyof typeof CATEGORY_LABEL] ?? p.category}</div>
-              <div className="text-sm">スコア: {(p.score*100).toFixed(0)}%</div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {lastQ && (
-        <div className="rounded-2xl border p-4 space-y-3">
-          <div className="font-semibold">{lastQ.title}</div>
-          <div className="flex flex-wrap gap-2">
-            {lastQ.choices.map((c:any) => (
-              <button
-                key={c.id}
-                className={`px-3 py-2 rounded-full border ${lastAnswer===c.id ? "border-white bg-white/10" : "border-gray-600"}`}
-                onClick={() => setLastAnswer(c.id)}
-              >{c.label}</button>
+      {/* --- おすすめタイプTOP3: TEMP OFF --- */}
+      {false && (
+        <section aria-label="type-top3" className="rounded-2xl border p-6">
+          <h3 className="text-lg font-semibold mb-3">おすすめタイプ TOP3</h3>
+          <ul className="grid gap-3 sm:grid-cols-3">
+            {top3.map(([key, val]) => (
+              <li key={key} className="rounded-xl border p-4">
+                <div className="text-sm opacity-70">{key}</div>
+                <div className="text-2xl font-bold">{Math.round((val ?? 0) * 100)}%</div>
+              </li>
             ))}
-          </div>
-          <div className="flex justify-end">
-            <button disabled={!lastAnswer} onClick={applyAnswer} className="px-4 py-2 rounded-xl bg-black text-white disabled:opacity-50">
-              反映する
-            </button>
-          </div>
-        </div>
+            {top3.length === 0 && (
+              <li className="text-sm opacity-70">入力が少ないため、タイプ抽出は次ページで行います。</li>
+            )}
+          </ul>
+        </section>
       )}
 
-      <div className="flex justify-end gap-3">
-        <Link href="/pillow/diagnosis" className="px-4 py-2 rounded-xl border">戻る</Link>
-        <Link href="/pillow/result" className="px-5 py-2 rounded-xl bg-black text-white">診断結果へ</Link>
-      </div>
+      {/* お悩みセクション */}
+      {problems.length > 0 && (
+        <section className="rounded-2xl border p-6">
+          <h3 className="text-lg font-semibold mb-3">あなたのお悩み</h3>
+          <ul className="list-disc pl-5 space-y-1">
+            {problems.map((problem, index) => (
+              <li key={index} className="text-sm">{problem}</li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      <section className="flex justify-end">
+        <Link
+          href="/pillow/result"
+          aria-disabled={!ready}
+          className={`px-6 py-3 rounded-xl ${ready ? "bg-white/10 hover:bg-white/20" : "bg-white/5 cursor-not-allowed opacity-50"}`}
+          onClick={(e) => {
+            if (!ready) e.preventDefault();
+          }}
+        >
+          {ready ? "診断結果へ" : "準備中…"}
+        </Link>
+      </section>
     </main>
   );
-} 
+}

@@ -2,6 +2,16 @@ import { fetchJsonWithRetry } from '../http';
 import { normalizePriceToNumber } from '../price';
 import type { SearchItem } from './types';
 
+function toSafeImageUrl(u?: string): string | undefined {
+  if (!u) return undefined;
+  try {
+    const url = new URL(u.replace(/^http:/, "https:"));
+    return url.toString();
+  } catch {
+    return undefined;
+  }
+}
+
 const YAHOO_ENDPOINT = 'https://shopping.yahooapis.jp/ShoppingWebService/V3/itemSearch';
 
 export async function searchYahoo(query: string, limit: number): Promise<SearchItem[]> {
@@ -32,7 +42,7 @@ export async function searchYahoo(query: string, limit: number): Promise<SearchI
     mall: 'yahoo' as const,
     title: h.name,
     url: h.url,
-    image: h.image?.medium || h.image?.small || null, // そのまま利用
+    image: toSafeImageUrl(h.image?.medium || h.image?.small) || null, // 安全化
     price: normalizePriceToNumber(h.price),
     shop: h.seller?.name ?? null,
   })).filter(i => i.price > 0);

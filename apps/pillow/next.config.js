@@ -1,3 +1,5 @@
+const path = require("path");
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   transpilePackages: ['@core/mm'],
@@ -18,6 +20,15 @@ const nextConfig = {
     return [
       { source: "/", destination: "/pillow", permanent: false },
     ];
+  },
+  webpack: (config) => {
+    config.resolve.alias = {
+      ...(config.resolve.alias || {}),
+      "@": path.resolve(__dirname, "src"),
+      "@lib": path.resolve(__dirname, "lib"),
+      "@shared": path.resolve(__dirname, "..", "..", "src")
+    };
+    return config;
   },
 };
 
