@@ -1,441 +1,86 @@
 "use client";
 
-import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
+import { DIAG_VERSION } from "../../../../lib/DIAG_VERSION";
+import { buildProblemList } from "../../../../lib/diagnosis/buildProblemList";
+import { buildGroupsFromAPI, BUILD_GROUPS_VERSION } from "../../../../lib/recommend/build_groups";
 import { useDiagStore } from "@lib/state/diagStore";
-import {
-  buildGroupsFromAPI,
-  type GroupedRecommendations,
-} from "@lib/recommend/build_groups";
-import { buildProfileFromAnswers } from "@lib/diag/profile";
-import { computeMatchPercent } from "@lib/match/score";
-import UserView from "../components/result/UserView";
-
-/** store から診断向けスナップショットに正規化（deriveProblems 互換想定） */
-function toSnapshot(s: any) {
-  const a = s?.answers ?? {};
-
-  return {
-    // ユーザー嗜好・回答（キーは環境に合わせて拾えるだけ拾う）
-    prefHeight:
-      s.prefHeight ??
-      s.heightFeel ??
-      a.prefHeight ??
-      a.heightFeel ??
-      "指定なし",
-    prefFirmness:
-      s.prefFirmness ??
-      s.firmnessFeel ??
-      a.prefFirmness ??
-      a.firmnessFeel ??
-      "指定なし",
-    prefMaterial:
-      s.prefMaterial ??
-      a.material ??
-      "指定なし",
-
-    // お悩みフラグ（あるものだけ）
-    neckOrShoulderPain: s.neckOrShoulderPain || a.neckPain || false,
-    pillowTooHigh: s.pillowTooHigh || a.tooHigh || false,
-    pillowTooLow: s.pillowTooLow || a.tooLow || false,
-    pillowTooHard: s.pillowTooHard || a.tooHard || false,
-    pillowTooSoft: s.pillowTooSoft || a.tooSoft || false,
-    getsHot: s.getsHot || a.hot || false,
-    materialMismatch: s.materialMismatch || a.matMis || false,
-  };
-}
-
-/** 問題点を人間可読にする（UserView で bullets 表示するための簡易版） */
-function deriveProblemsHuman(snap: any): string[] {
-  const out: string[] = [];
-  if (snap.neckOrShoulderPain) out.push("首・肩の痛みやコリがある");
-  if (snap.pillowTooHigh) out.push("枕が高すぎる");
-  if (snap.pillowTooLow) out.push("枕が低すぎる");
-  if (snap.pillowTooHard) out.push("枕が硬すぎる");
-  if (snap.pillowTooSoft) out.push("枕が柔らかすぎる");
-  if (snap.getsHot) out.push("枕が蒸れて暑い");
-  if (snap.materialMismatch) out.push("素材が合っていない");
-  return out;
-}
-
-/** お悩みの堅牢化ヘルパー */
-function deriveProblemsRobust(store: any): string[] {
-  const answers = store?.answers ?? {};
-  
-  // 複数のソースからお悩みを取得
-  const problems = [];
-  
-  // 1. neck_shoulder_issues から
-  if (answers?.neck_shoulder_issues) {
-    const issues = Array.isArray(answers.neck_shoulder_issues) 
-      ? answers.neck_shoulder_issues 
-      : [answers.neck_shoulder_issues];
-    
-    const issueMap: Record<string, string> = {
-      am_neck_pain: "朝起きると首が痛い",
-      shoulder_stiff: "肩こりがひどい", 
-      headache: "頭痛・偏頭痛持ち",
-      straight_neck: "ストレートネック",
-    };
-    
-    issues.forEach((issue: string) => {
-      if (issueMap[issue]) {
-        problems.push(issueMap[issue]);
-      }
-    });
-  }
-  
-  // 2. concerns から
-  if (answers?.concerns && Array.isArray(answers.concerns)) {
-    problems.push(...answers.concerns);
-  }
-  
-  // 3. その他の悩み関連フィールド
-  if (answers?.sleep_issues) {
-    problems.push("睡眠の質が悪い");
-  }
-  
-  // 4. フォールバック
-  if (problems.length === 0) {
-    problems.push("現在の枕に関する不満をお聞かせください");
-  }
-  
-  return problems.filter(Boolean);
-}
-
-/** 商品カード（モール名は画像の下・中央） */
-function ProductCard({ item }: { item: any }) {
-  const mallLabel =
-    item.mall === "rakuten"
-      ? "RAKUTEN"
-      : item.mall === "yahoo"
-      ? "YAHOO"
-      : (item.mall ?? "").toUpperCase();
-
-  return (
-    <a
-      href={item.url}
-      target="_blank"
-      rel="noreferrer"
-      onClick={() =>
-        fetch("/api/track", {
-          method: "POST",
-          body: JSON.stringify({
-            type: "click",
-            group: "primary",
-            url: item.url,
-            mall: item.mall,
-            ts: Date.now(),
-          }),
-        })
-      }
-      className="rounded-xl border p-3 hover:shadow-sm relative"
-    >
-      {item.outOfBudget && (
-        <span className="absolute left-3 top-3 rounded bg-rose-600/90 px-2 py-0.5 text-xs text-white z-10">
-          予算外
-        </span>
-      )}
-      <div className="font-medium line-clamp-2">{item.title}</div>
-      <img
-        src={item.image ?? "/images/mall-placeholder.svg"}
-        alt={item.title ?? ""}
-        loading="lazy"
-        onError={(e) => {
-            (e.currentTarget as HTMLImageElement).src =
-              "/images/mall-placeholder.svg";
-        }}
-        className="w-full h-28 object-cover rounded-lg mt-2"
-      />
-      {/* 画像下・中央にモール名 */}
-      <div className="mt-2 text-center text-[10px] uppercase tracking-[0.08em] opacity-80">
-        {mallLabel}
-      </div>
-      {/* 適合度（マッチ%） */}
-      {typeof item.match === "number" && (
-        <div className="mt-1 text-center text-[11px] opacity-80">
-          適合度 <span className="font-semibold">{item.match}%</span>
-        </div>
-      )}
-      {item.price != null && (
-        <div className="text-sm mt-1">¥{Number(item.price).toLocaleString()}</div>
-      )}
-    </a>
-  );
-}
 
 export default function ResultPage() {
   const store = useDiagStore();
-  let { provisional, answers } = store;
-  // 既定タブ: diagnosis → recommend
-  const [activeTab, setActiveTab] = useState<"diagnosis" | "recommend">("diagnosis");
-  // 第二候補: 既定で a を展開
-  const [secondaryOpen, setSecondaryOpen] = useState<"a" | "b" | "c">("a");
-  const [groups, setGroups] = useState<any|null>(null);
-  const [loading, setLoading] = useState(false);
-  const [triedFallback, setTriedFallback] = useState(false);
-  const [topMatch, setTopMatch] = useState(0);
-  const [score, setScore] = useState<number | null>(null);
   const [problems, setProblems] = useState<string[]>([]);
+  const [groups, setGroups] = useState<any>(null);
 
-  // 空配列検査ヘルパー
-  const isEmptyGroups = (g: any) => {
-    if (!g) return true;
-    const p = Array.isArray(g.primary) ? g.primary.length : 0;
-    const a = Array.isArray(g.secondaryA) ? g.secondaryA.length : 0;
-    const b = Array.isArray(g.secondaryB) ? g.secondaryB.length : 0;
-    const c = Array.isArray(g.secondaryC) ? g.secondaryC.length : 0;
-    return p + a + b + c === 0;
-  };
-
-  // provisional を配列/オブジェクト両対応で正規化
-  const rawProv = useMemo<unknown[]>(() => {
-    const p = store.provisional;
-    if (Array.isArray(p)) return p;
-    if (Array.isArray((p as any)?.provisional)) return (p as any).provisional;
-    if (p && typeof p === "object") return Object.values(p as any);
-    return [];
-  }, [store.provisional]);
-
-  // 「あなたのお悩み」を answers から人間可読に
-  const humanProblems = useMemo(() => {
-    const a = answers ?? {};
-    const src = Array.isArray(a?.neck_shoulder_issues)
-      ? a.neck_shoulder_issues
-      : a?.neck_shoulder_issues
-        ? [a.neck_shoulder_issues]
-        : [];
-    const M: Record<string, string> = {
-      am_neck_pain: "朝起きると首が痛い",
-      shoulder_stiff: "肩こりがひどい",
-      headache: "頭痛・偏頭痛持ち",
-      straight_neck: "ストレートネック",
-    };
-    return src.map((k: string) => M[k]).filter(Boolean);
-  }, [answers]);
-
-  // プレビュー経由で来ていない場合の復旧
   useEffect(() => {
-    if (answers && Object.keys(answers).length) return;
-    try {
-      const raw = sessionStorage.getItem("pillow_snapshot");
-      if (!raw) return;
-      const snap = JSON.parse(raw);
-      if (snap?.answers && (store as any).setAnswers) {
-        (store as any).setAnswers(snap.answers);
-      }
-      if (snap?.scores && (store as any).setScores) {
-        (store as any).setScores(snap.scores);
-      }
-    } catch {}
-  }, [answers, store]);
+    const snap = store?.getSnapshot ? store.getSnapshot() : {};
+    console.groupCollapsed("[RESULT]", DIAG_VERSION);
+    console.log("answers:", (snap as any)?.answers);
+    console.groupEnd();
 
-  // 商品候補の取得（正規化した rawProv を利用）
-  useEffect(() => {
-    if (!rawProv.length) { setGroups({ primary: [], secondaryBuckets: [[], [], []] }); return; }
-    setLoading(true);
+    setProblems(buildProblemList(snap));
+
+    const provisional = Array.isArray((snap as any)?.provisional)
+      ? (snap as any).provisional
+      : ((snap as any)?.provisional ? [(snap as any).provisional] : []);
+
+    const budgetBandId =
+      (snap as any)?.answers?.budgetBandId ??
+      (snap as any)?.budgetBandId ??
+      (snap as any)?.answers?.budget ??
+      undefined;
+
     (async () => {
-      try {
-        let mounted = true;
-        
-        // 既存の取得（例）
-        const budgetBandId = answers?.budget;
-        const g1 = await buildGroupsFromAPI(rawProv, 12, budgetBandId);
-        if (!mounted) return;
-
-        if (!isEmptyGroups(g1)) {
-          setGroups(g1);
-          console.log("[recommend] groups.raw", g1);
-          console.log("[recommend] primary", g1?.primary?.length, "secondaryA", g1?.secondaryA?.length);
-          return;
-        }
-
-        // 0件 → 未試行なら緩和リトライ（1回だけ）
-        if (!triedFallback) {
-          setTriedFallback(true);
-          const g2 = await buildGroupsFromAPI(rawProv, 12, undefined, false); // 予算無視・ゆる語・画像なし許容など
-          if (!mounted) return;
-          setGroups(g2);
-          console.log("[recommend] fallback groups.raw", g2);
-          return;
-        }
-
-        // フォールバック済みでも0件
-        setGroups(g1);
-        console.log("[recommend] groups.raw", g1);
-        console.log("[recommend] primary", g1?.primary?.length, "secondaryA", g1?.secondaryA?.length);
-      } finally {
-        setLoading(false);
-      }
+      const g = await buildGroupsFromAPI(provisional, 12, budgetBandId);
+      console.groupCollapsed("[recommend] groups.raw");
+      console.log("debugVersion:", BUILD_GROUPS_VERSION);
+      console.log("primary:", g?.primary?.length ?? 0,
+                  "A:", g?.secondaryA?.length ?? 0,
+                  "B:", g?.secondaryB?.length ?? 0,
+                  "C:", g?.secondaryC?.length ?? 0);
+      console.groupEnd();
+      setGroups(g);
     })();
-  }, [rawProv, answers, triedFallback]);
-
-  // 適合度は「候補が1件以上あるときだけ」計算・表示（MAX85%）
-  useEffect(() => {
-    const hasAny = (groups?.primary.length ?? 0) > 0 ||
-                   (groups?.secondaryBuckets.some((b: any) => b.length > 0) ?? false);
-    if (!hasAny) { setScore(null); return; }
-
-    const val = Math.min(85, Math.max(50, Math.round(topMatch || 0)));
-    setScore(Number.isFinite(val) ? val : null);
-  }, [groups, topMatch]);
-
-  // 「あなたのお悩み」は堅牢化されたヘルパーを使用
-  useEffect(() => {
-    const robustProblems = deriveProblemsRobust(store);
-    setProblems(robustProblems);
   }, [store]);
 
-  const disableProposals = !provisional;
-
-  const scores: Record<string, number> =
-    (store as any).scores ?? (store as any).topCategories ?? {};
-  const heightKey =
-    (store as any).heightKey ??
-    (scores.high_height ? "high_height" : scores.low_height ? "low_height" : "middle_height");
-  const firmnessKey =
-    (store as any).firmnessKey ??
-    (scores.firm_support ? "firm_support" : scores.soft_feel ? "soft_feel" : undefined);
-
   return (
-    <main className="max-w-3xl mx-auto p-6 space-y-6">
-      <h1 className="text-2xl font-bold">診断結果 ＋ 商品提案</h1>
-
-      <div className="flex gap-2">
-        <button
-          className={`rounded-2xl px-4 py-2 ${activeTab==="diagnosis" ? "bg-white/10" : "bg-white/5 hover:bg-white/10"}`}
-          onClick={() => setActiveTab("diagnosis")}
-        >
-          診断内容
-        </button>
-        <button
-          className={`rounded-2xl px-4 py-2 ${disableProposals ? "bg-white/5 opacity-50 cursor-not-allowed" : activeTab==="recommend" ? "bg-white/10" : "bg-white/5 hover:bg-white/10"}`}
-          onClick={() => !disableProposals && setActiveTab("recommend")}
-          aria-disabled={disableProposals}
-          title={disableProposals ? "プレビューで候補準備中です" : undefined}
-        >
-          商品提案
-        </button>
+    <div className="p-6">
+      <div className="text-xs opacity-60 mb-3">
+        DEBUG: {DIAG_VERSION} / {BUILD_GROUPS_VERSION}
       </div>
 
-      {activeTab === "diagnosis" ? (
-        <section className="space-y-6">
-          {/* --- Suitability(適合度) Card: TEMP OFF --- */}
-          {/* {false && (
-            <section aria-label="suitability-card">
-              {score !== null && typeof score === "number" && score > 0 && (
-                <section className="rounded-2xl border p-5">
-                  <h3 className="text-lg mb-2">ご提案する枕の適合性</h3>
-                  <div className="text-5xl font-bold font-mono">
-                    {score} <span className="text-2xl">%</span>
-                  </div>
-                  <p className="text-sm mt-3 opacity-80">
-                    ※ 無料版のわかりやすいスコアです。詳細コンサル診断ではより精密に判定します。
-                  </p>
-                </section>
-              )}
-            </section>
-          )} */}
-          {/* 診断内容（answers だけで描画可能） */}
-          <UserView
-            scores={scores}
-            problems={problems}
-            heightKey={heightKey as any}
-            firmnessKey={firmnessKey as any}
-            matchPercent={typeof score === "number" ? score : 0}
-          />
-          
-          <button
-            className="mt-6 inline-flex items-center rounded-xl border px-4 py-2"
-            onClick={() => {
-              setActiveTab("recommend");
-              const el = document.getElementById("recommend-section");
-              if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
-            }}
-          >
-            商品提案へ
-          </button>
-        </section>
-              ) : (
-          <section id="recommend-section" aria-label="recommendations" className="scroll-mt-20 space-y-6">
-          {disableProposals && (
-            <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-amber-200">
-              まずはプレビューで商品候補の準備を行ってください。
-              <Link href="/pillow/preview" className="underline ml-2">プレビューへ</Link>
-            </div>
-          )}
-          {!disableProposals && loading && <div>商品候補を取得中...</div>}
-          {!disableProposals && !loading && (
-            (() => {
-              const noCandidates = !groups || isEmptyGroups(groups);
-
-              if (noCandidates) {
-                return (
-                  <div className="text-sm text-gray-400">
-                    候補を取得できませんでした。<br />
-                    ・予算条件を緩める／時間をおいて再実行する<br />
-                    ・検索語（カテゴリ）が厳しすぎる可能性があります
-                  </div>
-                );
-              }
-
-              return (
-                <div>
-                  {/* --- 第一候補グループ --- */}
-                  {Array.isArray(groups.primary) && groups.primary.length > 0 && (
-                    <>
-                      <h3 className="text-lg md:text-xl font-semibold mt-8 mb-3">第一候補グループ</h3>
-                      <div className="grid gap-4 sm:grid-cols-3 mb-6">
-                        {groups.primary.slice(0, 3).map((item: any) => (
-                          <ProductCard key={item.id} item={item} />
-                        ))}
-                      </div>
-                    </>
-                  )}
-                  
-                  {/* --- 第二候補グループ --- */}
-                  <h3 className="text-lg md:text-xl font-semibold mt-10 mb-3">第二候補グループ</h3>
-                  <div className="space-y-4">
-                    <div className="flex gap-2">
-                      <button
-                        className={`px-3 py-1 rounded ${secondaryOpen === "a" ? "bg-white/10" : "bg-white/5"}`}
-                        onClick={() => setSecondaryOpen("a")}
-                      >
-                        横向き・高反発
-                      </button>
-                      <button
-                        className={`px-3 py-1 rounded ${secondaryOpen === "b" ? "bg-white/10" : "bg-white/5"}`}
-                        onClick={() => setSecondaryOpen("b")}
-                      >
-                        低反発・仰向け
-                      </button>
-                      <button
-                        className={`px-3 py-1 rounded ${secondaryOpen === "c" ? "bg-white/10" : "bg-white/5"}`}
-                        onClick={() => setSecondaryOpen("c")}
-                      >
-                        首肩・調整
-                      </button>
-                    </div>
-                    
-                    <div className="grid gap-4 sm:grid-cols-3">
-                      {(secondaryOpen === "a" ? groups.secondaryA : 
-                        secondaryOpen === "b" ? groups.secondaryB : 
-                        groups.secondaryC)?.map((item: any) => (
-                        <ProductCard key={item.id} item={item} />
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              );
-            })()
-          )}
-          {/* …（以降は既存の商品カード描画をそのまま）… */}
-        </section>
-      )}
-
-      <div className="flex justify-end">
-        <Link href="/pillow" className="px-4 py-2 rounded-xl border">最初に戻る</Link>
+      <div className="tabs mb-4">
+        <button className="btn">診断内容</button>
+        <button className="btn">商品提案</button>
       </div>
-    </main>
+
+      {/* 診断内容 */}
+      <section className="border rounded-xl p-6 mb-8">
+        <h3 className="text-xl font-semibold mb-2">あなたの診断サマリー</h3>
+        <p>あなたにおすすめの枕は「高さは中程度・柔らかさは標準」タイプです。</p>
+      </section>
+
+      <section className="border rounded-xl p-6 mb-8">
+        <h3 className="text-xl font-semibold mb-2">あなたのお悩み</h3>
+        <ul className="list-disc pl-6">
+          {problems.map((p) => <li key={p}>{p}</li>)}
+        </ul>
+      </section>
+
+      {/* 商品提案（簡易 / まずは件数が出ることを確認） */}
+      <section className="border rounded-xl p-6">
+        <h3 className="text-xl font-semibold mb-2">商品提案（件数）</h3>
+        {!groups ? (
+          <div>候補を取得中…</div>
+        ) : (
+          <div className="space-y-1 text-sm">
+            <div>第1候補: {groups?.primary?.length ?? 0} 件</div>
+            <div>第二候補A: {groups?.secondaryA?.length ?? 0} 件</div>
+            <div>第二候補B: {groups?.secondaryB?.length ?? 0} 件</div>
+            <div>第二候補C: {groups?.secondaryC?.length ?? 0} 件</div>
+            {!!groups?.message && <div className="mt-2 opacity-75">{groups.message}</div>}
+          </div>
+        )}
+      </section>
+    </div>
   );
 }

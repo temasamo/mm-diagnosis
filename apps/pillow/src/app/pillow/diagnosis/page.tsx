@@ -8,6 +8,13 @@ import { useDiagStore } from "../../../../lib/state/diagStore";
 // セクション定義
 const SECTIONS: { title: string; ids: string[] }[] = [
   {
+    title: "基本情報",
+    ids: [
+      "sex",                // 性別（任意）
+      "age_band",           // 年齢（任意）
+    ],
+  },
+  {
     title: "A. 体・寝姿勢",
     ids: [
       "posture",            // 主な寝姿勢

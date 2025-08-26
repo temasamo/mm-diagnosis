@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { pickTopChips, problemsToBullets, buildComment } from './presenters';
+import { useHydrated } from '../../../../../src/lib/react/useHydrated';
 
 type Props = {
   // 既存ストア/結果から受け取る想定
@@ -13,6 +14,7 @@ type Props = {
 };
 
 export default function UserView({ scores = {}, problems = [], heightKey, firmnessKey, matchPercent }: Props) {
+  const hydrated = useHydrated();
   const chips = pickTopChips(scores);
   const bullets = problemsToBullets(problems);
   const comment = buildComment({ heightKey, firmnessKey });
@@ -48,14 +50,16 @@ export default function UserView({ scores = {}, problems = [], heightKey, firmne
 
 
       {/* あなたのお悩み */}
-      {bullets.length > 0 && (
-        <section className="rounded-2xl border border-white/15 p-5">
-          <h3 className="text-lg font-semibold mb-3">あなたのお悩み</h3>
-          <ul className="list-disc list-inside space-y-1">
-            {bullets.map((b, i) => <li key={i}>{b.replace(/^・/,'')}</li>)}
+      <section className="rounded-2xl border border-white/15 p-5" aria-label="あなたのお悩み">
+        <h3 className="text-xl md:text-2xl font-semibold mb-3">あなたのお悩み</h3>
+        {hydrated ? (
+          <ul className="list-disc pl-6 space-y-2" suppressHydrationWarning>
+            {bullets.map((b, i) => <li key={i} className="text-sm md:text-base">{b.replace(/^・/,'')}</li>)}
           </ul>
-        </section>
-      )}
+        ) : (
+          <div className="h-6" aria-hidden /> // 同一HTMLを維持（スケルトン）
+        )}
+      </section>
     </div>
   );
 } 
