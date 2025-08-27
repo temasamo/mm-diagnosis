@@ -1,136 +1,18 @@
-"use client";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
-import { useDiagStore } from "@lib/state/diagStore";
-import { computeProvisional } from "@lib/scoring/engine";
-import { formatSummary } from "@/app/pillow/components/result/presenters";
+import { readAnswersFromSearchParams } from "@/lib/answers/ssr";
+import { buildProblemList } from "../../../../../lib/recommend/buildProblemList";
 
-// お悩みの堅牢化ヘルパー
-function deriveProblems(answers: any): string[] {
-  // 複数のソースからお悩みを取得
-  const problems = [];
-  
-  // 1. neck_shoulder_issues から
-  if (answers?.neck_shoulder_issues) {
-    const issues = Array.isArray(answers.neck_shoulder_issues) 
-      ? answers.neck_shoulder_issues 
-      : [answers.neck_shoulder_issues];
-    
-    const issueMap: Record<string, string> = {
-      am_neck_pain: "朝起きると首が痛い",
-      shoulder_stiff: "肩こりがひどい", 
-      headache: "頭痛・偏頭痛持ち",
-      straight_neck: "ストレートネック",
-    };
-    
-    issues.forEach((issue: string) => {
-      if (issueMap[issue]) {
-        problems.push(issueMap[issue]);
-      }
-    });
+export default async function Page({ searchParams }: { searchParams: Record<string, any> }) {
+  const answers = readAnswersFromSearchParams(searchParams);
+  const problems = buildProblemList(answers);
+
+  // 現在のクエリを文字列化（c があれば維持）
+  const current = new URLSearchParams();
+  if (Array.isArray(answers.problems) && answers.problems.length) {
+    current.set("c", answers.problems.filter(p => !["snore","tiredMorning","hotSleep"].includes(p)).join(","));
   }
-  
-  // 2. concerns から
-  if (answers?.concerns && Array.isArray(answers.concerns)) {
-    problems.push(...answers.concerns);
-  }
-  
-  // 3. その他の悩み関連フィールド
-  if (answers?.sleep_issues) {
-    problems.push("睡眠の質が悪い");
-  }
-  
-  return problems.filter(Boolean);
-}
-
-// --- 小さなヘルパ: 回答→高さ/硬さの日本語 ---
-function toHeightLabel(v?: string) {
-  if (v === "low") return "低め";
-  if (v === "high") return "高め";
-  return "中くらい";
-}
-function toSoftnessLabel(v?: string) {
-  if (v === "soft") return "やわらかめ";
-  if (v === "hard") return "硬め";
-  return "標準";
-}
-
-// 回答から最低限のカテゴリスコアを作る（既に store.scores があれば使う）
-function deriveScores(ans: any) {
-  const s: Record<string, number> = {};
-  const h = ans?.prefHeight ?? ans?.heightFeel ?? ans?.cur_height_feel;
-  const f = ans?.prefFirmness ?? ans?.firmnessFeel ?? ans?.cur_firm;
-  // 高さ系
-  if (h === "high") s.high_height = 1;
-  else if (h === "low") s.low_height = 1;
-  else s.middle_height = 1;
-  // 硬さ系
-  if (f === "hard") s.firm_support = 1;
-  else if (f === "soft") s.soft_feel = 1;
-  // 代表的なタイプも少しだけ点火（UI 用なので 0.75 で十分）
-  if (s.high_height) s.adjustable_height = 0.75;
-  return s;
-}
-
-export default function PreviewPage() {
-  const store = useDiagStore();
-  const answers = store.answers ?? {};
-  const [ready, setReady] = useState(false);
-
-  const height = toHeightLabel(
-    answers?.prefHeight ?? answers?.heightFeel ?? answers?.cur_height_feel
-  );
-  const soft = toSoftnessLabel(
-    answers?.prefFirmness ?? answers?.firmnessFeel ?? answers?.cur_firm
-  );
-  const summary = formatSummary(height, soft);
-
-  // お悩みの堅牢化
-  const problems = deriveProblems(answers);
-
-  // TOP3 は scores が無ければ derive
-  const scores: Record<string, number> =
-    (store as any).scores && Object.keys((store as any).scores).length
-      ? (store as any).scores
-      : deriveScores(answers);
-
-  const top3 = useMemo(() => {
-    return Object.entries(scores)
-      .sort((a, b) => (b[1] ?? 0) - (a[1] ?? 0))
-      .slice(0, 3);
-  }, [scores]);
-
-  // 初回: provisional を必ず作る & scores を store に格納、スナップショット保存
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        if (!store.provisional && answers) {
-          const provisional = await computeProvisional(answers);
-          if (!cancelled) {
-            // zustand の setter があればそれで。無ければ直接代入でも可。
-            (store as any).setProvisional
-              ? (store as any).setProvisional({ provisional })
-              : ((store as any).provisional = { provisional });
-          }
-        }
-        if ((store as any).setScores) {
-          (store as any).setScores(scores);
-        }
-        // 保険: セッション保存（結果側で復旧可能に）
-        sessionStorage.setItem(
-          "pillow_snapshot",
-          JSON.stringify({ answers, scores })
-        );
-        if (!cancelled) setReady(true);
-      } catch {
-        if (!cancelled) setReady(!!store.provisional);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [answers, store, scores]);
+  // s/t/h も既存値があれば維持
+  ["s","t","h"].forEach((k) => { if (searchParams[k]) current.set(k, String(searchParams[k])); });
 
   return (
     <main className="max-w-3xl mx-auto p-6 space-y-8">
@@ -139,51 +21,69 @@ export default function PreviewPage() {
       <section className="rounded-2xl border p-6">
         <h2 className="text-xl md:text-2xl font-semibold">あなたの診断サマリー</h2>
         <p className="leading-relaxed">
-          あなたにおすすめの枕は「{summary}」タイプです。
+          あなたにおすすめの枕は「中くらい・標準」タイプです。
         </p>
       </section>
 
-      {/* --- おすすめタイプTOP3: TEMP OFF --- */}
-      {false && (
-        <section aria-label="type-top3" className="rounded-2xl border p-6">
-          <h3 className="text-lg font-semibold mb-3">おすすめタイプ TOP3</h3>
-          <ul className="grid gap-3 sm:grid-cols-3">
-            {top3.map(([key, val]) => (
-              <li key={key} className="rounded-xl border p-4">
-                <div className="text-sm opacity-70">{key}</div>
-                <div className="text-2xl font-bold">{Math.round((val ?? 0) * 100)}%</div>
-              </li>
-            ))}
-            {top3.length === 0 && (
-              <li className="text-sm opacity-70">入力が少ないため、タイプ抽出は次ページで行います。</li>
-            )}
+      {/* 「あなたのお悩み」 */}
+      <section>
+        <h2 className="text-lg font-semibold">あなたのお悩み</h2>
+        {problems.bullets.length ? (
+          <ul className="list-disc pl-6 space-y-1">
+            {problems.bullets.map((b: string) => <li key={b}>{b}</li>)}
           </ul>
-        </section>
-      )}
+        ) : (
+          <p className="text-muted-foreground">特筆すべきお悩みは選択されていません。</p>
+        )}
+      </section>
 
-      {/* お悩みセクション */}
-      {problems.length > 0 && (
-        <section className="rounded-2xl border p-6">
-          <h3 className="text-lg font-semibold mb-3">あなたのお悩み</h3>
-          <ul className="list-disc pl-5 space-y-1">
-            {problems.map((problem, index) => (
-              <li key={index} className="text-sm">{problem}</li>
-            ))}
-          </ul>
-        </section>
-      )}
+      {/* 追加：追質問（GETで自身に送るだけ） */}
+      <section className="space-y-4">
+        <h3 className="font-medium">追加の確認</h3>
+        <form method="GET" action="/pillow/preview" className="space-y-3">
+          {/* 既存クエリ（c など）を hidden で維持 */}
+          {Array.from(current.entries()).map(([k, v]) => (
+            <input key={k} type="hidden" name={k} value={v} />
+          ))}
 
-      <section className="flex justify-end">
-        <Link
-          href="/pillow/result"
-          aria-disabled={!ready}
-          className={`px-6 py-3 rounded-xl ${ready ? "bg-white/10 hover:bg-white/20" : "bg-white/5 cursor-not-allowed opacity-50"}`}
-          onClick={(e) => {
-            if (!ready) e.preventDefault();
-          }}
-        >
-          {ready ? "診断結果へ" : "準備中…"}
-        </Link>
+          <div className="grid grid-cols-1 gap-3">
+            <label className="flex items-center gap-3">
+              <span className="w-40">いびき</span>
+              <select name="s" defaultValue={searchParams.s ?? ""} className="border rounded px-2 py-1">
+                <option value="">未選択</option>
+                <option value="1">あり</option>
+                <option value="0">なし</option>
+              </select>
+            </label>
+
+            <label className="flex items-center gap-3">
+              <span className="w-40">起床時の疲れ</span>
+              <select name="t" defaultValue={searchParams.t ?? ""} className="border rounded px-2 py-1">
+                <option value="">未選択</option>
+                <option value="1">あり</option>
+                <option value="0">なし</option>
+              </select>
+            </label>
+
+            <label className="flex items-center gap-3">
+              <span className="w-40">暑がり・汗かき</span>
+              <select name="h" defaultValue={searchParams.h ?? ""} className="border rounded px-2 py-1">
+                <option value="">未選択</option>
+                <option value="1">はい</option>
+                <option value="0">いいえ</option>
+              </select>
+            </label>
+          </div>
+
+          <div className="flex gap-3">
+            <button type="submit" className="px-4 py-2 rounded border">反映</button>
+            {/* /result へ遷移（現在のクエリをすべて持っていく） */}
+            <Link href={`/pillow/result?${new URLSearchParams({ ...Object.fromEntries(current), s:String(searchParams.s ?? ""), t:String(searchParams.t ?? ""), h:String(searchParams.h ?? "") }).toString()}`}
+                  className="px-5 py-2 rounded bg-black text-white">
+              診断結果へ
+            </Link>
+          </div>
+        </form>
       </section>
     </main>
   );
