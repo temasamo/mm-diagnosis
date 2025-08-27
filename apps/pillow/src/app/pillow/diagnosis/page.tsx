@@ -199,10 +199,11 @@ export default function Page() {
               className="w-full border rounded-lg px-3 py-2"
             >
               <option value="">選択してください</option>
-              <option value="memory_foam">メモリーフォーム</option>
-              <option value="latex">ラテックス</option>
-              <option value="down">羽毛</option>
-              <option value="cotton">綿</option>
+              <option value="lp">低反発</option>
+              <option value="hp">高反発</option>
+              <option value="feather">羽毛</option>
+              <option value="buckwheat">そば殻</option>
+              <option value="none">特になし</option>
               <option value="unknown">不明 / 指定なし</option>
             </select>
           </div>
