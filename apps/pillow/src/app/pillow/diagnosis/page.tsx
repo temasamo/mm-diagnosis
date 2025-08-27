@@ -4,6 +4,7 @@ import type { Questionnaire } from "@core/mm";
 import QuestionRenderer from "../../../../components/QuestionRenderer";
 import Link from "next/link";
 import { useDiagStore } from "../../../../lib/state/diagStore";
+import CQueryWriter from "./CQueryWriter";
 
 // セクション定義
 const SECTIONS: { title: string; ids: string[] }[] = [
@@ -85,33 +86,38 @@ export default function Page() {
   if (!q) return null;              // 質問データがない場合もnullを返す
 
   return (
-    <main className="max-w-3xl mx-auto p-6 space-y-6">
-      <h1 className="text-2xl font-bold">質問</h1>
-      
-      {SECTIONS.map((sec) => (
-        <section key={sec.title} className="mb-10">
-          <h2 className="text-xl font-semibold mb-4">{sec.title}</h2>
-          <div className="space-y-6">
-            {sec.ids.map((qid) => {
-              const question = q.items.find((x) => x.id === qid);
-              if (!question) return null;
-              return (
-                <QuestionRenderer
-                  key={question.id}
-                  questions={[question]}
-                  answers={answers}
-                  onChange={(id, v) => setAnswers({ [id]: v })}
-                />
-              );
-            })}
-          </div>
-        </section>
-      ))}
-      
-      <div className="flex justify-end gap-3 pt-4">
-        <Link href="/pillow" className="px-4 py-2 rounded-xl border">戻る</Link>
-        <Link href="/pillow/preview" className="px-5 py-2 rounded-xl bg-black text-white">一次診断へ</Link>
-      </div>
-    </main>
+    <form method="GET" action="/pillow/preview">
+      <main className="max-w-3xl mx-auto p-6 space-y-6">
+        <h1 className="text-2xl font-bold">質問</h1>
+        
+        {SECTIONS.map((sec) => (
+          <section key={sec.title} className="mb-10">
+            <h2 className="text-xl font-semibold mb-4">{sec.title}</h2>
+            <div className="space-y-6">
+              {sec.ids.map((qid) => {
+                const question = q.items.find((x) => x.id === qid);
+                if (!question) return null;
+                return (
+                  <QuestionRenderer
+                    key={question.id}
+                    questions={[question]}
+                    answers={answers}
+                    onChange={(id, v) => setAnswers({ [id]: v })}
+                  />
+                );
+              })}
+            </div>
+          </section>
+        ))}
+        
+        {/* hidden input を最後に置く（常に最新の c をセット） */}
+        <CQueryWriter answers={answers} />
+        
+        <div className="flex justify-end gap-3 pt-4">
+          <Link href="/pillow" className="px-4 py-2 rounded-xl border">戻る</Link>
+          <button type="submit" className="px-5 py-2 rounded-xl bg-black text-white">次へ（プレビューへ）</button>
+        </div>
+      </main>
+    </form>
   );
 } 
