@@ -49,7 +49,7 @@ const SECTIONS: { title: string; ids: string[] }[] = [
 
 export default function Page() {
   // ❗ Hooks は常にトップレベルで宣言
-  const [mounted, setMounted] = useState(false);
+  const [mounted, setMounted] = useState(true); // ← 初期値をtrueに変更
   const [q, setQ] = useState<Questionnaire | null>(null);
   const answers = useDiagStore((s: any) => s.answers);
   const setAnswers = useDiagStore((s: any) => s.setAnswers);
@@ -70,7 +70,7 @@ export default function Page() {
     console.log("[diag] Setting mounted to true");
     setMounted(true);               // ← 必ず TRUE にする
     console.debug("[diag] mounted");
-  }, []);
+  }, []); // ← 依存配列を空にして必ず実行
 
   // 質問データ取得
   useEffect(() => {
