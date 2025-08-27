@@ -15,17 +15,15 @@ export type ProblemList = {
 // 問題点のラベルマッピング
 const PROBLEM_LABELS: Record<string, string> = {
   // concerns（気になる点）
-  neck_pain: "首の痛み",
-  shoulder_pain: "肩こり",
-  back_pain: "腰の痛み",
-  height: "高さが合わない",
-  firmness: "硬さが合わない",
-  heat: "暑い",
-  durability: "耐久性",
+  neck_pain: "首が痛い",
+  height_mismatch: "高さが合わない",
+  poor_turn: "寝返りしづらい",
+  sweat: "蒸れる",
+  sagging: "へたる",
   
   // neck_shoulder_issues（首・肩の問題）
-  am_neck_pain: "朝起きると首が痛い",
-  shoulder_stiff: "肩こりがひどい",
+  morning_neck_pain: "朝起きると首が痛い",
+  severe_shoulder_stiffness: "肩こりがひどい",
   headache: "頭痛・偏頭痛持ち",
   straight_neck: "ストレートネック",
   

@@ -114,14 +114,11 @@
       "title": "気になる点（複数選択可）",
       "type": "multiple",
       "choices": [
-        { "id": "neck_pain", "label": "首の痛み" },
-        { "id": "shoulder_pain", "label": "肩こり" },
-        { "id": "back_pain", "label": "腰の痛み" },
-        { "id": "height", "label": "高さが合わない" },
-        { "id": "firmness", "label": "硬さが合わない" },
-        { "id": "heat", "label": "暑い" },
-        { "id": "durability", "label": "耐久性" },
-        { "id": "none", "label": "特になし" }
+        { "id": "neck_pain", "label": "首が痛い" },
+        { "id": "height_mismatch", "label": "高さが合わない" },
+        { "id": "poor_turn", "label": "寝返りしづらい" },
+        { "id": "sweat", "label": "蒸れる" },
+        { "id": "sagging", "label": "へたる" }
       ],
       "meta": { "group": "現在の枕", "order": 10 }
     },
@@ -178,8 +175,8 @@
       "title": "首・肩まわりで抱えている問題（複数選択可）",
       "type": "multiple",
       "choices": [
-        { "id": "am_neck_pain", "label": "朝起きると首が痛い" },
-        { "id": "shoulder_stiff", "label": "肩こりがひどい" },
+        { "id": "morning_neck_pain", "label": "朝起きると首が痛い" },
+        { "id": "severe_shoulder_stiffness", "label": "肩こりがひどい" },
         { "id": "headache", "label": "頭痛・偏頭痛持ち" },
         { "id": "straight_neck", "label": "ストレートネックと診断" },
         { "id": "none", "label": "特に問題なし" }
