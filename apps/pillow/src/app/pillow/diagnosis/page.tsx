@@ -87,7 +87,7 @@ export default function Page() {
           <div>
             <label className="block text-sm font-medium mb-2">気になる点</label>
             <select 
-              value={answers?.concerns || ""} 
+              value={Array.isArray(answers?.concerns) ? answers.concerns[0] || "" : answers?.concerns || ""} 
               onChange={(e) => setAnswers({ concerns: e.target.value })}
               className="w-full border rounded-lg px-3 py-2"
             >
@@ -110,7 +110,7 @@ export default function Page() {
           <div>
             <label className="block text-sm font-medium mb-2">首・肩まわりで抱えている問題</label>
             <select 
-              value={answers?.neck_shoulder_issues || ""} 
+              value={Array.isArray(answers?.neck_shoulder_issues) ? answers.neck_shoulder_issues[0] || "" : answers?.neck_shoulder_issues || ""} 
               onChange={(e) => setAnswers({ neck_shoulder_issues: e.target.value })}
               className="w-full border rounded-lg px-3 py-2"
             >
