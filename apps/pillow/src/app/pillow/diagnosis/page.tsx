@@ -55,8 +55,11 @@ export default function Page() {
   const setAnswers = useDiagStore((s: any) => s.setAnswers);
   const hasHydrated = useDiagStore((s: any) => s.hasHydrated);
 
+  console.log("[diag] Component rendered", { mounted, hasHydrated, hasQuestions: !!q });
+
   // ローカルストレージ初期化（念のため）
   useEffect(() => {
+    console.log("[diag] Initial useEffect");
     if (typeof window !== "undefined" && new URLSearchParams(location.search).get("reset") === "1") {
       localStorage.removeItem("pillow-diag");
     }
@@ -64,19 +67,24 @@ export default function Page() {
 
   // ハイドレーション完了検知
   useEffect(() => {
+    console.log("[diag] Setting mounted to true");
     setMounted(true);               // ← 必ず TRUE にする
     console.debug("[diag] mounted");
   }, []);
 
   // 質問データ取得
   useEffect(() => {
+    console.log("[diag] Fetch effect", { mounted });
     if (!mounted) return;
+    console.log("[diag] Fetching questions...");
     fetch("/questions.pillow.v2.json").then(r => r.json()).then(data => {
       console.log("[diag] Questions loaded:", data);
       console.log("[diag] Concerns question:", data.items.find((x: any) => x.id === "concerns"));
       console.log("[diag] Neck issues question:", data.items.find((x: any) => x.id === "neck_shoulder_issues"));
       setQ(data);
-    }).catch(console.error);
+    }).catch(error => {
+      console.error("[diag] Failed to load questions:", error);
+    });
   }, [mounted]);
 
   // デバッグ用ログ
@@ -84,9 +92,17 @@ export default function Page() {
     console.log("[diag] mounted, rendering form", { mounted, hasHydrated, hasQuestions: !!q }); 
   }, [mounted, hasHydrated, q]);
 
-  if (!mounted || !hasHydrated) return null;        // ← ハイドレーション完了まで待つ
+  console.log("[diag] Before return", { mounted, hasHydrated, hasQuestions: !!q });
 
-  if (!q) return null;              // 質問データがない場合もnullを返す
+  if (!mounted || !hasHydrated) {
+    console.log("[diag] Early return - not ready");
+    return null;        // ← ハイドレーション完了まで待つ
+  }
+
+  if (!q) {
+    console.log("[diag] Early return - no questions");
+    return null;              // 質問データがない場合もnullを返す
+  }
 
   return (
     <main className="max-w-3xl mx-auto p-6 space-y-6">
