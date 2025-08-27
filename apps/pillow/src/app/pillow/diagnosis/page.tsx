@@ -7,6 +7,12 @@ export default function Page() {
   const answers = useDiagStore((s: any) => s.answers);
   const setAnswers = useDiagStore((s: any) => s.setAnswers);
 
+  const handleNext = () => {
+    // 一次診断へ遷移
+    const compressed = JSON.stringify(answers);
+    window.location.href = `/pillow/preview?c=${encodeURIComponent(compressed)}`;
+  };
+
   return (
     <main className="max-w-3xl mx-auto p-6 space-y-6">
       <h1 className="text-2xl font-bold">枕診断</h1>
@@ -104,7 +110,7 @@ export default function Page() {
 
       {/* C. 今の悩み */}
       <section className="mb-10">
-        <h2 className="text-xl font-semibold mb-4">C. 今の悩み（複数可）</h2>
+        <h2 className="text-xl font-semibold mb-4">C. 今の悩み</h2>
         <div className="space-y-6">
           {/* 首・肩まわりで抱えている問題 */}
           <div>
@@ -132,10 +138,10 @@ export default function Page() {
               className="w-full border rounded-lg px-3 py-2"
             >
               <option value="">選択してください</option>
-              <option value="often">よくかく</option>
-              <option value="sometimes">時々</option>
-              <option value="rarely">ほぼない</option>
-              <option value="unknown">不明 / 指定なし</option>
+              <option value="rarely">ほとんどない</option>
+              <option value="sometimes">時々ある</option>
+              <option value="often">よくある</option>
+              <option value="unknown">わからない</option>
             </select>
           </div>
 
@@ -150,6 +156,7 @@ export default function Page() {
               <option value="">選択してください</option>
               <option value="yes">はい</option>
               <option value="no">いいえ</option>
+              <option value="unknown">わからない</option>
             </select>
           </div>
         </div>
@@ -186,7 +193,7 @@ export default function Page() {
               <option value="">選択してください</option>
               <option value="yes">はい</option>
               <option value="no">いいえ</option>
-              <option value="unknown">不明 / 指定なし</option>
+              <option value="unknown">不明・指定なし</option>
             </select>
           </div>
 
@@ -220,33 +227,32 @@ export default function Page() {
               <option value="standard">標準サイズ</option>
               <option value="large">大きめ</option>
               <option value="small">小さめ</option>
-              <option value="unknown">不明 / 指定なし</option>
+              <option value="unknown">不明・指定なし</option>
             </select>
           </div>
 
           {/* ご予算 */}
           <div>
-            <label className="block text-sm font-medium mb-2">ご予算 *</label>
+            <label className="block text-sm font-medium mb-2">ご予算</label>
             <select 
               value={answers?.budget || ""} 
               onChange={(e) => setAnswers({ budget: e.target.value })}
               className="w-full border rounded-lg px-3 py-2"
-              required
             >
               <option value="">選択してください</option>
-              <option value="lt3000">〜3,000円未満</option>
+              <option value="lt3000">3,000円未満</option>
               <option value="3k-6k">3,000円〜6,000円</option>
-              <option value="6k-10k">6,000円〜10,000円未満</option>
-              <option value="10k-20k">10,000円〜20,000円未満</option>
+              <option value="6k-10k">6,000円〜10,000円</option>
+              <option value="10k-20k">10,000円〜20,000円</option>
               <option value="20kplus">20,000円以上</option>
             </select>
           </div>
         </div>
       </section>
-      
+
       <div className="flex justify-end gap-3 pt-4">
         <Link href="/pillow" className="px-4 py-2 rounded-xl border">戻る</Link>
-        <Link href="/pillow/preview" className="px-5 py-2 rounded-xl bg-black text-white">一次診断へ</Link>
+        <button onClick={handleNext} className="px-5 py-2 rounded-xl bg-black text-white">一次診断へ</button>
       </div>
     </main>
   );
