@@ -61,10 +61,10 @@ export default async function Page({ searchParams }: { searchParams: Promise<Rec
           <div className="grid grid-cols-1 gap-3">
             <label className="flex items-center gap-3">
               <span className="w-40">いびき</span>
-              <select name="s" defaultValue={s} className="border rounded px-2 py-1">
-                <option value="">未選択</option>
-                <option value="1">あり</option>
-                <option value="0">なし</option>
+              <select name="s" defaultValue={s} className="border rounded px-2 py-1 bg-white text-black">
+                <option value="" className="text-black">未選択</option>
+                <option value="1" className="text-black">あり</option>
+                <option value="0" className="text-black">なし</option>
               </select>
             </label>
 
@@ -72,10 +72,10 @@ export default async function Page({ searchParams }: { searchParams: Promise<Rec
 
             <label className="flex items-center gap-3">
               <span className="w-40">暑がり・汗かき</span>
-              <select name="h" defaultValue={h} className="border rounded px-2 py-1">
-                <option value="">未選択</option>
-                <option value="1">はい</option>
-                <option value="0">いいえ</option>
+              <select name="h" defaultValue={h} className="border rounded px-2 py-1 bg-white text-black">
+                <option value="" className="text-black">未選択</option>
+                <option value="1" className="text-black">はい</option>
+                <option value="0" className="text-black">いいえ</option>
               </select>
             </label>
           </div>
