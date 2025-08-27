@@ -84,6 +84,36 @@ const mapPosture = (v?: string): DiagSnapshot['posture'] => {
   }
 };
 
+// Cブロックの値を取得するセレクター
+export const selectCValues = (s: DiagState): string[] => {
+  const answers = s.answers;
+  const problems: string[] = [];
+  
+  if (answers.neck_shoulder_issues) {
+    const issues = Array.isArray(answers.neck_shoulder_issues) 
+      ? answers.neck_shoulder_issues 
+      : [answers.neck_shoulder_issues];
+    
+    issues.forEach(issue => {
+      switch (issue) {
+        case 'am_neck_pain': problems.push('朝起きると首が痛い'); break;
+        case 'shoulder_stiff': problems.push('肩こりがひどい'); break;
+        case 'headache': problems.push('頭痛・偏頭痛持ち'); break;
+        case 'straight_neck': problems.push('ストレートネック'); break;
+      }
+    });
+  }
+  
+  // いびき
+  if (answers.snore === 'often') problems.push('よくかく');
+  else if (answers.snore === 'sometimes') problems.push('時々');
+  
+  // 疲れ
+  if (answers.fatigue === 'remain') problems.push('疲れが残る');
+  
+  return problems;
+};
+
 export const useDiagStore = create<DiagState>()(
   persist(
     (set, get) => ({
