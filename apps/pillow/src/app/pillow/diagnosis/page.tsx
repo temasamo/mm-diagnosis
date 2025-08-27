@@ -3,7 +3,10 @@ import { useEffect, useState, useMemo, useCallback } from "react";
 import type { Questionnaire } from "@core/mm";
 import QuestionRenderer from "../../../../components/QuestionRenderer";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useDiagStore } from "../../../../lib/state/diagStore";
+import { toProblemKeys } from "@/i18n/problemValueMap";
+import { setCookie } from "@/lib/utils/cookie-client";
 
 // セクション定義
 const SECTIONS: { title: string; ids: string[] }[] = [
@@ -55,6 +58,7 @@ export default function Page() {
   const answers = useDiagStore((s: any) => s.answers);
   const setAnswers = useDiagStore((s: any) => s.setAnswers);
   const hasHydrated = useDiagStore((s: any) => s.hasHydrated);
+  const router = useRouter();
 
   // ローカルストレージ初期化（念のため）
   useEffect(() => {
@@ -79,6 +83,48 @@ export default function Page() {
   useEffect(() => { 
     console.log("[diag] mounted, rendering form", { mounted, hasHydrated, hasQuestions: !!q }); 
   }, [mounted, hasHydrated, q]);
+
+  // 「次へ」ボタンのハンドラ
+  const handleNext = useCallback(() => {
+    // Cブロックの値を取得
+    const cValues: string[] = [];
+    
+    // neck_shoulder_issues から値を取得
+    const neckShoulder = answers?.neck_shoulder_issues;
+    if (Array.isArray(neckShoulder)) {
+      cValues.push(...neckShoulder);
+    }
+    
+    // snore から値を取得
+    const snore = answers?.snore;
+    if (snore && typeof snore === "string") {
+      cValues.push(snore);
+    }
+    
+    // fatigue から値を取得
+    const fatigue = answers?.fatigue;
+    if (fatigue && typeof fatigue === "string") {
+      cValues.push(fatigue);
+    }
+    
+    // heat_sweat から値を取得
+    const heatSweat = answers?.heat_sweat;
+    if (heatSweat && typeof heatSweat === "string") {
+      cValues.push(heatSweat);
+    }
+
+    const keys = toProblemKeys(cValues);
+
+    // ① searchParams で送る
+    const sp = new URLSearchParams();
+    if (keys.length) sp.set("c", keys.join(","));
+    // 他に必要なパラメータがあれば同様にspへ
+
+    // ② Cookieにも保存（SSRで読めるように）
+    setCookie("pillow_answers", JSON.stringify({ problems: keys }), { maxAge: 60 * 60, path: "/" });
+
+    router.push(`/pillow/preview?${sp.toString()}`);
+  }, [answers, router]);
 
   if (!mounted || !hasHydrated) return null;        // ← ハイドレーション完了まで待つ
 
@@ -110,7 +156,7 @@ export default function Page() {
       
       <div className="flex justify-end gap-3 pt-4">
         <Link href="/pillow" className="px-4 py-2 rounded-xl border">戻る</Link>
-        <Link href="/pillow/preview" className="px-5 py-2 rounded-xl bg-black text-white">一次診断へ</Link>
+        <button onClick={handleNext} className="px-5 py-2 rounded-xl bg-black text-white">一次診断へ</button>
       </div>
     </main>
   );
