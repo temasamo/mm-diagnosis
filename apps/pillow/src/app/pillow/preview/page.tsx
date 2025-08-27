@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { readAnswersFromSearchParams } from "@/lib/answers/ssr";
 import { buildProblemList } from "@lib/recommend/buildProblemList";
+import CQueryWriter from "./CQueryWriter";
 
 // 先頭付近に util を1つ追加（関数でもOK）
 const qp = (v: unknown): string => (Array.isArray(v) ? (v[0] ?? "") : (v as string ?? ""));
@@ -42,7 +43,9 @@ export default async function Page({ searchParams }: { searchParams: Promise<Rec
         <h2 className="text-lg font-semibold">あなたのお悩み</h2>
         {problems.bullets.length ? (
           <ul className="list-disc pl-6 space-y-1">
-            {problems.bullets.map((b: string) => <li key={b}>{b}</li>)}
+            {problems.bullets.map((b: string, i: number) => (
+              <li key={`${b}-${i}`}>{b}</li>
+            ))}
           </ul>
         ) : (
           <p className="text-muted-foreground">特筆すべきお悩みは選択されていません。</p>
@@ -57,6 +60,9 @@ export default async function Page({ searchParams }: { searchParams: Promise<Rec
           {Array.from(current.entries()).map(([k, v]) => (
             <input key={k} type="hidden" name={k} value={v} />
           ))}
+          
+          {/* CQueryWriterを追加 */}
+          <CQueryWriter />
 
           <div className="grid grid-cols-1 gap-3">
             <label className="flex items-center gap-3">
@@ -67,8 +73,6 @@ export default async function Page({ searchParams }: { searchParams: Promise<Rec
                 <option value="0" className="text-black">なし</option>
               </select>
             </label>
-
-
 
             <label className="flex items-center gap-3">
               <span className="w-40">暑がり・汗かき</span>
