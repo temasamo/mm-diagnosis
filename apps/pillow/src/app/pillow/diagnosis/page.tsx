@@ -32,7 +32,6 @@ const SECTIONS: { title: string; ids: string[] }[] = [
     ids: [
       "neck_shoulder_issues", // 首・肩まわりで抱えている問題
       "snore",               // いびき
-      "fatigue",             // 起床時の疲れ
       "heat_sweat",          // 暑がり・汗かきですか？
     ],
   },

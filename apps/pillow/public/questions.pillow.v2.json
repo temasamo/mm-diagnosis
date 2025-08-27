@@ -1,7 +1,7 @@
 {
-  "version": "pillow.v2.1",
+  "version": "pillow.v2.2",
   "locale": "ja-JP",
-  "title": "枕診断AI 質問フロー v2.1",
+  "title": "枕診断AI 質問フロー v2.2",
   "items": [
     {
       "id": "sex",
@@ -101,45 +101,30 @@
       "title": "今の枕の素材は？（わかれば）",
       "type": "single",
       "choices": [
-        { "id": "urethane", "label": "ウレタン" },
-        { "id": "pipe", "label": "パイプ" },
+        { "id": "lp", "label": "低反発" },
+        { "id": "hp", "label": "高反発" },
+        { "id": "feather", "label": "羽毛" },
         { "id": "buckwheat", "label": "そば殻" },
-        { "id": "feather", "label": "羽根" },
-        { "id": "other", "label": "その他" },
         { "id": "unknown", "label": "不明 / 指定なし" }
       ],
       "meta": { "group": "現在の枕", "order": 9 }
     },
     {
-      "id": "cur_size_material_known",
-      "title": "サイズ・素材（わかれば）",
-      "type": "multi",
-      "choices": [
-        { "id": "std", "label": "標準サイズ" },
-        { "id": "wide", "label": "ワイドサイズ" },
-        { "id": "jr", "label": "ジュニア" },
-        { "id": "lp", "label": "低反発" },
-        { "id": "hp", "label": "高反発" },
-        { "id": "feather", "label": "羽毛" },
-        { "id": "buckwheat", "label": "そば殻" },
-        { "id": "other", "label": "その他/不明" }
-      ],
-      "meta": { "group": "現在の枕", "order": 8 }
-    },
-    {
       "id": "cur_issues",
       "title": "気になる点（複数選択可）",
-      "type": "multi",
+      "type": "multiple",
       "choices": [
-        { "id": "neck_pain", "label": "首が痛い" },
-        { "id": "height_mismatch", "label": "高さが合わない" },
-        { "id": "roll_difficulty", "label": "寝返りしづらい" },
-        { "id": "hot", "label": "蒸れる" },
-        { "id": "sag", "label": "へたる" }
+        { "id": "neck_pain", "label": "首の痛み" },
+        { "id": "shoulder_pain", "label": "肩こり" },
+        { "id": "back_pain", "label": "腰の痛み" },
+        { "id": "height", "label": "高さが合わない" },
+        { "id": "firmness", "label": "硬さが合わない" },
+        { "id": "heat", "label": "暑い" },
+        { "id": "durability", "label": "耐久性" },
+        { "id": "none", "label": "特になし" }
       ],
-      "meta": { "group": "現在の枕", "order": 9 }
+      "meta": { "group": "現在の枕", "order": 10 }
     },
-
     {
       "id": "posture",
       "title": "主な寝姿勢",
@@ -147,71 +132,46 @@
       "required": true,
       "choices": [
         { "id": "supine", "label": "仰向け" },
-        { "id": "side", "label": "横向き" },
         { "id": "prone", "label": "うつ伏せ" },
-        { "id": "unknown", "label": "不明 / 指定なし" }
+        { "id": "side", "label": "横向き" },
+        { "id": "mixed", "label": "いろいろ" }
       ],
-      "meta": { "group": "睡眠スタイル", "order": 20, "notes": "姿勢×寝返りが高さに影響" }
+      "meta": { "group": "体型", "order": 20 }
     },
     {
       "id": "rollover",
       "title": "寝返り頻度",
       "type": "single",
-      "required": true,
       "choices": [
-        { "id": "low", "label": "少ない" },
+        { "id": "rare", "label": "少ない" },
         { "id": "mid", "label": "普通" },
-        { "id": "high", "label": "多い" },
-        { "id": "unknown", "label": "不明 / 指定なし" }
+        { "id": "often", "label": "多い" }
       ],
-      "meta": { "group": "睡眠スタイル", "order": 21 }
+      "meta": { "group": "体型", "order": 21 }
     },
     {
-      "id": "neck_shoulder_issues",
-      "title": "首・肩まわりで抱えている問題（複数選択可）",
-      "type": "multi",
-      "choices": [
-        { "id": "am_neck_pain", "label": "朝起きると首が痛い" },
-        { "id": "shoulder_stiff", "label": "肩こりがひどい" },
-        { "id": "headache", "label": "頭痛・偏頭痛持ち" },
-        { "id": "straight_neck", "label": "ストレートネックと診断" },
-        { "id": "none", "label": "特に問題なし" }
-      ],
-      "meta": { "group": "首・肩の状態", "order": 30 }
-    },
-    {
-      "id": "snore",
-      "title": "いびき",
+      "id": "shoulder_width",
+      "title": "肩幅（あれば）",
       "type": "single",
       "choices": [
-        { "id": "often", "label": "よくかく" },
-        { "id": "sometimes", "label": "時々" },
-        { "id": "rarely", "label": "ほぼない" },
-        { "id": "unknown", "label": "不明 / 指定なし" }
-      ],
-      "meta": { "group": "健康・快適性", "order": 40 }
-    },
-    {
-      "id": "fatigue",
-      "title": "起床時の疲れ",
-      "type": "single",
-      "choices": [
-        { "id": "remain", "label": "疲れが残る" },
+        { "id": "narrow", "label": "狭い" },
         { "id": "normal", "label": "普通" },
-        { "id": "clear", "label": "スッキリ" },
+        { "id": "wide", "label": "広い" },
         { "id": "unknown", "label": "不明 / 指定なし" }
       ],
-      "meta": { "group": "健康・快適性", "order": 41 }
+      "meta": { "group": "体型", "order": 22 }
     },
     {
-      "id": "heat_sweat",
-      "title": "暑がり・汗かきですか？",
+      "id": "height_band",
+      "title": "身長（任意）",
       "type": "single",
       "choices": [
-        { "id": "yes", "label": "はい" },
-        { "id": "no", "label": "いいえ" }
+        { "id": "u155", "label": "〜155cm" },
+        { "id": "155-170", "label": "155〜170cm" },
+        { "id": "170p", "label": "170cm以上" },
+        { "id": "na", "label": "答えない" }
       ],
-      "meta": { "group": "健康・快適性", "order": 42 }
+      "meta": { "group": "体型", "order": 23 }
     },
     {
       "id": "mattress_firmness",
@@ -262,27 +222,16 @@
       "meta": { "group": "環境・好み", "order": 53 }
     },
     {
-      "id": "height_band",
-      "title": "身長（任意）",
-      "type": "single",
-      "choices": [
-        { "id": "u155", "label": "〜155cm" },
-        { "id": "155-170", "label": "155〜170cm" },
-        { "id": "170p", "label": "170cm以上" },
-        { "id": "na", "label": "答えない" }
-      ],
-      "meta": { "group": "体型", "order": 60 }
-    },
-    {
       "id": "budget",
-      "title": "ご予算",
+      "title": "ご予算 *",
       "type": "single",
       "required": true,
       "choices": [
-        { "id": "lt5k", "label": "〜5,000円" },
-        { "id": "5k-15k", "label": "5,000〜15,000円" },
-        { "id": "15k-30k", "label": "15,000〜30,000円" },
-        { "id": "30k+", "label": "30,000円以上" }
+        { "id": "lt3000", "label": "〜3,000円未満" },
+        { "id": "3k-6k", "label": "3,000円〜6,000円" },
+        { "id": "6k-10k", "label": "6,000円〜10,000円未満" },
+        { "id": "10k-20k", "label": "10,000円〜20,000円未満" },
+        { "id": "20kplus", "label": "20,000円以上" }
       ],
       "meta": { "group": "予算・購入意欲", "order": 70 }
     },
