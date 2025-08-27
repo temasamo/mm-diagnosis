@@ -5,13 +5,27 @@ export type SsrAnswers = {
   hot?: string;
 };
 
-// 例: /pillow/preview?c=neckPain,shoulderPain&s=1&t=1&h=1
+// 例: /pillow/preview?c={"posture":"prone"}&s=1&h=1
 export async function readAnswersFromSearchParams(sp: Promise<Record<string, any>>): Promise<SsrAnswers> {
   const params = await sp;
   
   const arrFromC = (() => {
     const raw = typeof params?.c === "string" ? params.c : Array.isArray(params?.c) ? params.c[0] : "";
-    return raw ? String(raw).split(",").map((s) => s.trim()).filter(Boolean) : [];
+    if (!raw) return [];
+    
+    try {
+      // JSON形式のcパラメータを解析
+      const answers = JSON.parse(decodeURIComponent(raw));
+      // 問題に関連する回答を抽出
+      const problems = [];
+      if (answers.neck_shoulder_issues) problems.push("neckPain");
+      if (answers.cur_issues?.includes("肩こり")) problems.push("shoulderPain");
+      if (answers.cur_issues?.includes("首の痛み")) problems.push("neckPain");
+      return problems;
+    } catch (e) {
+      // 従来のカンマ区切り形式のフォールバック
+      return raw ? String(raw).split(",").map((s) => s.trim()).filter(Boolean) : [];
+    }
   })();
 
   const extra: string[] = [];

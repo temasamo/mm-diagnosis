@@ -285,4 +285,82 @@ export async function buildGroupsFromAPI(
       message: "候補を取得できませんでした" 
     };
   }
+}
+
+// 新しいAPI関数（タスク5の要件）
+export async function buildGroupsFromAPIv2({ c, snore, heat }: { c: string; snore: number; heat: number }): Promise<GroupedRecommendations> {
+  try {
+    console.log("[build] v2 params", { c, snore, heat });
+    
+    // キーワード生成
+    const keywords = [];
+    if (c) {
+      const cKeywords = c.split(',').map(k => k.trim()).filter(Boolean);
+      keywords.push(...cKeywords);
+    }
+    if (snore === 1) keywords.push('いびき 枕');
+    if (heat === 1) keywords.push('冷却 枕', '涼感 枕');
+    
+    // デフォルトキーワード
+    if (keywords.length === 0) {
+      keywords.push('枕', '高さ調整 枕');
+    }
+
+    let primary: any[] = [];
+    let secondaryA: any[] = [];
+    let secondaryB: any[] = [];
+    let secondaryC: any[] = [];
+
+    // 第一候補（上位6件から上位3件）
+    primary = await searchWithFallback({
+      budgetBandId: null,
+      anyOfKeywords: keywords,
+      limit: 6,
+    });
+
+    // 第二候補（異なるキーワードで3件ずつ）
+    secondaryA = await searchWithFallback({ 
+      budgetBandId: null, 
+      anyOfKeywords: ["横向き 枕", "高反発 枕"], 
+      limit: 3 
+    });
+    secondaryB = await searchWithFallback({ 
+      budgetBandId: null, 
+      anyOfKeywords: ["低反発 枕", "仰向け 枕"], 
+      limit: 3 
+    });
+    secondaryC = await searchWithFallback({ 
+      budgetBandId: null, 
+      anyOfKeywords: ["首 肩こり 枕", "高さ 調整 枕"], 
+      limit: 3 
+    });
+
+    // null安全
+    primary = Array.isArray(primary) ? primary.slice(0, 3) : [];
+    secondaryA = Array.isArray(secondaryA) ? secondaryA.slice(0, 3) : [];
+    secondaryB = Array.isArray(secondaryB) ? secondaryB.slice(0, 3) : [];
+    secondaryC = Array.isArray(secondaryC) ? secondaryC.slice(0, 3) : [];
+
+    const emptyAll = primary.length + secondaryA.length + secondaryB.length + secondaryC.length === 0;
+    const message = emptyAll ? "候補を取得できませんでした" : undefined;
+
+    return { 
+      primary, 
+      secondaryBuckets: [secondaryA, secondaryB, secondaryC], 
+      secondaryA, 
+      secondaryB, 
+      secondaryC, 
+      message 
+    };
+  } catch (e) {
+    console.error("[build] v2 error", e);
+    return { 
+      primary: [], 
+      secondaryBuckets: [[], [], []], 
+      secondaryA: [], 
+      secondaryB: [], 
+      secondaryC: [], 
+      message: "候補を取得できませんでした" 
+    };
+  }
 } 

@@ -4,9 +4,10 @@ import type { Questionnaire } from "@core/mm";
 import QuestionRenderer from "../../../../components/QuestionRenderer";
 import Link from "next/link";
 import { useDiagStore } from "../../../../lib/state/diagStore";
-import CQueryWriter from "./CQueryWriter";
+import { useRouter } from "next/navigation";
 
-// セクション定義
+
+// セクション定義（Cセクションは除外）
 const SECTIONS: { title: string; ids: string[] }[] = [
   {
     title: "A. 体・寝姿勢",
@@ -29,15 +30,6 @@ const SECTIONS: { title: string; ids: string[] }[] = [
     ],
   },
   {
-    title: "C. 今の悩み（複数可）",
-    ids: [
-      "neck_shoulder_issues", // 首・肩まわりで抱えている問題
-      "snore",               // いびき
-      "fatigue",             // 起床時の疲れ
-      "heat_sweat",          // 暑がり・汗かきですか？
-    ],
-  },
-  {
     title: "D. 好み・希望",
     ids: [
       "mattress_firmness",   // マットレスの硬さ
@@ -56,6 +48,7 @@ export default function Page() {
   const answers = useDiagStore((s: any) => s.answers);
   const setAnswers = useDiagStore((s: any) => s.setAnswers);
   const hasHydrated = useDiagStore((s: any) => s.hasHydrated);
+  const router = useRouter();
 
   // ローカルストレージ初期化（念のため）
   useEffect(() => {
@@ -85,8 +78,15 @@ export default function Page() {
 
   if (!q) return null;              // 質問データがない場合もnullを返す
 
+  function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    // A/B/Dセクションの回答を圧縮してcパラメータを生成
+    const c = JSON.stringify(answers);
+    router.push(`/pillow/preview?c=${encodeURIComponent(c)}`);
+  }
+
   return (
-    <form method="GET" action="/pillow/preview">
+    <form onSubmit={onSubmit}>
       <main className="max-w-3xl mx-auto p-6 space-y-6">
         <h1 className="text-2xl font-bold">質問</h1>
         
@@ -110,8 +110,7 @@ export default function Page() {
           </section>
         ))}
         
-        {/* hidden input を最後に置く（常に最新の c をセット） */}
-        <CQueryWriter answers={answers} />
+
         
         <div className="flex justify-end gap-3 pt-4">
           <Link href="/pillow" className="px-4 py-2 rounded-xl border">戻る</Link>
