@@ -85,32 +85,19 @@ export default function Page() {
 
           {/* 気になる点 */}
           <div>
-            <label className="block text-sm font-medium mb-2">気になる点（複数選択可）</label>
-            <div className="space-y-2">
-              {[
-                { id: "neck_pain", label: "首が痛い" },
-                { id: "height_mismatch", label: "高さが合わない" },
-                { id: "poor_turn", label: "寝返りしづらい" },
-                { id: "sweat", label: "蒸れる" },
-                { id: "sagging", label: "へたる" }
-              ].map((item) => (
-                <label key={item.id} className="flex items-center">
-                  <input
-                    type="checkbox"
-                    checked={answers?.concerns?.includes(item.id) || false}
-                    onChange={(e) => {
-                      const current = answers?.concerns || [];
-                      const newValue = e.target.checked
-                        ? [...current, item.id]
-                        : current.filter((x: string) => x !== item.id);
-                      setAnswers({ concerns: newValue });
-                    }}
-                    className="mr-2"
-                  />
-                  {item.label}
-                </label>
-              ))}
-            </div>
+            <label className="block text-sm font-medium mb-2">気になる点</label>
+            <select 
+              value={answers?.concerns || ""} 
+              onChange={(e) => setAnswers({ concerns: e.target.value })}
+              className="w-full border rounded-lg px-3 py-2"
+            >
+              <option value="">選択してください</option>
+              <option value="neck_pain">首が痛い</option>
+              <option value="height_mismatch">高さが合わない</option>
+              <option value="poor_turn">寝返りしづらい</option>
+              <option value="sweat">蒸れる</option>
+              <option value="sagging">へたる</option>
+            </select>
           </div>
         </div>
       </section>
@@ -121,32 +108,19 @@ export default function Page() {
         <div className="space-y-6">
           {/* 首・肩まわりで抱えている問題 */}
           <div>
-            <label className="block text-sm font-medium mb-2">首・肩まわりで抱えている問題（複数選択可）</label>
-            <div className="space-y-2">
-              {[
-                { id: "morning_neck_pain", label: "朝起きると首が痛い" },
-                { id: "severe_shoulder_stiffness", label: "肩こりがひどい" },
-                { id: "headache", label: "頭痛・偏頭痛持ち" },
-                { id: "straight_neck", label: "ストレートネックと診断" },
-                { id: "none", label: "特に問題なし" }
-              ].map((item) => (
-                <label key={item.id} className="flex items-center">
-                  <input
-                    type="checkbox"
-                    checked={answers?.neck_shoulder_issues?.includes(item.id) || false}
-                    onChange={(e) => {
-                      const current = answers?.neck_shoulder_issues || [];
-                      const newValue = e.target.checked
-                        ? [...current, item.id]
-                        : current.filter((x: string) => x !== item.id);
-                      setAnswers({ neck_shoulder_issues: newValue });
-                    }}
-                    className="mr-2"
-                  />
-                  {item.label}
-                </label>
-              ))}
-            </div>
+            <label className="block text-sm font-medium mb-2">首・肩まわりで抱えている問題</label>
+            <select 
+              value={answers?.neck_shoulder_issues || ""} 
+              onChange={(e) => setAnswers({ neck_shoulder_issues: e.target.value })}
+              className="w-full border rounded-lg px-3 py-2"
+            >
+              <option value="">選択してください</option>
+              <option value="morning_neck_pain">朝起きると首が痛い</option>
+              <option value="severe_shoulder_stiffness">肩こりがひどい</option>
+              <option value="headache">頭痛・偏頭痛持ち</option>
+              <option value="straight_neck">ストレートネックと診断</option>
+              <option value="none">特に問題なし</option>
+            </select>
           </div>
 
           {/* いびき */}
