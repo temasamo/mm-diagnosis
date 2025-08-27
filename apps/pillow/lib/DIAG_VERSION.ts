@@ -1,0 +1,1 @@
+export const DIAG_VERSION = "vol6-20250826-ix1"; 

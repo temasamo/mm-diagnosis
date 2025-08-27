@@ -3,6 +3,8 @@ import { CATEGORY_QUERIES, buildQueryWords } from "../catalog/category_query";
 import { searchAllMalls, type MallProduct } from "../catalog/mall_search";
 import type { Provisional } from "../scoring/engine";
 
+export const BUILD_GROUPS_VERSION = "bg-20250826-ix1";
+
 // --- add: normalize helper ---
 function normalizeProvisional(input: any): Provisional[] {
   // 正規化
@@ -190,6 +192,9 @@ export async function buildGroupsFromAPI(
   budgetBandId?: string,
   _allowFallback = true
 ): Promise<GroupedRecommendations> {
+  console.groupCollapsed("[buildGroupsFromAPI]", BUILD_GROUPS_VERSION);
+  console.log("topN:", topN, "budgetBandId:", budgetBandId);
+  
   try {
     console.log("[build] provisional(raw)", provisional, "topN", topN, "budgetBandId", budgetBandId);
     
@@ -266,6 +271,9 @@ export async function buildGroupsFromAPI(
     const emptyAll = primary.length + secondaryA.length + secondaryB.length + secondaryC.length === 0;
     const message = emptyAll ? "候補を取得できませんでした" : undefined;
 
+    console.log("counts => P:", primary.length, "A:", secondaryA.length, "B:", secondaryB.length, "C:", secondaryC.length);
+    console.groupEnd();
+
     return { 
       primary, 
       secondaryBuckets: [secondaryA, secondaryB, secondaryC], 
@@ -276,6 +284,7 @@ export async function buildGroupsFromAPI(
     };
   } catch (e) {
     console.error("[build] error", e);
+    console.groupEnd();
     return { 
       primary: [], 
       secondaryBuckets: [[], [], []], 
