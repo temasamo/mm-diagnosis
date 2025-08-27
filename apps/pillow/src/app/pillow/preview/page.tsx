@@ -1,18 +1,32 @@
 import Link from "next/link";
 import { readAnswersFromSearchParams } from "@/lib/answers/ssr";
-import { buildProblemList } from "../../../../../lib/recommend/buildProblemList";
+import { buildProblemList } from "@lib/recommend/buildProblemList";
 
-export default async function Page({ searchParams }: { searchParams: Record<string, any> }) {
-  const answers = readAnswersFromSearchParams(searchParams);
+// 先頭付近に util を1つ追加（関数でもOK）
+const qp = (v: unknown): string => (Array.isArray(v) ? (v[0] ?? "") : (v as string ?? ""));
+
+export default async function Page({ searchParams }: { searchParams: Promise<Record<string, any>> }) {
+  const params = await searchParams;
+  const answers = await readAnswersFromSearchParams(searchParams);
   const problems = buildProblemList(answers);
 
-  // 現在のクエリを文字列化（c があれば維持）
+  // 既存クエリ維持用
   const current = new URLSearchParams();
   if (Array.isArray(answers.problems) && answers.problems.length) {
-    current.set("c", answers.problems.filter(p => !["snore","tiredMorning","hotSleep"].includes(p)).join(","));
+    current.set("c", answers.problems
+      .filter(p => !["snore","tiredMorning","hotSleep"].includes(p))
+      .join(","));
   }
-  // s/t/h も既存値があれば維持
-  ["s","t","h"].forEach((k) => { if (searchParams[k]) current.set(k, String(searchParams[k])); });
+
+  // ← ここを追加：常にスカラに正規化
+  const s = qp(params.s);
+  const t = qp(params.t);
+  const h = qp(params.h);
+
+  // 既存値があれば current にも反映
+  if (s) current.set("s", s);
+  if (t) current.set("t", t);
+  if (h) current.set("h", h);
 
   return (
     <main className="max-w-3xl mx-auto p-6 space-y-8">
@@ -49,7 +63,7 @@ export default async function Page({ searchParams }: { searchParams: Record<stri
           <div className="grid grid-cols-1 gap-3">
             <label className="flex items-center gap-3">
               <span className="w-40">いびき</span>
-              <select name="s" defaultValue={searchParams.s ?? ""} className="border rounded px-2 py-1">
+              <select name="s" defaultValue={s} className="border rounded px-2 py-1">
                 <option value="">未選択</option>
                 <option value="1">あり</option>
                 <option value="0">なし</option>
@@ -58,7 +72,7 @@ export default async function Page({ searchParams }: { searchParams: Record<stri
 
             <label className="flex items-center gap-3">
               <span className="w-40">起床時の疲れ</span>
-              <select name="t" defaultValue={searchParams.t ?? ""} className="border rounded px-2 py-1">
+              <select name="t" defaultValue={t} className="border rounded px-2 py-1">
                 <option value="">未選択</option>
                 <option value="1">あり</option>
                 <option value="0">なし</option>
@@ -67,7 +81,7 @@ export default async function Page({ searchParams }: { searchParams: Record<stri
 
             <label className="flex items-center gap-3">
               <span className="w-40">暑がり・汗かき</span>
-              <select name="h" defaultValue={searchParams.h ?? ""} className="border rounded px-2 py-1">
+              <select name="h" defaultValue={h} className="border rounded px-2 py-1">
                 <option value="">未選択</option>
                 <option value="1">はい</option>
                 <option value="0">いいえ</option>
@@ -78,8 +92,13 @@ export default async function Page({ searchParams }: { searchParams: Record<stri
           <div className="flex gap-3">
             <button type="submit" className="px-4 py-2 rounded border">反映</button>
             {/* /result へ遷移（現在のクエリをすべて持っていく） */}
-            <Link href={`/pillow/result?${new URLSearchParams({ ...Object.fromEntries(current), s:String(searchParams.s ?? ""), t:String(searchParams.t ?? ""), h:String(searchParams.h ?? "") }).toString()}`}
-                  className="px-5 py-2 rounded bg-black text-white">
+            <Link
+              href={`/pillow/result?${new URLSearchParams({
+                ...(Object.fromEntries(current) as Record<string,string>),
+                s, t, h,
+              }).toString()}`}
+              className="px-5 py-2 rounded bg-black text-white"
+            >
               診断結果へ
             </Link>
           </div>
