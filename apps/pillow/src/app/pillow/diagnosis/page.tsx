@@ -98,14 +98,23 @@ export default function Page() {
 
   console.log("[diag] Before return", { mounted, hasHydrated, hasQuestions: !!q });
 
-  if (!mounted || !hasHydrated) {
-    console.log("[diag] Early return - not ready");
-    return null;        // ← ハイドレーション完了まで待つ
+  if (!mounted) {
+    console.log("[diag] Early return - not mounted");
+    return null;
   }
 
   if (!q) {
     console.log("[diag] Early return - no questions");
-    return null;              // 質問データがない場合もnullを返す
+    return (
+      <main className="max-w-3xl mx-auto p-6 space-y-6">
+        <h1 className="text-2xl font-bold">質問を読み込み中...</h1>
+      </main>
+    );
+  }
+
+  // hasHydratedがfalseでも質問データがあれば表示する
+  if (!hasHydrated) {
+    console.log("[diag] Not hydrated yet, but showing questions");
   }
 
   return (
