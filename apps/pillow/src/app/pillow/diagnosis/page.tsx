@@ -74,22 +74,32 @@ export default function Page() {
 
   // 質問データ取得
   useEffect(() => {
-    console.log("[diag] Fetch effect", { mounted });
-    if (!mounted) return;
+    console.log("[diag] Fetch effect - always execute");
     console.log("[diag] Fetching questions...");
-    fetch("/questions.pillow.v2.json").then(r => r.json()).then(data => {
-      console.log("[diag] Questions loaded:", data);
-      console.log("[diag] Concerns question:", data.items.find((x: any) => x.id === "concerns"));
-      console.log("[diag] Neck issues question:", data.items.find((x: any) => x.id === "neck_shoulder_issues"));
-      
-      // すべての質問IDをログ出力
-      console.log("[diag] All question IDs:", data.items.map((x: any) => x.id));
-      
-      setQ(data);
-    }).catch(error => {
-      console.error("[diag] Failed to load questions:", error);
-    });
-  }, [mounted]);
+    
+    // 即座にfetchを実行
+    fetch("/questions.pillow.v2.json")
+      .then(r => {
+        console.log("[diag] Fetch response status:", r.status);
+        if (!r.ok) {
+          throw new Error(`HTTP error! status: ${r.status}`);
+        }
+        return r.json();
+      })
+      .then(data => {
+        console.log("[diag] Questions loaded:", data);
+        console.log("[diag] Concerns question:", data.items.find((x: any) => x.id === "concerns"));
+        console.log("[diag] Neck issues question:", data.items.find((x: any) => x.id === "neck_shoulder_issues"));
+        
+        // すべての質問IDをログ出力
+        console.log("[diag] All question IDs:", data.items.map((x: any) => x.id));
+        
+        setQ(data);
+      })
+      .catch(error => {
+        console.error("[diag] Failed to load questions:", error);
+      });
+  }, []); // 依存配列を空にして、コンポーネントマウント時に1回だけ実行
 
   // デバッグ用ログ
   useEffect(() => { 
@@ -97,11 +107,6 @@ export default function Page() {
   }, [mounted, hasHydrated, q]);
 
   console.log("[diag] Before return", { mounted, hasHydrated, hasQuestions: !!q });
-
-  if (!mounted) {
-    console.log("[diag] Early return - not mounted");
-    return null;
-  }
 
   if (!q) {
     console.log("[diag] Early return - no questions");
