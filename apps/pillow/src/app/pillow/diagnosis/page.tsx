@@ -1,4 +1,4 @@
-import NextStepController from "./NextStepController";
+import CSelectedBridge from "./CSelectedBridge";
 
 // セクション定義
 const SECTIONS: { title: string; ids: string[] }[] = [
@@ -58,8 +58,8 @@ export default function Page() {
         <p>フォームUIは後で実装...</p>
       </div>
       
-      {/* ↓ フォーム末尾の「次へ」ボタンを NextStepController に置き換え/併置 */}
-      <NextStepController cValues={cValues} />
+      {/* ↓ フォーム末尾の「次へ」ボタンを Bridge に置き換え/併置 */}
+      <CSelectedBridge />
     </main>
   );
 } 
