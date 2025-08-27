@@ -2,7 +2,7 @@ import { DIAG_VERSION } from "../../../../lib/DIAG_VERSION";
 import { readAnswersFromSearchParams, readAnswersFromCookie, mergeAnswersAsync } from "@/lib/answers/ssr";
 import { buildProblemList } from "../../../../lib/recommend/buildProblemList";
 
-export default async function Page({ searchParams }: { searchParams: Record<string, any> }) {
+export default async function Page({ searchParams }: { searchParams: Promise<Record<string, any>> }) {
   const answers = await mergeAnswersAsync(
     readAnswersFromSearchParams(searchParams),
     readAnswersFromCookie()

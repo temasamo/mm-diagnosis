@@ -2,8 +2,9 @@ import { cookies } from "next/headers";
 
 export type SsrAnswers = { problems?: string[] };
 
-export function readAnswersFromSearchParams(sp: Record<string, any>): SsrAnswers {
-  const raw = typeof sp?.c === "string" ? sp.c : Array.isArray(sp?.c) ? sp.c[0] : "";
+export async function readAnswersFromSearchParams(sp: Promise<Record<string, any>>): Promise<SsrAnswers> {
+  const resolved = await sp;
+  const raw = typeof resolved?.c === "string" ? resolved.c : Array.isArray(resolved?.c) ? resolved.c[0] : "";
   const arr = raw ? String(raw).split(",").map(s => s.trim()).filter(Boolean) : [];
   return { problems: Array.from(new Set(arr)) };
 }
@@ -24,7 +25,7 @@ export function mergeAnswers(a: SsrAnswers, b: SsrAnswers): SsrAnswers {
   return { problems: Array.from(p) };
 }
 
-export async function mergeAnswersAsync(a: SsrAnswers, b: Promise<SsrAnswers>): Promise<SsrAnswers> {
-  const bResolved = await b;
-  return mergeAnswers(a, bResolved);
+export async function mergeAnswersAsync(a: Promise<SsrAnswers>, b: Promise<SsrAnswers>): Promise<SsrAnswers> {
+  const [aResolved, bResolved] = await Promise.all([a, b]);
+  return mergeAnswers(aResolved, bResolved);
 } 

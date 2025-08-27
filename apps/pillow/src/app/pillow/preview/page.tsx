@@ -2,12 +2,12 @@ import { DIAG_VERSION } from "../../../../lib/DIAG_VERSION";
 import { readAnswersFromSearchParams, readAnswersFromCookie, mergeAnswersAsync } from "@/lib/answers/ssr";
 import { buildProblemList } from "../../../../lib/recommend/buildProblemList";
 
-export default async function Page({ searchParams }: { searchParams: Record<string, any> }) {
+export default async function Page({ searchParams }: { searchParams: Promise<Record<string, any>> }) {
   // SSRで回答を決定
   const fromSp = readAnswersFromSearchParams(searchParams);
-  const fromCk = await readAnswersFromCookie();
-  const answers = mergeAnswersAsync(fromSp, Promise.resolve(fromCk));
-  const problems = buildProblemList(await answers);
+  const fromCk = readAnswersFromCookie();
+  const answers = await mergeAnswersAsync(fromSp, fromCk);
+  const problems = buildProblemList(answers);
 
   return (
     <main className="p-6">
