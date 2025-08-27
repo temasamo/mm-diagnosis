@@ -1,154 +1,225 @@
 "use client";
-import { useEffect, useState, useMemo, useCallback } from "react";
-import type { Questionnaire } from "@core/mm";
-import QuestionRenderer from "../../../../components/QuestionRenderer";
+import { useState } from "react";
 import Link from "next/link";
 import { useDiagStore } from "../../../../lib/state/diagStore";
 
-// セクション定義
-const SECTIONS: { title: string; ids: string[] }[] = [
-  {
-    title: "A. 体・寝姿勢",
-    ids: [
-      "posture",            // 主な寝姿勢
-      "rollover",           // 寝返り頻度
-      "height_band",        // 身長
-      "shoulder_width",     // 肩幅（あれば）
-    ],
-  },
-  {
-    title: "B. 今使っている枕",
-    ids: [
-      "cur_years",          // 使用年数
-      "cur_height_feel",    // 今の枕の高さはどうですか？
-      "cur_firm",           // 今の枕の硬さはどうですか？
-      "current_pillow_size",      // 今の枕のサイズは？（わかれば）
-      "current_pillow_material",  // 今の枕の素材は？（わかれば）
-      "concerns",           // 気になる点（複数選択可）
-    ],
-  },
-  {
-    title: "C. 今の悩み（複数可）",
-    ids: [
-      "neck_shoulder_issues", // 首・肩まわりで抱えている問題
-      "snore",               // いびき
-      "heat_sweat",          // 暑がり・汗かきですか？
-    ],
-  },
-  {
-    title: "D. 好み・希望",
-    ids: [
-      "mattress_firmness",   // マットレスの硬さ
-      "adjustable_pref",     // 枕の高さや硬さを調整できる方が良いですか？
-      "material_pref",       // 素材の好み
-      "size_pref",           // サイズ希望
-      "budget",              // ご予算
-    ],
-  },
-];
-
 export default function Page() {
-  // ❗ Hooks は常にトップレベルで宣言
-  const [mounted, setMounted] = useState(true); // ← 初期値をtrueに変更
-  const [q, setQ] = useState<Questionnaire | null>(null);
   const answers = useDiagStore((s: any) => s.answers);
   const setAnswers = useDiagStore((s: any) => s.setAnswers);
-  const hasHydrated = useDiagStore((s: any) => s.hasHydrated);
-
-  console.log("[diag] Component rendered", { mounted, hasHydrated, hasQuestions: !!q });
-
-  // ローカルストレージ初期化（念のため）
-  useEffect(() => {
-    console.log("[diag] Initial useEffect");
-    if (typeof window !== "undefined" && new URLSearchParams(location.search).get("reset") === "1") {
-      localStorage.removeItem("pillow-diag");
-    }
-  }, []);
-
-  // ハイドレーション完了検知
-  useEffect(() => {
-    console.log("[diag] Setting mounted to true");
-    setMounted(true);               // ← 必ず TRUE にする
-    console.debug("[diag] mounted");
-  }, []); // ← 依存配列を空にして必ず実行
-
-  // 質問データ取得
-  useEffect(() => {
-    console.log("[diag] Fetch effect - always execute");
-    console.log("[diag] Fetching questions...");
-    
-    // 即座にfetchを実行
-    fetch("/questions.pillow.v2.json")
-      .then(r => {
-        console.log("[diag] Fetch response status:", r.status);
-        if (!r.ok) {
-          throw new Error(`HTTP error! status: ${r.status}`);
-        }
-        return r.json();
-      })
-      .then(data => {
-        console.log("[diag] Questions loaded:", data);
-        console.log("[diag] Concerns question:", data.items.find((x: any) => x.id === "concerns"));
-        console.log("[diag] Neck issues question:", data.items.find((x: any) => x.id === "neck_shoulder_issues"));
-        
-        // すべての質問IDをログ出力
-        console.log("[diag] All question IDs:", data.items.map((x: any) => x.id));
-        
-        setQ(data);
-      })
-      .catch(error => {
-        console.error("[diag] Failed to load questions:", error);
-      });
-  }, []); // 依存配列を空にして、コンポーネントマウント時に1回だけ実行
-
-  // デバッグ用ログ
-  useEffect(() => { 
-    console.log("[diag] mounted, rendering form", { mounted, hasHydrated, hasQuestions: !!q }); 
-  }, [mounted, hasHydrated, q]);
-
-  console.log("[diag] Before return", { mounted, hasHydrated, hasQuestions: !!q });
-
-  if (!q) {
-    console.log("[diag] Early return - no questions");
-    return (
-      <main className="max-w-3xl mx-auto p-6 space-y-6">
-        <h1 className="text-2xl font-bold">質問を読み込み中...</h1>
-      </main>
-    );
-  }
-
-  // hasHydratedがfalseでも質問データがあれば表示する
-  if (!hasHydrated) {
-    console.log("[diag] Not hydrated yet, but showing questions");
-  }
 
   return (
     <main className="max-w-3xl mx-auto p-6 space-y-6">
-      <h1 className="text-2xl font-bold">質問</h1>
+      <h1 className="text-2xl font-bold">枕診断</h1>
       
-      {SECTIONS.map((sec) => (
-        <section key={sec.title} className="mb-10">
-          <h2 className="text-xl font-semibold mb-4">{sec.title}</h2>
-          <div className="space-y-6">
-            {sec.ids.map((qid) => {
-              const question = q.items.find((x) => x.id === qid);
-              if (!question) {
-                console.warn(`[diag] Question not found: ${qid}`);
-                return null;
-              }
-              console.log(`[diag] Rendering question: ${qid}`, question);
-              return (
-                <QuestionRenderer
-                  key={question.id}
-                  questions={[question]}
-                  answers={answers}
-                  onChange={(id, v) => setAnswers({ [id]: v })}
-                />
-              );
-            })}
+      {/* A. 体・寝姿勢 */}
+      <section className="mb-10">
+        <h2 className="text-xl font-semibold mb-4">A. 体・寝姿勢</h2>
+        <div className="space-y-6">
+          {/* 主な寝姿勢 */}
+          <div>
+            <label className="block text-sm font-medium mb-2">主な寝姿勢</label>
+            <select 
+              value={answers?.posture || ""} 
+              onChange={(e) => setAnswers({ posture: e.target.value })}
+              className="w-full border rounded-lg px-3 py-2"
+            >
+              <option value="">選択してください</option>
+              <option value="supine">仰向け</option>
+              <option value="prone">うつ伏せ</option>
+              <option value="side">横向き</option>
+            </select>
           </div>
-        </section>
-      ))}
+
+          {/* 寝返り頻度 */}
+          <div>
+            <label className="block text-sm font-medium mb-2">寝返り頻度</label>
+            <select 
+              value={answers?.rollover || ""} 
+              onChange={(e) => setAnswers({ rollover: e.target.value })}
+              className="w-full border rounded-lg px-3 py-2"
+            >
+              <option value="">選択してください</option>
+              <option value="rare">ほとんどしない</option>
+              <option value="mid">普通</option>
+              <option value="often">よくする</option>
+            </select>
+          </div>
+
+          {/* 身長 */}
+          <div>
+            <label className="block text-sm font-medium mb-2">身長</label>
+            <select 
+              value={answers?.height_band || ""} 
+              onChange={(e) => setAnswers({ height_band: e.target.value })}
+              className="w-full border rounded-lg px-3 py-2"
+            >
+              <option value="">選択してください</option>
+              <option value="150-155">150cm未満</option>
+              <option value="155-170">150-170cm</option>
+              <option value="170-180">170-180cm</option>
+              <option value="180+">180cm以上</option>
+            </select>
+          </div>
+        </div>
+      </section>
+
+      {/* B. 今使っている枕 */}
+      <section className="mb-10">
+        <h2 className="text-xl font-semibold mb-4">B. 今使っている枕</h2>
+        <div className="space-y-6">
+          {/* 使用年数 */}
+          <div>
+            <label className="block text-sm font-medium mb-2">使用年数</label>
+            <select 
+              value={answers?.cur_years || ""} 
+              onChange={(e) => setAnswers({ cur_years: e.target.value })}
+              className="w-full border rounded-lg px-3 py-2"
+            >
+              <option value="">選択してください</option>
+              <option value="lt1y">1年未満</option>
+              <option value="1-2y">1-2年</option>
+              <option value="3-5y">3-5年</option>
+              <option value="5y+">5年以上</option>
+            </select>
+          </div>
+
+          {/* 気になる点 */}
+          <div>
+            <label className="block text-sm font-medium mb-2">気になる点（複数選択可）</label>
+            <div className="space-y-2">
+              {[
+                { id: "neck_pain", label: "首が痛い" },
+                { id: "height_mismatch", label: "高さが合わない" },
+                { id: "poor_turn", label: "寝返りしづらい" },
+                { id: "sweat", label: "蒸れる" },
+                { id: "sagging", label: "へたる" }
+              ].map((item) => (
+                <label key={item.id} className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={answers?.concerns?.includes(item.id) || false}
+                    onChange={(e) => {
+                      const current = answers?.concerns || [];
+                      const newValue = e.target.checked
+                        ? [...current, item.id]
+                        : current.filter((x: string) => x !== item.id);
+                      setAnswers({ concerns: newValue });
+                    }}
+                    className="mr-2"
+                  />
+                  {item.label}
+                </label>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* C. 今の悩み */}
+      <section className="mb-10">
+        <h2 className="text-xl font-semibold mb-4">C. 今の悩み（複数可）</h2>
+        <div className="space-y-6">
+          {/* 首・肩まわりで抱えている問題 */}
+          <div>
+            <label className="block text-sm font-medium mb-2">首・肩まわりで抱えている問題（複数選択可）</label>
+            <div className="space-y-2">
+              {[
+                { id: "morning_neck_pain", label: "朝起きると首が痛い" },
+                { id: "severe_shoulder_stiffness", label: "肩こりがひどい" },
+                { id: "headache", label: "頭痛・偏頭痛持ち" },
+                { id: "straight_neck", label: "ストレートネックと診断" },
+                { id: "none", label: "特に問題なし" }
+              ].map((item) => (
+                <label key={item.id} className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={answers?.neck_shoulder_issues?.includes(item.id) || false}
+                    onChange={(e) => {
+                      const current = answers?.neck_shoulder_issues || [];
+                      const newValue = e.target.checked
+                        ? [...current, item.id]
+                        : current.filter((x: string) => x !== item.id);
+                      setAnswers({ neck_shoulder_issues: newValue });
+                    }}
+                    className="mr-2"
+                  />
+                  {item.label}
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* いびき */}
+          <div>
+            <label className="block text-sm font-medium mb-2">いびき</label>
+            <select 
+              value={answers?.snore || ""} 
+              onChange={(e) => setAnswers({ snore: e.target.value })}
+              className="w-full border rounded-lg px-3 py-2"
+            >
+              <option value="">選択してください</option>
+              <option value="often">よくかく</option>
+              <option value="sometimes">時々</option>
+              <option value="rarely">ほぼない</option>
+              <option value="unknown">不明 / 指定なし</option>
+            </select>
+          </div>
+
+          {/* 暑がり・汗かき */}
+          <div>
+            <label className="block text-sm font-medium mb-2">暑がり・汗かきですか？</label>
+            <select 
+              value={answers?.heat_sweat || ""} 
+              onChange={(e) => setAnswers({ heat_sweat: e.target.value })}
+              className="w-full border rounded-lg px-3 py-2"
+            >
+              <option value="">選択してください</option>
+              <option value="yes">はい</option>
+              <option value="no">いいえ</option>
+            </select>
+          </div>
+        </div>
+      </section>
+
+      {/* D. 好み・希望 */}
+      <section className="mb-10">
+        <h2 className="text-xl font-semibold mb-4">D. 好み・希望</h2>
+        <div className="space-y-6">
+          {/* マットレスの硬さ */}
+          <div>
+            <label className="block text-sm font-medium mb-2">マットレスの硬さ</label>
+            <select 
+              value={answers?.mattress_firmness || ""} 
+              onChange={(e) => setAnswers({ mattress_firmness: e.target.value })}
+              className="w-full border rounded-lg px-3 py-2"
+            >
+              <option value="">選択してください</option>
+              <option value="soft">柔らかめ</option>
+              <option value="mid">普通</option>
+              <option value="firm">硬め</option>
+              <option value="unknown">不明 / 指定なし</option>
+            </select>
+          </div>
+
+          {/* ご予算 */}
+          <div>
+            <label className="block text-sm font-medium mb-2">ご予算 *</label>
+            <select 
+              value={answers?.budget || ""} 
+              onChange={(e) => setAnswers({ budget: e.target.value })}
+              className="w-full border rounded-lg px-3 py-2"
+              required
+            >
+              <option value="">選択してください</option>
+              <option value="lt3000">〜3,000円未満</option>
+              <option value="3k-6k">3,000円〜6,000円</option>
+              <option value="6k-10k">6,000円〜10,000円未満</option>
+              <option value="10k-20k">10,000円〜20,000円未満</option>
+              <option value="20kplus">20,000円以上</option>
+            </select>
+          </div>
+        </div>
+      </section>
       
       <div className="flex justify-end gap-3 pt-4">
         <Link href="/pillow" className="px-4 py-2 rounded-xl border">戻る</Link>
