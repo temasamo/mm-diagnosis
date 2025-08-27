@@ -20,12 +20,10 @@ export default async function Page({ searchParams }: { searchParams: Promise<Rec
 
   // ← ここを追加：常にスカラに正規化
   const s = qp(params.s);
-  const t = qp(params.t);
   const h = qp(params.h);
 
   // 既存値があれば current にも反映
   if (s) current.set("s", s);
-  if (t) current.set("t", t);
   if (h) current.set("h", h);
 
   return (
@@ -70,14 +68,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Rec
               </select>
             </label>
 
-            <label className="flex items-center gap-3">
-              <span className="w-40">起床時の疲れ</span>
-              <select name="t" defaultValue={t} className="border rounded px-2 py-1">
-                <option value="">未選択</option>
-                <option value="1">あり</option>
-                <option value="0">なし</option>
-              </select>
-            </label>
+
 
             <label className="flex items-center gap-3">
               <span className="w-40">暑がり・汗かき</span>
@@ -95,7 +86,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<Rec
             <Link
               href={`/pillow/result?${new URLSearchParams({
                 ...(Object.fromEntries(current) as Record<string,string>),
-                s, t, h,
+                s, h,
               }).toString()}`}
               className="px-5 py-2 rounded bg-black text-white"
             >

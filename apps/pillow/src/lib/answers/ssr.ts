@@ -13,8 +13,6 @@ export async function readAnswersFromSearchParams(sp: Promise<Record<string, any
   const extra: string[] = [];
   // いびき: s=1(あり)/0(なし)
   if (params?.s === "1" || params?.snore === "1") extra.push("snore");
-  // 起床時の疲れ: t=1(あり)
-  if (params?.t === "1" || params?.tired === "1") extra.push("tiredMorning");
   // 暑がり: h=1(はい)
   if (params?.h === "1" || params?.hot === "1") extra.push("hotSleep");
 
