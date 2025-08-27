@@ -81,6 +81,10 @@ export default function Page() {
       console.log("[diag] Questions loaded:", data);
       console.log("[diag] Concerns question:", data.items.find((x: any) => x.id === "concerns"));
       console.log("[diag] Neck issues question:", data.items.find((x: any) => x.id === "neck_shoulder_issues"));
+      
+      // すべての質問IDをログ出力
+      console.log("[diag] All question IDs:", data.items.map((x: any) => x.id));
+      
       setQ(data);
     }).catch(error => {
       console.error("[diag] Failed to load questions:", error);
