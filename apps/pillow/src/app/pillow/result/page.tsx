@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { readAnswersFromSearchParams } from "@/lib/answers/ssr";
-import { buildProblemList } from "../../../../lib/recommend/buildProblemList";
+import { buildProblemList } from "@lib/recommend/buildProblemList";
 
-export default async function Page({ searchParams }: { searchParams: Record<string, any> }) {
-  const answers = readAnswersFromSearchParams(searchParams);
+export default async function Page({ searchParams }: { searchParams: Promise<Record<string, any>> }) {
+  const answers = await readAnswersFromSearchParams(searchParams);
   const problems = buildProblemList(answers);
 
   return (

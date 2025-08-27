@@ -2,19 +2,21 @@
 export type SsrAnswers = { problems?: string[] };
 
 // 例: /pillow/preview?c=neckPain,shoulderPain&s=1&t=1&h=1
-export function readAnswersFromSearchParams(sp: Record<string, any>): SsrAnswers {
+export async function readAnswersFromSearchParams(sp: Promise<Record<string, any>>): Promise<SsrAnswers> {
+  const params = await sp;
+  
   const arrFromC = (() => {
-    const raw = typeof sp?.c === "string" ? sp.c : Array.isArray(sp?.c) ? sp.c[0] : "";
+    const raw = typeof params?.c === "string" ? params.c : Array.isArray(params?.c) ? params.c[0] : "";
     return raw ? String(raw).split(",").map((s) => s.trim()).filter(Boolean) : [];
   })();
 
   const extra: string[] = [];
   // いびき: s=1(あり)/0(なし)
-  if (sp?.s === "1" || sp?.snore === "1") extra.push("snore");
+  if (params?.s === "1" || params?.snore === "1") extra.push("snore");
   // 起床時の疲れ: t=1(あり)
-  if (sp?.t === "1" || sp?.tired === "1") extra.push("tiredMorning");
+  if (params?.t === "1" || params?.tired === "1") extra.push("tiredMorning");
   // 暑がり: h=1(はい)
-  if (sp?.h === "1" || sp?.hot === "1") extra.push("hotSleep");
+  if (params?.h === "1" || params?.hot === "1") extra.push("hotSleep");
 
   const problems = Array.from(new Set([...arrFromC, ...extra]));
   return { problems };
