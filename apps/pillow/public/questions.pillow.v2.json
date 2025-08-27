@@ -1,7 +1,7 @@
 {
-  "version": "pillow.v2.2",
+  "version": "pillow.v2.3",
   "locale": "ja-JP",
-  "title": "枕診断AI 質問フロー v2.2",
+  "title": "枕診断AI 質問フロー v2.3",
   "items": [
     {
       "id": "sex",
@@ -110,7 +110,7 @@
       "meta": { "group": "現在の枕", "order": 9 }
     },
     {
-      "id": "cur_issues",
+      "id": "concerns",
       "title": "気になる点（複数選択可）",
       "type": "multiple",
       "choices": [
@@ -172,6 +172,41 @@
         { "id": "na", "label": "答えない" }
       ],
       "meta": { "group": "体型", "order": 23 }
+    },
+    {
+      "id": "neck_shoulder_issues",
+      "title": "首・肩まわりで抱えている問題（複数選択可）",
+      "type": "multiple",
+      "choices": [
+        { "id": "am_neck_pain", "label": "朝起きると首が痛い" },
+        { "id": "shoulder_stiff", "label": "肩こりがひどい" },
+        { "id": "headache", "label": "頭痛・偏頭痛持ち" },
+        { "id": "straight_neck", "label": "ストレートネックと診断" },
+        { "id": "none", "label": "特に問題なし" }
+      ],
+      "meta": { "group": "健康・快適性", "order": 40 }
+    },
+    {
+      "id": "snore",
+      "title": "いびき",
+      "type": "single",
+      "choices": [
+        { "id": "often", "label": "よくかく" },
+        { "id": "sometimes", "label": "時々" },
+        { "id": "rarely", "label": "ほぼない" },
+        { "id": "unknown", "label": "不明 / 指定なし" }
+      ],
+      "meta": { "group": "健康・快適性", "order": 41 }
+    },
+    {
+      "id": "heat_sweat",
+      "title": "暑がり・汗かきですか？",
+      "type": "single",
+      "choices": [
+        { "id": "yes", "label": "はい" },
+        { "id": "no", "label": "いいえ" }
+      ],
+      "meta": { "group": "健康・快適性", "order": 42 }
     },
     {
       "id": "mattress_firmness",

@@ -4,43 +4,12 @@ import { useEffect, useMemo, useState } from "react";
 import { useDiagStore } from "@lib/state/diagStore";
 import { computeProvisional } from "@lib/scoring/engine";
 import { formatSummary } from "@/app/pillow/components/result/presenters";
+import { buildProblemList } from "@lib/recommend/buildProblemList";
 
 // お悩みの堅牢化ヘルパー
 function deriveProblems(answers: any): string[] {
-  // 複数のソースからお悩みを取得
-  const problems = [];
-  
-  // 1. neck_shoulder_issues から
-  if (answers?.neck_shoulder_issues) {
-    const issues = Array.isArray(answers.neck_shoulder_issues) 
-      ? answers.neck_shoulder_issues 
-      : [answers.neck_shoulder_issues];
-    
-    const issueMap: Record<string, string> = {
-      am_neck_pain: "朝起きると首が痛い",
-      shoulder_stiff: "肩こりがひどい", 
-      headache: "頭痛・偏頭痛持ち",
-      straight_neck: "ストレートネック",
-    };
-    
-    issues.forEach((issue: string) => {
-      if (issueMap[issue]) {
-        problems.push(issueMap[issue]);
-      }
-    });
-  }
-  
-  // 2. concerns から
-  if (answers?.concerns && Array.isArray(answers.concerns)) {
-    problems.push(...answers.concerns);
-  }
-  
-  // 3. その他の悩み関連フィールド
-  if (answers?.sleep_issues) {
-    problems.push("睡眠の質が悪い");
-  }
-  
-  return problems.filter(Boolean);
+  const problemList = buildProblemList(answers);
+  return problemList.bullets;
 }
 
 // --- 小さなヘルパ: 回答→高さ/硬さの日本語 ---

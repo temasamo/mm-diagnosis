@@ -24,7 +24,7 @@ const SECTIONS: { title: string; ids: string[] }[] = [
       "cur_firm",           // 今の枕の硬さはどうですか？
       "current_pillow_size",      // 今の枕のサイズは？（わかれば）
       "current_pillow_material",  // 今の枕の素材は？（わかれば）
-      "cur_issues",         // 気になる点（複数選択可）
+      "concerns",           // 気になる点（複数選択可）
     ],
   },
   {

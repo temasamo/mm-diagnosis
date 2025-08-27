@@ -171,6 +171,12 @@ export const useDiagStore = create<DiagState>()(
             delete answers.fatigue;
           }
           
+          // cur_issuesをconcernsに変換
+          if (answers.cur_issues) {
+            answers.concerns = answers.cur_issues;
+            delete answers.cur_issues;
+          }
+          
           return {
             ...state,
             answers,

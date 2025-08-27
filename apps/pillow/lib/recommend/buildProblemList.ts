@@ -1,0 +1,88 @@
+export type Answers = {
+  // Cブロックの複数選択。文字列/配列/カンマ区切りに揺れても吸収
+  concerns?: string | string[];
+  neck_shoulder_issues?: string | string[];
+  snore?: string;
+  heat_sweat?: string;
+  [key: string]: any;
+};
+
+export type ProblemList = {
+  bullets: string[];
+  summary: string;
+};
+
+// 問題点のラベルマッピング
+const PROBLEM_LABELS: Record<string, string> = {
+  // concerns（気になる点）
+  neck_pain: "首の痛み",
+  shoulder_pain: "肩こり",
+  back_pain: "腰の痛み",
+  height: "高さが合わない",
+  firmness: "硬さが合わない",
+  heat: "暑い",
+  durability: "耐久性",
+  
+  // neck_shoulder_issues（首・肩の問題）
+  am_neck_pain: "朝起きると首が痛い",
+  shoulder_stiff: "肩こりがひどい",
+  headache: "頭痛・偏頭痛持ち",
+  straight_neck: "ストレートネック",
+  
+  // snore（いびき）
+  often: "いびきをよくかく",
+  sometimes: "いびきを時々かく",
+  
+  // heat_sweat（暑がり）
+  yes: "暑がり・汗かき",
+};
+
+// 配列を正規化（文字列/配列/カンマ区切りに対応）
+function normalizeArray(value: any): string[] {
+  if (!value) return [];
+  if (Array.isArray(value)) return value;
+  if (typeof value === "string") {
+    return value.split(",").map(s => s.trim()).filter(Boolean);
+  }
+  return [];
+}
+
+export function buildProblemList(answers: Answers): ProblemList {
+  const problems: string[] = [];
+  
+  // 1. concerns（気になる点）から
+  const concerns = normalizeArray(answers.concerns);
+  concerns.forEach(concern => {
+    const label = PROBLEM_LABELS[concern];
+    if (label) problems.push(label);
+  });
+  
+  // 2. neck_shoulder_issues（首・肩の問題）から
+  const neckIssues = normalizeArray(answers.neck_shoulder_issues);
+  neckIssues.forEach(issue => {
+    const label = PROBLEM_LABELS[issue];
+    if (label) problems.push(label);
+  });
+  
+  // 3. snore（いびき）から
+  if (answers.snore && answers.snore !== "rarely" && answers.snore !== "unknown") {
+    const label = PROBLEM_LABELS[answers.snore];
+    if (label) problems.push(label);
+  }
+  
+  // 4. heat_sweat（暑がり）から
+  if (answers.heat_sweat === "yes") {
+    const label = PROBLEM_LABELS[answers.heat_sweat];
+    if (label) problems.push(label);
+  }
+  
+  // 重複を除去
+  const uniqueProblems = Array.from(new Set(problems));
+  
+  return {
+    bullets: uniqueProblems,
+    summary: uniqueProblems.length > 0 
+      ? `主な問題点: ${uniqueProblems.slice(0, 3).join("、")}${uniqueProblems.length > 3 ? "など" : ""}`
+      : "特に問題なし"
+  };
+} 
