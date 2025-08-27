@@ -201,6 +201,54 @@ export default function Page() {
             </select>
           </div>
 
+          {/* 枕の高さや硬さを調整できる方が良いですか？ */}
+          <div>
+            <label className="block text-sm font-medium mb-2">枕の高さや硬さを調整できる方が良いですか？</label>
+            <select 
+              value={answers?.adjustable_pref || ""} 
+              onChange={(e) => setAnswers({ adjustable_pref: e.target.value })}
+              className="w-full border rounded-lg px-3 py-2"
+            >
+              <option value="">選択してください</option>
+              <option value="yes">はい</option>
+              <option value="no">いいえ</option>
+              <option value="unknown">不明 / 指定なし</option>
+            </select>
+          </div>
+
+          {/* 素材の好み */}
+          <div>
+            <label className="block text-sm font-medium mb-2">素材の好み</label>
+            <select 
+              value={answers?.material_pref || ""} 
+              onChange={(e) => setAnswers({ material_pref: e.target.value })}
+              className="w-full border rounded-lg px-3 py-2"
+            >
+              <option value="">選択してください</option>
+              <option value="memory_foam">メモリーフォーム</option>
+              <option value="latex">ラテックス</option>
+              <option value="down">羽毛</option>
+              <option value="cotton">綿</option>
+              <option value="unknown">不明 / 指定なし</option>
+            </select>
+          </div>
+
+          {/* サイズ希望 */}
+          <div>
+            <label className="block text-sm font-medium mb-2">サイズ希望</label>
+            <select 
+              value={answers?.size_pref || ""} 
+              onChange={(e) => setAnswers({ size_pref: e.target.value })}
+              className="w-full border rounded-lg px-3 py-2"
+            >
+              <option value="">選択してください</option>
+              <option value="standard">標準サイズ</option>
+              <option value="large">大きめ</option>
+              <option value="small">小さめ</option>
+              <option value="unknown">不明 / 指定なし</option>
+            </select>
+          </div>
+
           {/* ご予算 */}
           <div>
             <label className="block text-sm font-medium mb-2">ご予算 *</label>
