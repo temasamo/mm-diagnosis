@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { readAnswersFromSearchParams } from "@/lib/answers/ssr";
 import { buildProblemList } from "@lib/recommend/buildProblemList";
-import CQueryWriter from "./CQueryWriter";
 
 // 先頭付近に util を1つ追加（関数でもOK）
 const qp = (v: unknown): string => (Array.isArray(v) ? (v[0] ?? "") : (v as string ?? ""));
@@ -60,9 +59,6 @@ export default async function Page({ searchParams }: { searchParams: Promise<Rec
           {Array.from(current.entries()).map(([k, v]) => (
             <input key={k} type="hidden" name={k} value={v} />
           ))}
-          
-          {/* CQueryWriterを追加 */}
-          <CQueryWriter />
 
           <div className="grid grid-cols-1 gap-3">
             <label className="flex items-center gap-3">

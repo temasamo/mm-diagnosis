@@ -1,5 +1,9 @@
 // 既存 readAnswersFromSearchParams を差し替え/拡張
-export type SsrAnswers = { problems?: string[] };
+export type SsrAnswers = { 
+  problems?: string[];
+  snore?: string;
+  hot?: string;
+};
 
 // 例: /pillow/preview?c=neckPain,shoulderPain&s=1&t=1&h=1
 export async function readAnswersFromSearchParams(sp: Promise<Record<string, any>>): Promise<SsrAnswers> {
@@ -17,5 +21,10 @@ export async function readAnswersFromSearchParams(sp: Promise<Record<string, any
   if (params?.h === "1" || params?.hot === "1") extra.push("hotSleep");
 
   const problems = Array.from(new Set([...arrFromC, ...extra]));
-  return { problems };
+  
+  return { 
+    problems,
+    snore: params?.s,
+    hot: params?.h
+  };
 } 
