@@ -71,7 +71,12 @@ export default function Page() {
   // 質問データ取得
   useEffect(() => {
     if (!mounted) return;
-    fetch("/questions.pillow.v2.json").then(r => r.json()).then(setQ).catch(console.error);
+    fetch("/questions.pillow.v2.json").then(r => r.json()).then(data => {
+      console.log("[diag] Questions loaded:", data);
+      console.log("[diag] Concerns question:", data.items.find((x: any) => x.id === "concerns"));
+      console.log("[diag] Neck issues question:", data.items.find((x: any) => x.id === "neck_shoulder_issues"));
+      setQ(data);
+    }).catch(console.error);
   }, [mounted]);
 
   // デバッグ用ログ
@@ -93,7 +98,11 @@ export default function Page() {
           <div className="space-y-6">
             {sec.ids.map((qid) => {
               const question = q.items.find((x) => x.id === qid);
-              if (!question) return null;
+              if (!question) {
+                console.warn(`[diag] Question not found: ${qid}`);
+                return null;
+              }
+              console.log(`[diag] Rendering question: ${qid}`, question);
               return (
                 <QuestionRenderer
                   key={question.id}
