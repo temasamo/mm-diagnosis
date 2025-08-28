@@ -19,17 +19,6 @@ export default function UserView({ scores = {}, problems = [], heightKey, firmne
 
   return (
     <div className="space-y-8">
-      {/* 適合度（%） */}
-      {matchPercent !== undefined && (
-        <section className="rounded-2xl border border-white/15 p-5">
-          <h2 className="text-xl font-semibold mb-4">ご提案する枕の適合性</h2>
-          <div className="text-5xl font-bold font-mono">{matchPercent} <span className="text-2xl">%</span></div>
-          <p className="text-sm mt-3 opacity-80">
-            ※ 無料版のわかりやすいスコアです。詳細コンサル診断ではより精密に判定します。
-          </p>
-        </section>
-      )}
-
       {/* 診断サマリー */}
       <section className="rounded-2xl border border-white/15 p-5">
         <h3 className="text-lg font-semibold mb-3">あなたの診断サマリー</h3>
@@ -44,8 +33,6 @@ export default function UserView({ scores = {}, problems = [], heightKey, firmne
           {comment}
         </p>
       </section>
-
-
 
       {/* あなたのお悩み */}
       {bullets.length > 0 && (

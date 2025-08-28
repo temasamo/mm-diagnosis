@@ -239,32 +239,72 @@ export default function ResultPage() {
   useEffect(() => {
     // 商品候補がなくても、answersから基本的な適合度を計算
     if (answers && Object.keys(answers).length > 0) {
-      // 基本的な適合度計算（answersから）
-      let baseScore = 50; // 基本スコア
+      // より動的で意味のあるスコア計算
+      let baseScore = 30; // 基本スコアを下げる
       
       // 回答の充実度に応じてスコアを調整
       const answeredFields = Object.keys(answers).filter(key => 
         answers[key] && answers[key] !== "" && 
-        !Array.isArray(answers[key]) || 
-        (Array.isArray(answers[key]) && answers[key].length > 0)
+        (!Array.isArray(answers[key]) || (Array.isArray(answers[key]) && answers[key].length > 0))
       ).length;
       
-      // 回答数に応じてスコアを調整（最大85%）
-      const completenessBonus = Math.min(35, answeredFields * 3);
-      baseScore = Math.min(85, baseScore + completenessBonus);
+      // 回答数に応じてスコアを調整（より細かく）
+      const completenessBonus = Math.min(25, answeredFields * 2);
       
-      setScore(baseScore);
+      // 特定の回答に基づくボーナス
+      let specificBonus = 0;
+      
+      // 身長・寝姿勢の組み合わせによるボーナス
+      if (answers.height_band && answers.posture) {
+        specificBonus += 5;
+      }
+      
+      // 予算設定によるボーナス
+      if (answers.budget) {
+        specificBonus += 3;
+      }
+      
+      // 素材の好み設定によるボーナス
+      if (answers.material_pref && answers.material_pref !== "unknown") {
+        specificBonus += 3;
+      }
+      
+      // 調整可能な枕の希望によるボーナス
+      if (answers.adjustable_pref && answers.adjustable_pref !== "unknown") {
+        specificBonus += 2;
+      }
+      
+      // 現在の枕の問題点の詳細によるボーナス
+      if (Array.isArray(answers.concerns) && answers.concerns.length > 0) {
+        specificBonus += Math.min(8, answers.concerns.length * 2);
+      }
+      
+      // 首・肩の問題の詳細によるボーナス
+      if (Array.isArray(answers.neck_shoulder_issues) && answers.neck_shoulder_issues.length > 0) {
+        specificBonus += Math.min(8, answers.neck_shoulder_issues.length * 2);
+      }
+      
+      // いびき・暑がり情報によるボーナス
+      if (answers.snore && answers.snore !== "unknown") {
+        specificBonus += 2;
+      }
+      if (answers.heat_sweat && answers.heat_sweat !== "unknown") {
+        specificBonus += 2;
+      }
+      
+      const totalScore = Math.min(85, baseScore + completenessBonus + specificBonus);
+      setScore(totalScore);
     } else {
       // 商品候補がある場合は従来の計算
       const hasAny = (groups?.primary.length ?? 0) > 0 ||
                      (groups?.secondaryBuckets.some((b: any) => b.length > 0) ?? false);
       if (!hasAny) { 
-        setScore(50); // デフォルトスコア
+        setScore(30); // デフォルトスコアを下げる
         return; 
       }
 
-      const val = Math.min(85, Math.max(50, Math.round(topMatch || 0)));
-      setScore(Number.isFinite(val) ? val : 50);
+      const val = Math.min(85, Math.max(30, Math.round(topMatch || 0)));
+      setScore(Number.isFinite(val) ? val : 30);
     }
   }, [groups, topMatch, answers]);
 
