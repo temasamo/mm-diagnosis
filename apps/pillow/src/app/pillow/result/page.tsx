@@ -368,6 +368,7 @@ export default function ResultPage() {
             problems={problems}
             heightKey={heightKey as any}
             firmnessKey={firmnessKey as any}
+            mattressFirmness={answers?.mattress_firmness as any}
             matchPercent={typeof score === "number" ? score : 0}
           />
           

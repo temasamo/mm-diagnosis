@@ -4,6 +4,7 @@ export type Answers = {
   neck_shoulder_issues?: string | string[];
   snore?: string;
   heat_sweat?: string;
+  mattress_firmness?: string;
   [key: string]: any;
 };
 
@@ -33,6 +34,10 @@ const PROBLEM_LABELS: Record<string, string> = {
   
   // heat_sweat（暑がり）
   yes: "暑がり・汗かき",
+  
+  // mattress_firmness（マットレス硬さ）
+  soft: "柔らかめマットレス",
+  firm: "硬めマットレス",
 };
 
 // 配列を正規化（文字列/配列/カンマ区切りに対応）
@@ -71,6 +76,12 @@ export function buildProblemList(answers: Answers): ProblemList {
   // 4. heat_sweat（暑がり）から
   if (answers.heat_sweat === "yes") {
     const label = PROBLEM_LABELS[answers.heat_sweat];
+    if (label) problems.push(label);
+  }
+  
+  // 5. mattress_firmness（マットレス硬さ）から
+  if (answers.mattress_firmness && answers.mattress_firmness !== "mid" && answers.mattress_firmness !== "unknown") {
+    const label = PROBLEM_LABELS[answers.mattress_firmness];
     if (label) problems.push(label);
   }
   

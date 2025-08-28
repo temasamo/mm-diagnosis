@@ -19,6 +19,9 @@ export const labelMap: Record<string, string> = {
   firm_support: '硬めでしっかり支持',
   soft_feel: 'やわらかめ',
   cervical_support_supine: '仰向け 首サポート',
+  // マットレス硬さ
+  soft_mattress: '柔らかめマットレス対応',
+  firm_mattress: '硬めマットレス対応',
   // 足りなければ随時追加
 };
 
@@ -32,6 +35,9 @@ export const helpTextMap: Record<string, string> = {
   firm_support: '沈み込みを抑えて負担を分散',
   soft_feel: '包まれる感触でリラックス',
   cervical_support_supine: '仰向け時の頸椎をやさしく支持',
+  // マットレス硬さ
+  soft_mattress: '柔らかめマットレスに合わせた枕の高さ調整',
+  firm_mattress: '硬めマットレスに合わせた枕の高さ調整',
 };
 
 export function rankSymbol(rank: Rank): '◎' | '○' | '△' {
@@ -50,6 +56,7 @@ export function pickTopChips(scores: Record<string, number> = {}): Array<{key:st
 export function buildComment(opts: {
   heightKey?: 'low_height'|'middle_height'|'high_height';
   firmnessKey?: 'soft_feel'|'firm_support';
+  mattressFirmness?: 'soft'|'firm'|'mid';
 }) {
   const heightPart =
     opts.heightKey === 'low_height' ? '低め' :
@@ -60,7 +67,15 @@ export function buildComment(opts: {
     opts.firmnessKey === 'firm_support' ? '硬め' :
     '標準';
 
-  return `あなたにおすすめの枕は「高さは${heightPart}・柔らかさは${firmnessPart}」タイプです。`;
+  // マットレス硬さを考慮したコメント
+  let mattressPart = '';
+  if (opts.mattressFirmness === 'soft') {
+    mattressPart = '（柔らかめマットレスに合わせて低め枕を推奨）';
+  } else if (opts.mattressFirmness === 'firm') {
+    mattressPart = '（硬めマットレスに合わせて高め枕を推奨）';
+  }
+
+  return `あなたにおすすめの枕は「高さは${heightPart}・柔らかさは${firmnessPart}」タイプです。${mattressPart}`;
 }
 
 // formatSummary関数（height/softness のラベルを渡す）

@@ -9,13 +9,14 @@ type Props = {
   problems?: string[];             // 「あなたのお悩み」
   heightKey?: 'low_height'|'middle_height'|'high_height';
   firmnessKey?: 'soft_feel'|'firm_support';
+  mattressFirmness?: 'soft'|'firm'|'mid';
   matchPercent?: number;           // 適合度（%）
 };
 
-export default function UserView({ scores = {}, problems = [], heightKey, firmnessKey, matchPercent }: Props) {
+export default function UserView({ scores = {}, problems = [], heightKey, firmnessKey, mattressFirmness, matchPercent }: Props) {
   const chips = pickTopChips(scores);
   const bullets = problemsToBullets(problems);
-  const comment = buildComment({ heightKey, firmnessKey });
+  const comment = buildComment({ heightKey, firmnessKey, mattressFirmness });
 
   return (
     <div className="space-y-8">
