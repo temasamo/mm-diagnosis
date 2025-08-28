@@ -170,7 +170,7 @@ export default function PreviewPage() {
       {/* お悩みセクション */}
       {problems.length > 0 && (
         <section className="rounded-2xl border p-6">
-          <h3 className="text-lg font-semibold mb-3">あなたのお悩み</h3>
+          <h3 className="text-lg font-semibold mb-3">あなたのお悩み/使っているマットレス・布団や枕の素材</h3>
           <ul className="list-disc pl-5 space-y-1">
             {problems.map((problem, index) => (
               <li key={index} className="text-sm">{problem}</li>

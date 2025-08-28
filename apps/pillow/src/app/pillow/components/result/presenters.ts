@@ -70,11 +70,25 @@ export function pickTopChips(scores: Record<string, number> = {}): Array<{key:st
     .map(([k]) => ({ key: k, label: labelMap[k] ?? k }));
 }
 
-// 「高さは高め・柔らかさは硬め」形式の自然文を生成
+// 素材のラベルマッピング
+const MATERIAL_LABELS: Record<string, string> = {
+  low_rebound: '低反発ウレタン',
+  high_rebound: '高反発ウレタン',
+  latex: 'ラテックス',
+  pipe: 'パイプ',
+  beads: 'ビーズ',
+  feather: '羽毛・フェザー',
+  poly_cotton: 'ポリエステル綿',
+  sobakawa: 'そば殻',
+  other: 'その他',
+};
+
+// 「高さは高め・柔らかさは硬め・素材は高反発ウレタン」形式の自然文を生成
 export function buildComment(opts: {
   heightKey?: 'low_height'|'middle_height'|'high_height';
   firmnessKey?: 'soft_feel'|'firm_support';
   mattressFirmness?: 'soft'|'firm'|'mid';
+  currentMaterial?: string;
 }) {
   const heightPart =
     opts.heightKey === 'low_height' ? '低め' :
@@ -85,6 +99,15 @@ export function buildComment(opts: {
     opts.firmnessKey === 'firm_support' ? '硬め' :
     '標準';
 
+  // 素材情報を追加
+  let materialPart = '';
+  if (opts.currentMaterial && opts.currentMaterial !== 'other') {
+    const materialLabel = MATERIAL_LABELS[opts.currentMaterial];
+    if (materialLabel) {
+      materialPart = `・素材は${materialLabel}`;
+    }
+  }
+
   // マットレス硬さを考慮したコメント
   let mattressPart = '';
   if (opts.mattressFirmness === 'soft') {
@@ -93,7 +116,7 @@ export function buildComment(opts: {
     mattressPart = '（硬めマットレスに合わせて高め枕を推奨）';
   }
 
-  return `あなたにおすすめの枕は「高さは${heightPart}・柔らかさは${firmnessPart}」タイプです。${mattressPart}`;
+  return `あなたにおすすめの枕は「高さは${heightPart}・柔らかさは${firmnessPart}${materialPart}」タイプです。${mattressPart}`;
 }
 
 // formatSummary関数（height/softness のラベルを渡す）
