@@ -51,6 +51,7 @@ export type GroupedRecommendations = {
   secondaryB?: ProductItem[];           // 第二候補B
   secondaryC?: ProductItem[];           // 第二候補C
   message?: string;                     // エラーメッセージ
+  secondaryLabels?: string[];           // 第2候補のラベル
 };
 
 type SearchOpts = {
@@ -65,6 +66,156 @@ function chunk<T>(arr: T[], size: number): T[][] {
   const out: T[][] = [];
   for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
   return out;
+}
+
+/**
+ * 診断結果から第2候補の検索キーワードを生成
+ * 提案された改善案に基づいて実装
+ */
+function generateSecondaryKeywords(answers: any): { keywords: string[][], labels: string[] } {
+  const keywords: string[][] = [];
+  const labels: string[] = [];
+  
+  // Aセクション（寝姿勢・寝返り）とBセクション（気になる点）を主にマッチング
+  const posture = answers?.posture;
+  const rollover = answers?.rollover;
+  const concerns = Array.isArray(answers?.concerns) ? answers.concerns : [];
+  const neckIssues = Array.isArray(answers?.neck_shoulder_issues) ? answers.neck_shoulder_issues : [];
+  
+  // Dセクション（好み・素材・サイズ・予算）をフィルタ条件として使用
+  const materialPref = answers?.material_pref;
+  const mattressFirmness = answers?.mattress_firmness;
+  const adjustablePref = answers?.adjustable_pref;
+  
+  // 第2候補A: 姿勢ベースの代替案
+  if (posture) {
+    let postureKeywords: string[] = [];
+    let postureLabel = "";
+    
+    if (posture === "side") {
+      postureKeywords = ["横向き 枕", "横向き寝 枕"];
+      postureLabel = "横向き寝向け";
+    } else if (posture === "supine") {
+      postureKeywords = ["仰向け 枕", "仰向け寝 枕"];
+      postureLabel = "仰向け寝向け";
+    } else if (posture === "prone") {
+      postureKeywords = ["うつ伏せ 枕", "うつ伏せ寝 枕"];
+      postureLabel = "うつ伏せ寝向け";
+    }
+    
+    // 素材の好みを組み合わせ
+    if (materialPref && materialPref !== "unknown" && materialPref !== "none") {
+      if (materialPref === "lp") {
+        postureKeywords.push("低反発");
+        postureLabel += " × 低反発";
+      } else if (materialPref === "hp") {
+        postureKeywords.push("高反発");
+        postureLabel += " × 高反発";
+      } else if (materialPref === "feather") {
+        postureKeywords.push("羽毛");
+        postureLabel += " × 羽毛";
+      }
+    }
+    
+    if (postureKeywords.length > 0) {
+      keywords.push(postureKeywords);
+      labels.push(postureLabel);
+    }
+  }
+  
+  // 第2候補B: 悩みベースの代替案
+  if (concerns.length > 0 || neckIssues.length > 0) {
+    let problemKeywords = [];
+    let problemLabel = "お悩み対応";
+    
+    // 気になる点からキーワード生成
+    if (concerns.includes("neck_pain")) {
+      problemKeywords.push("首痛 枕", "首 痛み 枕");
+    }
+    if (concerns.includes("height_mismatch")) {
+      problemKeywords.push("高さ調整 枕", "調整可能 枕");
+    }
+    if (concerns.includes("poor_turn")) {
+      problemKeywords.push("寝返り しやすい 枕");
+    }
+    if (concerns.includes("sweat")) {
+      problemKeywords.push("通気性 枕", "涼しい 枕");
+    }
+    
+    // 首・肩の問題からキーワード生成
+    if (neckIssues.includes("morning_neck_pain")) {
+      problemKeywords.push("朝 首痛 枕", "起床時 首痛 枕");
+    }
+    if (neckIssues.includes("severe_shoulder_stiffness")) {
+      problemKeywords.push("肩こり 枕", "肩 こり 枕");
+    }
+    if (neckIssues.includes("straight_neck")) {
+      problemKeywords.push("ストレートネック 枕", "首 矯正 枕");
+    }
+    
+    // 硬さの好みを組み合わせ
+    if (mattressFirmness && mattressFirmness !== "unknown") {
+      if (mattressFirmness === "soft") {
+        problemKeywords.push("柔らかめ");
+        problemLabel += " × 柔らかめ";
+      } else if (mattressFirmness === "firm") {
+        problemKeywords.push("硬め");
+        problemLabel += " × 硬め";
+      }
+    }
+    
+    if (problemKeywords.length > 0) {
+      keywords.push(problemKeywords);
+      labels.push(problemLabel);
+    }
+  }
+  
+  // 第2候補C: 調整可能・特殊機能ベース
+  let specialKeywords = [];
+  let specialLabel = "調整・機能重視";
+  
+  if (adjustablePref === "yes") {
+    specialKeywords.push("調整可能 枕", "高さ調整 枕");
+  }
+  
+  // いびき・暑がり情報を追加
+  if (answers?.snore === "often" || answers?.snore === "sometimes") {
+    specialKeywords.push("いびき 枕", "いびき 対策 枕");
+    specialLabel += " × いびき対策";
+  }
+  
+  if (answers?.heat_sweat === "yes") {
+    specialKeywords.push("涼しい 枕", "通気性 枕", "冷却 枕");
+    specialLabel += " × 涼感";
+  }
+  
+  // 寝返り頻度を考慮
+  if (rollover === "often") {
+    specialKeywords.push("寝返り しやすい 枕");
+  } else if (rollover === "rare") {
+    specialKeywords.push("安定 枕", "固定 枕");
+  }
+  
+  if (specialKeywords.length > 0) {
+    keywords.push(specialKeywords);
+    labels.push(specialLabel);
+  }
+  
+  // 最低3つになるようにフォールバック
+  while (keywords.length < 3) {
+    if (keywords.length === 0) {
+      keywords.push(["枕", "快眠 枕"]);
+      labels.push("快眠重視");
+    } else if (keywords.length === 1) {
+      keywords.push(["低反発 枕", "高反発 枕"]);
+      labels.push("素材重視");
+    } else {
+      keywords.push(["首 肩 枕", "調整 枕"]);
+      labels.push("首肩サポート");
+    }
+  }
+  
+  return { keywords: keywords.slice(0, 3), labels: labels.slice(0, 3) };
 }
 
 /** フォールバック検索（provisional が空の場合の代替検索） */
@@ -188,7 +339,8 @@ export async function buildGroupsFromAPI(
   provisional: any,
   topN = 6,
   budgetBandId?: string,
-  _allowFallback = true
+  _allowFallback = true,
+  answers?: any // 診断結果を追加
 ): Promise<GroupedRecommendations> {
   try {
     console.log("[build] provisional(raw)", provisional, "topN", topN, "budgetBandId", budgetBandId);
@@ -210,6 +362,7 @@ export async function buildGroupsFromAPI(
     let secondaryA: any[] = [];
     let secondaryB: any[] = [];
     let secondaryC: any[] = [];
+    let secondaryLabels: string[] = [];
 
     // ① 通常検索（既存ロジック）
     primary = await searchWithFallback({
@@ -249,13 +402,44 @@ export async function buildGroupsFromAPI(
       });
     }
 
-    // 第二候補（a/b/c）も同様に、ゆるい語で 3 件ずつ確保（足りなければあるだけ）
-    // a
-    secondaryA = await searchWithFallback({ budgetBandId: null, anyOfKeywords: ["横向き 枕","高反発 枕"], limit: 3 });
-    // b
-    secondaryB = await searchWithFallback({ budgetBandId: null, anyOfKeywords: ["低反発 枕","仰向け 枕"], limit: 3 });
-    // c
-    secondaryC = await searchWithFallback({ budgetBandId: null, anyOfKeywords: ["首 肩こり 枕","高さ 調整 枕"], limit: 3 });
+    // 第2候補を診断ベースに変更
+    if (answers) {
+      const { keywords, labels } = generateSecondaryKeywords(answers);
+      secondaryLabels = labels;
+      
+      // 第2候補A
+      if (keywords[0] && keywords[0].length > 0) {
+        secondaryA = await searchWithFallback({ 
+          budgetBandId: null, 
+          anyOfKeywords: keywords[0], 
+          limit: 3 
+        });
+      }
+      
+      // 第2候補B
+      if (keywords[1] && keywords[1].length > 0) {
+        secondaryB = await searchWithFallback({ 
+          budgetBandId: null, 
+          anyOfKeywords: keywords[1], 
+          limit: 3 
+        });
+      }
+      
+      // 第2候補C
+      if (keywords[2] && keywords[2].length > 0) {
+        secondaryC = await searchWithFallback({ 
+          budgetBandId: null, 
+          anyOfKeywords: keywords[2], 
+          limit: 3 
+        });
+      }
+    } else {
+      // フォールバック: 従来の固定カテゴリ検索
+      secondaryA = await searchWithFallback({ budgetBandId: null, anyOfKeywords: ["横向き 枕","高反発 枕"], limit: 3 });
+      secondaryB = await searchWithFallback({ budgetBandId: null, anyOfKeywords: ["低反発 枕","仰向け 枕"], limit: 3 });
+      secondaryC = await searchWithFallback({ budgetBandId: null, anyOfKeywords: ["首 肩こり 枕","高さ 調整 枕"], limit: 3 });
+      secondaryLabels = ["横向き × 高反発", "低反発 × 仰向け", "首肩サポート"];
+    }
 
     // null安全
     primary = Array.isArray(primary) ? primary.slice(0, topN) : [];
@@ -272,6 +456,7 @@ export async function buildGroupsFromAPI(
       secondaryA, 
       secondaryB, 
       secondaryC, 
+      secondaryLabels,
       message 
     };
   } catch (e) {
@@ -282,6 +467,7 @@ export async function buildGroupsFromAPI(
       secondaryA: [], 
       secondaryB: [], 
       secondaryC: [], 
+      secondaryLabels: [],
       message: "候補を取得できませんでした" 
     };
   }

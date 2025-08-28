@@ -205,7 +205,7 @@ export default function ResultPage() {
         
         // 既存の取得（例）
         const budgetBandId = answers?.budget;
-        const g1 = await buildGroupsFromAPI(rawProv, 12, budgetBandId);
+        const g1 = await buildGroupsFromAPI(rawProv, 12, budgetBandId, true, answers);
         if (!mounted) return;
 
         if (!isEmptyGroups(g1)) {
@@ -218,7 +218,7 @@ export default function ResultPage() {
         // 0件 → 未試行なら緩和リトライ（1回だけ）
         if (!triedFallback) {
           setTriedFallback(true);
-          const g2 = await buildGroupsFromAPI(rawProv, 12, undefined, false); // 予算無視・ゆる語・画像なし許容など
+          const g2 = await buildGroupsFromAPI(rawProv, 12, undefined, false, answers); // 予算無視・ゆる語・画像なし許容など
           if (!mounted) return;
           setGroups(g2);
           console.log("[recommend] fallback groups.raw", g2);
@@ -427,19 +427,19 @@ export default function ResultPage() {
                         className={`px-3 py-1 rounded ${secondaryOpen === "a" ? "bg-white/10" : "bg-white/5"}`}
                         onClick={() => setSecondaryOpen("a")}
                       >
-                        横向き・高反発
+                        {groups.secondaryLabels?.[0] || "横向き・高反発"}
                       </button>
                       <button
                         className={`px-3 py-1 rounded ${secondaryOpen === "b" ? "bg-white/10" : "bg-white/5"}`}
                         onClick={() => setSecondaryOpen("b")}
                       >
-                        低反発・仰向け
+                        {groups.secondaryLabels?.[1] || "低反発・仰向け"}
                       </button>
                       <button
                         className={`px-3 py-1 rounded ${secondaryOpen === "c" ? "bg-white/10" : "bg-white/5"}`}
                         onClick={() => setSecondaryOpen("c")}
                       >
-                        首肩・調整
+                        {groups.secondaryLabels?.[2] || "首肩・調整"}
                       </button>
                     </div>
                     
