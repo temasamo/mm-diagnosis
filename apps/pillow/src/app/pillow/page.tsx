@@ -7,7 +7,7 @@ export default function Page() {
   return (
     <main className="max-w-3xl mx-auto p-6 space-y-6">
       <h1 className="text-2xl font-bold">枕診断へようこそ</h1>
-      <p className="text-sm text-gray-600">
+      <p className="text-base text-gray-800 leading-relaxed">
         悩みの可視化 → 解決アプローチ提示 → モール横断の購入候補まで、数分でご案内します。
       </p>
       <div className="flex gap-3">

@@ -237,13 +237,36 @@ export default function ResultPage() {
 
   // 適合度は「候補が1件以上あるときだけ」計算・表示（MAX85%）
   useEffect(() => {
-    const hasAny = (groups?.primary.length ?? 0) > 0 ||
-                   (groups?.secondaryBuckets.some((b: any) => b.length > 0) ?? false);
-    if (!hasAny) { setScore(null); return; }
+    // 商品候補がなくても、answersから基本的な適合度を計算
+    if (answers && Object.keys(answers).length > 0) {
+      // 基本的な適合度計算（answersから）
+      let baseScore = 50; // 基本スコア
+      
+      // 回答の充実度に応じてスコアを調整
+      const answeredFields = Object.keys(answers).filter(key => 
+        answers[key] && answers[key] !== "" && 
+        !Array.isArray(answers[key]) || 
+        (Array.isArray(answers[key]) && answers[key].length > 0)
+      ).length;
+      
+      // 回答数に応じてスコアを調整（最大85%）
+      const completenessBonus = Math.min(35, answeredFields * 3);
+      baseScore = Math.min(85, baseScore + completenessBonus);
+      
+      setScore(baseScore);
+    } else {
+      // 商品候補がある場合は従来の計算
+      const hasAny = (groups?.primary.length ?? 0) > 0 ||
+                     (groups?.secondaryBuckets.some((b: any) => b.length > 0) ?? false);
+      if (!hasAny) { 
+        setScore(50); // デフォルトスコア
+        return; 
+      }
 
-    const val = Math.min(85, Math.max(50, Math.round(topMatch || 0)));
-    setScore(Number.isFinite(val) ? val : null);
-  }, [groups, topMatch]);
+      const val = Math.min(85, Math.max(50, Math.round(topMatch || 0)));
+      setScore(Number.isFinite(val) ? val : 50);
+    }
+  }, [groups, topMatch, answers]);
 
   // 「あなたのお悩み」は堅牢化されたヘルパーを使用
   useEffect(() => {
@@ -285,22 +308,20 @@ export default function ResultPage() {
 
       {activeTab === "diagnosis" ? (
         <section className="space-y-6">
-          {/* --- Suitability(適合度) Card: TEMP OFF --- */}
-          {/* {false && (
-            <section aria-label="suitability-card">
-              {score !== null && typeof score === "number" && score > 0 && (
-                <section className="rounded-2xl border p-5">
-                  <h3 className="text-lg mb-2">ご提案する枕の適合性</h3>
-                  <div className="text-5xl font-bold font-mono">
-                    {score} <span className="text-2xl">%</span>
-                  </div>
-                  <p className="text-sm mt-3 opacity-80">
-                    ※ 無料版のわかりやすいスコアです。詳細コンサル診断ではより精密に判定します。
-                  </p>
-                </section>
-              )}
-            </section>
-          )} */}
+          {/* --- Suitability(適合度) Card --- */}
+          <section aria-label="suitability-card">
+            {score !== null && typeof score === "number" && (
+              <section className="rounded-2xl border p-5">
+                <h3 className="text-lg mb-2">ご提案する枕の適合性</h3>
+                <div className="text-5xl font-bold font-mono">
+                  {score} <span className="text-2xl">%</span>
+                </div>
+                <p className="text-sm mt-3 opacity-80">
+                  ※ 無料版のわかりやすいスコアです。詳細コンサル診断ではより精密に判定します。
+                </p>
+              </section>
+            )}
+          </section>
           {/* 診断内容（answers だけで描画可能） */}
           <UserView
             scores={scores}
