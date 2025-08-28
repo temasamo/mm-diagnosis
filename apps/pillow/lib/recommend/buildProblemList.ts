@@ -5,6 +5,7 @@ export type Answers = {
   snore?: string;
   heat_sweat?: string;
   mattress_firmness?: string;
+  current_pillow_material?: string;
   [key: string]: any;
 };
 
@@ -38,6 +39,16 @@ const PROBLEM_LABELS: Record<string, string> = {
   // mattress_firmness（マットレス硬さ）
   soft: "柔らかめマットレス",
   firm: "硬めマットレス",
+  
+  // current_pillow_material（現在の枕の素材）
+  low_rebound: "低反発ウレタン枕",
+  high_rebound: "高反発ウレタン枕",
+  latex: "ラテックス枕",
+  pipe: "パイプ枕",
+  beads: "ビーズ枕",
+  feather: "羽毛・フェザー枕",
+  poly_cotton: "ポリエステル綿枕",
+  sobakawa: "そば殻枕",
 };
 
 // 配列を正規化（文字列/配列/カンマ区切りに対応）
@@ -82,6 +93,12 @@ export function buildProblemList(answers: Answers): ProblemList {
   // 5. mattress_firmness（マットレス硬さ）から
   if (answers.mattress_firmness && answers.mattress_firmness !== "mid" && answers.mattress_firmness !== "unknown") {
     const label = PROBLEM_LABELS[answers.mattress_firmness];
+    if (label) problems.push(label);
+  }
+  
+  // 6. current_pillow_material（現在の枕の素材）から
+  if (answers.current_pillow_material && answers.current_pillow_material !== "other") {
+    const label = PROBLEM_LABELS[answers.current_pillow_material];
     if (label) problems.push(label);
   }
   

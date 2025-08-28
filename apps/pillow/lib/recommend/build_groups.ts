@@ -86,6 +86,20 @@ function generateSecondaryKeywords(answers: any): { keywords: string[][], labels
   const materialPref = answers?.material_pref;
   const mattressFirmness = answers?.mattress_firmness;
   const adjustablePref = answers?.adjustable_pref;
+  const currentMaterial = answers?.current_pillow_material;
+  
+  // 素材リメディマッピング（現在の素材→推奨素材）
+  const materialRemedyMap: Record<string, string[]> = {
+    // 現在 → 推奨素材（悩みを緩和）
+    low_rebound: ["高反発", "ラテックス", "パイプ"],         // 首痛/寝返り→反発UP系へ
+    high_rebound: ["低反発", "ラテックス", "ビーズ"],        // 硬すぎ→少し柔軟orラテックス
+    feather: ["低反発", "高反発", "パイプ"],       // へたり/高さ不足→形状保持
+    poly_cotton: ["高反発", "パイプ", "ラテックス"],         // へたり/蒸れ
+    sobakawa: ["ラテックス", "高反発", "パイプ"],            // 硬い/音→反発・通気の両立
+    beads: ["パイプ", "ラテックス", "高反発"],               // 耐久・支え
+    pipe: ["低反発", "ラテックス"],                         // 硬さが不満なら
+    latex: ["高反発", "パイプ"],                            // 耐久性向上
+  };
   
   // 第2候補A: 姿勢ベースの代替案（マットレス硬さを考慮）
   if (posture) {
@@ -158,7 +172,24 @@ function generateSecondaryKeywords(answers: any): { keywords: string[][], labels
     }
   }
   
-  // 第2候補B: 悩みベースの代替案（マットレス硬さを考慮）
+  // 第2候補B: 素材リメディベースの代替案
+  if (currentMaterial && currentMaterial !== "other" && materialRemedyMap[currentMaterial]) {
+    const remedyMaterials = materialRemedyMap[currentMaterial];
+    const remedyKeywords = remedyMaterials.map(material => `${material} 枕`);
+    const remedyLabel = `素材改善提案（${currentMaterial === "low_rebound" ? "低反発" : 
+      currentMaterial === "high_rebound" ? "高反発" : 
+      currentMaterial === "latex" ? "ラテックス" :
+      currentMaterial === "pipe" ? "パイプ" :
+      currentMaterial === "beads" ? "ビーズ" :
+      currentMaterial === "feather" ? "羽毛" :
+      currentMaterial === "poly_cotton" ? "ポリエステル綿" :
+      currentMaterial === "sobakawa" ? "そば殻" : "現在の素材"}から改善）`;
+    
+    keywords.push(remedyKeywords);
+    labels.push(remedyLabel);
+  }
+  
+  // 第2候補C: 悩みベースの代替案（マットレス硬さを考慮）
   if (concerns.length > 0 || neckIssues.length > 0) {
     let problemKeywords = [];
     let problemLabel = "お悩み対応";
@@ -218,7 +249,7 @@ function generateSecondaryKeywords(answers: any): { keywords: string[][], labels
     }
   }
   
-  // 第2候補C: 調整可能・特殊機能ベース
+  // 第2候補D: 調整可能・特殊機能ベース
   let specialKeywords = [];
   let specialLabel = "調整・機能重視";
   

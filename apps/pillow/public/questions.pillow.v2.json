@@ -101,11 +101,15 @@
       "title": "今の枕の素材は？（わかれば）",
       "type": "single",
       "choices": [
-        { "id": "lp", "label": "低反発" },
-        { "id": "hp", "label": "高反発" },
-        { "id": "feather", "label": "羽毛" },
-        { "id": "buckwheat", "label": "そば殻" },
-        { "id": "unknown", "label": "不明 / 指定なし" }
+        { "id": "low_rebound", "label": "低反発ウレタン" },
+        { "id": "high_rebound", "label": "高反発ウレタン" },
+        { "id": "latex", "label": "ラテックス" },
+        { "id": "pipe", "label": "パイプ" },
+        { "id": "beads", "label": "ビーズ（マイクロビーズ含む）" },
+        { "id": "feather", "label": "羽毛・フェザー" },
+        { "id": "poly_cotton", "label": "ポリエステル綿" },
+        { "id": "sobakawa", "label": "そば殻" },
+        { "id": "other", "label": "その他 / 不明" }
       ],
       "meta": { "group": "現在の枕", "order": 9 }
     },

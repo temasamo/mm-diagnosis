@@ -41,10 +41,25 @@ function deriveScores(ans: any) {
   return s;
 }
 
+// 素材選択肢
+const MATERIAL_OPTIONS = [
+  { id: "low_rebound", label: "低反発ウレタン" },
+  { id: "high_rebound", label: "高反発ウレタン" },
+  { id: "latex", label: "ラテックス" },
+  { id: "pipe", label: "パイプ" },
+  { id: "beads", label: "ビーズ（マイクロビーズ含む）" },
+  { id: "feather", label: "羽毛・フェザー" },
+  { id: "poly_cotton", label: "ポリエステル綿" },
+  { id: "sobakawa", label: "そば殻" },
+  { id: "other", label: "その他 / 不明" }
+];
+
 export default function PreviewPage() {
   const store = useDiagStore();
   const answers = store.answers ?? {};
   const [ready, setReady] = useState(false);
+  const [showMaterialPopup, setShowMaterialPopup] = useState(false);
+  const [selectedMaterial, setSelectedMaterial] = useState<string>("");
 
   const height = toHeightLabel(
     answers?.prefHeight ?? answers?.heightFeel ?? answers?.cur_height_feel
@@ -101,6 +116,28 @@ export default function PreviewPage() {
     };
   }, [answers, store, scores]);
 
+  // ページ表示後に素材質問ポップアップを表示
+  useEffect(() => {
+    if (ready && !answers.current_pillow_material) {
+      const timer = setTimeout(() => {
+        setShowMaterialPopup(true);
+      }, 1000); // 1秒後に表示
+      return () => clearTimeout(timer);
+    }
+  }, [ready, answers.current_pillow_material]);
+
+  // 素材選択時の処理
+  const handleMaterialSelect = (materialId: string) => {
+    setSelectedMaterial(materialId);
+    // storeに素材情報を保存
+    if ((store as any).setAnswers) {
+      (store as any).setAnswers({ ...answers, current_pillow_material: materialId });
+    } else {
+      (store as any).answers = { ...answers, current_pillow_material: materialId };
+    }
+    setShowMaterialPopup(false);
+  };
+
   return (
     <main className="max-w-3xl mx-auto p-6 space-y-8">
       <h1 className="text-3xl md:text-4xl font-bold mb-6">一次診断</h1>
@@ -154,6 +191,51 @@ export default function PreviewPage() {
           {ready ? "診断結果へ" : "準備中…"}
         </Link>
       </section>
+
+      {/* 素材質問ポップアップ */}
+      {showMaterialPopup && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full max-h-[80vh] overflow-y-auto">
+            <h3 className="text-lg font-semibold mb-2 text-gray-900">
+              AIから追加の質問です
+            </h3>
+            <p className="text-sm text-gray-600 mb-4">
+              あなたのお使いの枕の素材はなんですか？より良いご提案のためにわかれば教えてください
+            </p>
+            
+            <div className="space-y-2 mb-6">
+              {MATERIAL_OPTIONS.map((option) => (
+                <label key={option.id} className="flex items-center p-3 rounded-lg border hover:bg-gray-50 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="material"
+                    value={option.id}
+                    checked={selectedMaterial === option.id}
+                    onChange={() => handleMaterialSelect(option.id)}
+                    className="mr-3"
+                  />
+                  <span className="text-sm text-gray-900">{option.label}</span>
+                </label>
+              ))}
+            </div>
+
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => handleMaterialSelect("other")}
+                className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800"
+              >
+                スキップ
+              </button>
+              <button
+                onClick={() => setShowMaterialPopup(false)}
+                className="px-4 py-2 text-sm bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300"
+              >
+                閉じる
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

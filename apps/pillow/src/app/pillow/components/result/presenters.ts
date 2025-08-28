@@ -22,6 +22,15 @@ export const labelMap: Record<string, string> = {
   // マットレス硬さ
   soft_mattress: '柔らかめマットレス対応',
   firm_mattress: '硬めマットレス対応',
+  // 素材
+  low_rebound_pillow: '低反発ウレタン枕使用',
+  high_rebound_pillow: '高反発ウレタン枕使用',
+  latex_pillow: 'ラテックス枕使用',
+  pipe_pillow: 'パイプ枕使用',
+  beads_pillow: 'ビーズ枕使用',
+  feather_pillow: '羽毛・フェザー枕使用',
+  poly_cotton_pillow: 'ポリエステル綿枕使用',
+  sobakawa_pillow: 'そば殻枕使用',
   // 足りなければ随時追加
 };
 
@@ -38,6 +47,15 @@ export const helpTextMap: Record<string, string> = {
   // マットレス硬さ
   soft_mattress: '柔らかめマットレスに合わせた枕の高さ調整',
   firm_mattress: '硬めマットレスに合わせた枕の高さ調整',
+  // 素材
+  low_rebound_pillow: '低反発ウレタン枕から素材改善を提案',
+  high_rebound_pillow: '高反発ウレタン枕から素材改善を提案',
+  latex_pillow: 'ラテックス枕から素材改善を提案',
+  pipe_pillow: 'パイプ枕から素材改善を提案',
+  beads_pillow: 'ビーズ枕から素材改善を提案',
+  feather_pillow: '羽毛・フェザー枕から素材改善を提案',
+  poly_cotton_pillow: 'ポリエステル綿枕から素材改善を提案',
+  sobakawa_pillow: 'そば殻枕から素材改善を提案',
 };
 
 export function rankSymbol(rank: Rank): '◎' | '○' | '△' {
