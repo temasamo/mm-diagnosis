@@ -7,6 +7,15 @@ export default function Page() {
   const answers = useDiagStore((s: any) => s.answers);
   const setAnswers = useDiagStore((s: any) => s.setAnswers);
 
+  // チェックボックス用のヘルパー関数
+  const handleCheckboxChange = (field: 'concerns' | 'neck_shoulder_issues', value: string, checked: boolean) => {
+    const currentValues = Array.isArray(answers?.[field]) ? answers[field] : [];
+    const newValues = checked
+      ? [...currentValues, value]
+      : currentValues.filter(item => item !== value);
+    setAnswers({ [field]: newValues });
+  };
+
   const handleNext = () => {
     // 一次診断へ遷移
     const compressed = JSON.stringify(answers);
@@ -24,47 +33,132 @@ export default function Page() {
           {/* 主な寝姿勢 */}
           <div>
             <label className="block text-sm font-medium mb-2">主な寝姿勢</label>
-            <select 
-              value={answers?.posture || ""} 
-              onChange={(e) => setAnswers({ posture: e.target.value })}
-              className="w-full border rounded-lg px-3 py-2"
-            >
-              <option value="">選択してください</option>
-              <option value="supine">仰向け</option>
-              <option value="prone">うつ伏せ</option>
-              <option value="side">横向き</option>
-            </select>
+            <div className="space-y-2">
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="posture"
+                  value="supine"
+                  checked={answers?.posture === "supine"}
+                  onChange={(e) => setAnswers({ posture: e.target.value })}
+                  className="mr-2"
+                />
+                仰向け
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="posture"
+                  value="prone"
+                  checked={answers?.posture === "prone"}
+                  onChange={(e) => setAnswers({ posture: e.target.value })}
+                  className="mr-2"
+                />
+                うつ伏せ
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="posture"
+                  value="side"
+                  checked={answers?.posture === "side"}
+                  onChange={(e) => setAnswers({ posture: e.target.value })}
+                  className="mr-2"
+                />
+                横向き
+              </label>
+            </div>
           </div>
 
           {/* 寝返り頻度 */}
           <div>
             <label className="block text-sm font-medium mb-2">寝返り頻度</label>
-            <select 
-              value={answers?.rollover || ""} 
-              onChange={(e) => setAnswers({ rollover: e.target.value })}
-              className="w-full border rounded-lg px-3 py-2"
-            >
-              <option value="">選択してください</option>
-              <option value="rare">ほとんどしない</option>
-              <option value="mid">普通</option>
-              <option value="often">よくする</option>
-            </select>
+            <div className="space-y-2">
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="rollover"
+                  value="rare"
+                  checked={answers?.rollover === "rare"}
+                  onChange={(e) => setAnswers({ rollover: e.target.value })}
+                  className="mr-2"
+                />
+                ほとんどしない
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="rollover"
+                  value="mid"
+                  checked={answers?.rollover === "mid"}
+                  onChange={(e) => setAnswers({ rollover: e.target.value })}
+                  className="mr-2"
+                />
+                普通
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="rollover"
+                  value="often"
+                  checked={answers?.rollover === "often"}
+                  onChange={(e) => setAnswers({ rollover: e.target.value })}
+                  className="mr-2"
+                />
+                よくする
+              </label>
+            </div>
           </div>
 
           {/* 身長 */}
           <div>
             <label className="block text-sm font-medium mb-2">身長</label>
-            <select 
-              value={answers?.height_band || ""} 
-              onChange={(e) => setAnswers({ height_band: e.target.value })}
-              className="w-full border rounded-lg px-3 py-2"
-            >
-              <option value="">選択してください</option>
-              <option value="150-155">150cm未満</option>
-              <option value="155-170">150-170cm</option>
-              <option value="170-180">170-180cm</option>
-              <option value="180+">180cm以上</option>
-            </select>
+            <div className="space-y-2">
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="height_band"
+                  value="150-155"
+                  checked={answers?.height_band === "150-155"}
+                  onChange={(e) => setAnswers({ height_band: e.target.value })}
+                  className="mr-2"
+                />
+                150cm未満
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="height_band"
+                  value="155-170"
+                  checked={answers?.height_band === "155-170"}
+                  onChange={(e) => setAnswers({ height_band: e.target.value })}
+                  className="mr-2"
+                />
+                150-170cm
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="height_band"
+                  value="170-180"
+                  checked={answers?.height_band === "170-180"}
+                  onChange={(e) => setAnswers({ height_band: e.target.value })}
+                  className="mr-2"
+                />
+                170-180cm
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="height_band"
+                  value="180+"
+                  checked={answers?.height_band === "180+"}
+                  onChange={(e) => setAnswers({ height_band: e.target.value })}
+                  className="mr-2"
+                />
+                180cm以上
+              </label>
+            </div>
           </div>
         </div>
       </section>
@@ -76,34 +170,109 @@ export default function Page() {
           {/* 使用年数 */}
           <div>
             <label className="block text-sm font-medium mb-2">使用年数</label>
-            <select 
-              value={answers?.cur_years || ""} 
-              onChange={(e) => setAnswers({ cur_years: e.target.value })}
-              className="w-full border rounded-lg px-3 py-2"
-            >
-              <option value="">選択してください</option>
-              <option value="lt1y">1年未満</option>
-              <option value="1-2y">1-2年</option>
-              <option value="3-5y">3-5年</option>
-              <option value="5y+">5年以上</option>
-            </select>
+            <div className="space-y-2">
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="cur_years"
+                  value="lt1y"
+                  checked={answers?.cur_years === "lt1y"}
+                  onChange={(e) => setAnswers({ cur_years: e.target.value })}
+                  className="mr-2"
+                />
+                1年未満
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="cur_years"
+                  value="1-2y"
+                  checked={answers?.cur_years === "1-2y"}
+                  onChange={(e) => setAnswers({ cur_years: e.target.value })}
+                  className="mr-2"
+                />
+                1-2年
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="cur_years"
+                  value="3-5y"
+                  checked={answers?.cur_years === "3-5y"}
+                  onChange={(e) => setAnswers({ cur_years: e.target.value })}
+                  className="mr-2"
+                />
+                3-5年
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="cur_years"
+                  value="5y+"
+                  checked={answers?.cur_years === "5y+"}
+                  onChange={(e) => setAnswers({ cur_years: e.target.value })}
+                  className="mr-2"
+                />
+                5年以上
+              </label>
+            </div>
           </div>
 
-          {/* 気になる点 */}
+          {/* 気になる点 - チェックボックスに変更 */}
           <div>
-            <label className="block text-sm font-medium mb-2">気になる点</label>
-            <select 
-              value={Array.isArray(answers?.concerns) ? answers.concerns[0] || "" : answers?.concerns || ""} 
-              onChange={(e) => setAnswers({ concerns: e.target.value })}
-              className="w-full border rounded-lg px-3 py-2"
-            >
-              <option value="">選択してください</option>
-              <option value="neck_pain">首が痛い</option>
-              <option value="height_mismatch">高さが合わない</option>
-              <option value="poor_turn">寝返りしづらい</option>
-              <option value="sweat">蒸れる</option>
-              <option value="sagging">へたる</option>
-            </select>
+            <label className="block text-sm font-medium mb-2">気になる点（複数選択可）</label>
+            <div className="space-y-2">
+              <label className="flex items-center">
+                <input
+                  type="checkbox"
+                  value="neck_pain"
+                  checked={Array.isArray(answers?.concerns) && answers.concerns.includes("neck_pain")}
+                  onChange={(e) => handleCheckboxChange('concerns', e.target.value, e.target.checked)}
+                  className="mr-2"
+                />
+                首が痛い
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="checkbox"
+                  value="height_mismatch"
+                  checked={Array.isArray(answers?.concerns) && answers.concerns.includes("height_mismatch")}
+                  onChange={(e) => handleCheckboxChange('concerns', e.target.value, e.target.checked)}
+                  className="mr-2"
+                />
+                高さが合わない
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="checkbox"
+                  value="poor_turn"
+                  checked={Array.isArray(answers?.concerns) && answers.concerns.includes("poor_turn")}
+                  onChange={(e) => handleCheckboxChange('concerns', e.target.value, e.target.checked)}
+                  className="mr-2"
+                />
+                寝返りしづらい
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="checkbox"
+                  value="sweat"
+                  checked={Array.isArray(answers?.concerns) && answers.concerns.includes("sweat")}
+                  onChange={(e) => handleCheckboxChange('concerns', e.target.value, e.target.checked)}
+                  className="mr-2"
+                />
+                蒸れる
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="checkbox"
+                  value="sagging"
+                  checked={Array.isArray(answers?.concerns) && answers.concerns.includes("sagging")}
+                  onChange={(e) => handleCheckboxChange('concerns', e.target.value, e.target.checked)}
+                  className="mr-2"
+                />
+                へたる
+              </label>
+            </div>
           </div>
         </div>
       </section>
@@ -112,52 +281,152 @@ export default function Page() {
       <section className="mb-10">
         <h2 className="text-xl font-semibold mb-4">C. 今の悩み</h2>
         <div className="space-y-6">
-          {/* 首・肩まわりで抱えている問題 */}
+          {/* 首・肩まわりで抱えている問題 - チェックボックスに変更 */}
           <div>
-            <label className="block text-sm font-medium mb-2">首・肩まわりで抱えている問題</label>
-            <select 
-              value={Array.isArray(answers?.neck_shoulder_issues) ? answers.neck_shoulder_issues[0] || "" : answers?.neck_shoulder_issues || ""} 
-              onChange={(e) => setAnswers({ neck_shoulder_issues: e.target.value })}
-              className="w-full border rounded-lg px-3 py-2"
-            >
-              <option value="">選択してください</option>
-              <option value="morning_neck_pain">朝起きると首が痛い</option>
-              <option value="severe_shoulder_stiffness">肩こりがひどい</option>
-              <option value="headache">頭痛・偏頭痛持ち</option>
-              <option value="straight_neck">ストレートネックと診断</option>
-              <option value="none">特に問題なし</option>
-            </select>
+            <label className="block text-sm font-medium mb-2">首・肩まわりで抱えている問題（複数選択可）</label>
+            <div className="space-y-2">
+              <label className="flex items-center">
+                <input
+                  type="checkbox"
+                  value="morning_neck_pain"
+                  checked={Array.isArray(answers?.neck_shoulder_issues) && answers.neck_shoulder_issues.includes("morning_neck_pain")}
+                  onChange={(e) => handleCheckboxChange('neck_shoulder_issues', e.target.value, e.target.checked)}
+                  className="mr-2"
+                />
+                朝起きると首が痛い
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="checkbox"
+                  value="severe_shoulder_stiffness"
+                  checked={Array.isArray(answers?.neck_shoulder_issues) && answers.neck_shoulder_issues.includes("severe_shoulder_stiffness")}
+                  onChange={(e) => handleCheckboxChange('neck_shoulder_issues', e.target.value, e.target.checked)}
+                  className="mr-2"
+                />
+                肩こりがひどい
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="checkbox"
+                  value="headache"
+                  checked={Array.isArray(answers?.neck_shoulder_issues) && answers.neck_shoulder_issues.includes("headache")}
+                  onChange={(e) => handleCheckboxChange('neck_shoulder_issues', e.target.value, e.target.checked)}
+                  className="mr-2"
+                />
+                頭痛・偏頭痛持ち
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="checkbox"
+                  value="straight_neck"
+                  checked={Array.isArray(answers?.neck_shoulder_issues) && answers.neck_shoulder_issues.includes("straight_neck")}
+                  onChange={(e) => handleCheckboxChange('neck_shoulder_issues', e.target.value, e.target.checked)}
+                  className="mr-2"
+                />
+                ストレートネックと診断
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="checkbox"
+                  value="none"
+                  checked={Array.isArray(answers?.neck_shoulder_issues) && answers.neck_shoulder_issues.includes("none")}
+                  onChange={(e) => handleCheckboxChange('neck_shoulder_issues', e.target.value, e.target.checked)}
+                  className="mr-2"
+                />
+                特に問題なし
+              </label>
+            </div>
           </div>
 
           {/* いびき */}
           <div>
             <label className="block text-sm font-medium mb-2">いびき</label>
-            <select 
-              value={answers?.snore || ""} 
-              onChange={(e) => setAnswers({ snore: e.target.value })}
-              className="w-full border rounded-lg px-3 py-2"
-            >
-              <option value="">選択してください</option>
-              <option value="rarely">ほとんどない</option>
-              <option value="sometimes">時々ある</option>
-              <option value="often">よくある</option>
-              <option value="unknown">わからない</option>
-            </select>
+            <div className="space-y-2">
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="snore"
+                  value="rarely"
+                  checked={answers?.snore === "rarely"}
+                  onChange={(e) => setAnswers({ snore: e.target.value })}
+                  className="mr-2"
+                />
+                ほとんどない
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="snore"
+                  value="sometimes"
+                  checked={answers?.snore === "sometimes"}
+                  onChange={(e) => setAnswers({ snore: e.target.value })}
+                  className="mr-2"
+                />
+                時々ある
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="snore"
+                  value="often"
+                  checked={answers?.snore === "often"}
+                  onChange={(e) => setAnswers({ snore: e.target.value })}
+                  className="mr-2"
+                />
+                よくある
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="snore"
+                  value="unknown"
+                  checked={answers?.snore === "unknown"}
+                  onChange={(e) => setAnswers({ snore: e.target.value })}
+                  className="mr-2"
+                />
+                わからない
+              </label>
+            </div>
           </div>
 
           {/* 暑がり・汗かき */}
           <div>
             <label className="block text-sm font-medium mb-2">暑がり・汗かきですか？</label>
-            <select 
-              value={answers?.heat_sweat || ""} 
-              onChange={(e) => setAnswers({ heat_sweat: e.target.value })}
-              className="w-full border rounded-lg px-3 py-2"
-            >
-              <option value="">選択してください</option>
-              <option value="yes">はい</option>
-              <option value="no">いいえ</option>
-              <option value="unknown">わからない</option>
-            </select>
+            <div className="space-y-2">
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="heat_sweat"
+                  value="yes"
+                  checked={answers?.heat_sweat === "yes"}
+                  onChange={(e) => setAnswers({ heat_sweat: e.target.value })}
+                  className="mr-2"
+                />
+                はい
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="heat_sweat"
+                  value="no"
+                  checked={answers?.heat_sweat === "no"}
+                  onChange={(e) => setAnswers({ heat_sweat: e.target.value })}
+                  className="mr-2"
+                />
+                いいえ
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="heat_sweat"
+                  value="unknown"
+                  checked={answers?.heat_sweat === "unknown"}
+                  onChange={(e) => setAnswers({ heat_sweat: e.target.value })}
+                  className="mr-2"
+                />
+                わからない
+              </label>
+            </div>
           </div>
         </div>
       </section>
@@ -169,83 +438,278 @@ export default function Page() {
           {/* マットレスの硬さ */}
           <div>
             <label className="block text-sm font-medium mb-2">マットレスの硬さ</label>
-            <select 
-              value={answers?.mattress_firmness || ""} 
-              onChange={(e) => setAnswers({ mattress_firmness: e.target.value })}
-              className="w-full border rounded-lg px-3 py-2"
-            >
-              <option value="">選択してください</option>
-              <option value="soft">柔らかめ</option>
-              <option value="mid">普通</option>
-              <option value="firm">硬め</option>
-              <option value="unknown">不明 / 指定なし</option>
-            </select>
+            <div className="space-y-2">
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="mattress_firmness"
+                  value="soft"
+                  checked={answers?.mattress_firmness === "soft"}
+                  onChange={(e) => setAnswers({ mattress_firmness: e.target.value })}
+                  className="mr-2"
+                />
+                柔らかめ
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="mattress_firmness"
+                  value="mid"
+                  checked={answers?.mattress_firmness === "mid"}
+                  onChange={(e) => setAnswers({ mattress_firmness: e.target.value })}
+                  className="mr-2"
+                />
+                普通
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="mattress_firmness"
+                  value="firm"
+                  checked={answers?.mattress_firmness === "firm"}
+                  onChange={(e) => setAnswers({ mattress_firmness: e.target.value })}
+                  className="mr-2"
+                />
+                硬め
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="mattress_firmness"
+                  value="unknown"
+                  checked={answers?.mattress_firmness === "unknown"}
+                  onChange={(e) => setAnswers({ mattress_firmness: e.target.value })}
+                  className="mr-2"
+                />
+                不明 / 指定なし
+              </label>
+            </div>
           </div>
 
           {/* 枕の高さや硬さを調整できる方が良いですか？ */}
           <div>
             <label className="block text-sm font-medium mb-2">枕の高さや硬さを調整できる方が良いですか？</label>
-            <select 
-              value={answers?.adjustable_pref || ""} 
-              onChange={(e) => setAnswers({ adjustable_pref: e.target.value })}
-              className="w-full border rounded-lg px-3 py-2"
-            >
-              <option value="">選択してください</option>
-              <option value="yes">はい</option>
-              <option value="no">いいえ</option>
-              <option value="unknown">不明・指定なし</option>
-            </select>
+            <div className="space-y-2">
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="adjustable_pref"
+                  value="yes"
+                  checked={answers?.adjustable_pref === "yes"}
+                  onChange={(e) => setAnswers({ adjustable_pref: e.target.value })}
+                  className="mr-2"
+                />
+                はい
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="adjustable_pref"
+                  value="no"
+                  checked={answers?.adjustable_pref === "no"}
+                  onChange={(e) => setAnswers({ adjustable_pref: e.target.value })}
+                  className="mr-2"
+                />
+                いいえ
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="adjustable_pref"
+                  value="unknown"
+                  checked={answers?.adjustable_pref === "unknown"}
+                  onChange={(e) => setAnswers({ adjustable_pref: e.target.value })}
+                  className="mr-2"
+                />
+                不明・指定なし
+              </label>
+            </div>
           </div>
 
           {/* 素材の好み */}
           <div>
             <label className="block text-sm font-medium mb-2">素材の好み</label>
-            <select 
-              value={answers?.material_pref || ""} 
-              onChange={(e) => setAnswers({ material_pref: e.target.value })}
-              className="w-full border rounded-lg px-3 py-2"
-            >
-              <option value="">選択してください</option>
-              <option value="lp">低反発</option>
-              <option value="hp">高反発</option>
-              <option value="feather">羽毛</option>
-              <option value="buckwheat">そば殻</option>
-              <option value="none">特になし</option>
-              <option value="unknown">不明 / 指定なし</option>
-            </select>
+            <div className="space-y-2">
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="material_pref"
+                  value="lp"
+                  checked={answers?.material_pref === "lp"}
+                  onChange={(e) => setAnswers({ material_pref: e.target.value })}
+                  className="mr-2"
+                />
+                低反発
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="material_pref"
+                  value="hp"
+                  checked={answers?.material_pref === "hp"}
+                  onChange={(e) => setAnswers({ material_pref: e.target.value })}
+                  className="mr-2"
+                />
+                高反発
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="material_pref"
+                  value="feather"
+                  checked={answers?.material_pref === "feather"}
+                  onChange={(e) => setAnswers({ material_pref: e.target.value })}
+                  className="mr-2"
+                />
+                羽毛
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="material_pref"
+                  value="buckwheat"
+                  checked={answers?.material_pref === "buckwheat"}
+                  onChange={(e) => setAnswers({ material_pref: e.target.value })}
+                  className="mr-2"
+                />
+                そば殻
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="material_pref"
+                  value="none"
+                  checked={answers?.material_pref === "none"}
+                  onChange={(e) => setAnswers({ material_pref: e.target.value })}
+                  className="mr-2"
+                />
+                特になし
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="material_pref"
+                  value="unknown"
+                  checked={answers?.material_pref === "unknown"}
+                  onChange={(e) => setAnswers({ material_pref: e.target.value })}
+                  className="mr-2"
+                />
+                不明 / 指定なし
+              </label>
+            </div>
           </div>
 
           {/* サイズ希望 */}
           <div>
             <label className="block text-sm font-medium mb-2">サイズ希望</label>
-            <select 
-              value={answers?.size_pref || ""} 
-              onChange={(e) => setAnswers({ size_pref: e.target.value })}
-              className="w-full border rounded-lg px-3 py-2"
-            >
-              <option value="">選択してください</option>
-              <option value="standard">標準サイズ</option>
-              <option value="large">大きめ</option>
-              <option value="small">小さめ</option>
-              <option value="unknown">不明・指定なし</option>
-            </select>
+            <div className="space-y-2">
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="size_pref"
+                  value="standard"
+                  checked={answers?.size_pref === "standard"}
+                  onChange={(e) => setAnswers({ size_pref: e.target.value })}
+                  className="mr-2"
+                />
+                標準サイズ
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="size_pref"
+                  value="large"
+                  checked={answers?.size_pref === "large"}
+                  onChange={(e) => setAnswers({ size_pref: e.target.value })}
+                  className="mr-2"
+                />
+                大きめ
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="size_pref"
+                  value="small"
+                  checked={answers?.size_pref === "small"}
+                  onChange={(e) => setAnswers({ size_pref: e.target.value })}
+                  className="mr-2"
+                />
+                小さめ
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="size_pref"
+                  value="unknown"
+                  checked={answers?.size_pref === "unknown"}
+                  onChange={(e) => setAnswers({ size_pref: e.target.value })}
+                  className="mr-2"
+                />
+                不明・指定なし
+              </label>
+            </div>
           </div>
 
           {/* ご予算 */}
           <div>
             <label className="block text-sm font-medium mb-2">ご予算</label>
-            <select 
-              value={answers?.budget || ""} 
-              onChange={(e) => setAnswers({ budget: e.target.value })}
-              className="w-full border rounded-lg px-3 py-2"
-            >
-              <option value="">選択してください</option>
-              <option value="lt3000">3,000円未満</option>
-              <option value="3k-6k">3,000円〜6,000円</option>
-              <option value="6k-10k">6,000円〜10,000円</option>
-              <option value="10k-20k">10,000円〜20,000円</option>
-              <option value="20kplus">20,000円以上</option>
-            </select>
+            <div className="space-y-2">
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="budget"
+                  value="lt3000"
+                  checked={answers?.budget === "lt3000"}
+                  onChange={(e) => setAnswers({ budget: e.target.value })}
+                  className="mr-2"
+                />
+                3,000円未満
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="budget"
+                  value="3k-6k"
+                  checked={answers?.budget === "3k-6k"}
+                  onChange={(e) => setAnswers({ budget: e.target.value })}
+                  className="mr-2"
+                />
+                3,000円〜6,000円
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="budget"
+                  value="6k-10k"
+                  checked={answers?.budget === "6k-10k"}
+                  onChange={(e) => setAnswers({ budget: e.target.value })}
+                  className="mr-2"
+                />
+                6,000円〜10,000円
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="budget"
+                  value="10k-20k"
+                  checked={answers?.budget === "10k-20k"}
+                  onChange={(e) => setAnswers({ budget: e.target.value })}
+                  className="mr-2"
+                />
+                10,000円〜20,000円
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="budget"
+                  value="20kplus"
+                  checked={answers?.budget === "20kplus"}
+                  onChange={(e) => setAnswers({ budget: e.target.value })}
+                  className="mr-2"
+                />
+                20,000円以上
+              </label>
+            </div>
           </div>
         </div>
       </section>
