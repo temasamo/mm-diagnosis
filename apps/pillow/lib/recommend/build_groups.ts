@@ -4,6 +4,21 @@ import { searchAllMalls, type MallProduct } from "../catalog/mall_search";
 import type { Provisional } from "../scoring/engine";
 import { dedupeProductGroups } from "../dedupe";
 
+// --- 予算のワンランク上を計算する関数 ---
+function getExtendedBudgetBandId(budgetBandId?: string | null): string | null {
+  if (!budgetBandId) return null;
+  
+  // 予算バンドのマッピング（ワンランク上まで拡張）
+  const budgetMapping: Record<string, string> = {
+    "3k-6k": "3k-10k",      // 3k-6k → 3k-10k（6k-10kまで含める）
+    "6k-10k": "6k-20k",     // 6k-10k → 6k-20k（10k-20kまで含める）
+    "10k-20k": "10k-20k",   // 10k-20k → 変更なし（上限なし）
+    "20k+": "20k+",         // 20k+ → 変更なし（変更なし）
+  };
+  
+  return budgetMapping[budgetBandId] || budgetBandId;
+}
+
 // --- add: normalize helper ---
 function normalizeProvisional(input: any): Provisional[] {
   // 正規化
@@ -498,10 +513,13 @@ export async function buildGroupsFromAPI(
       const { keywords, labels } = generateSecondaryKeywords(answers);
       secondaryLabels = labels;
       
+      // 予算のワンランク上を計算
+      const extendedBudgetBandId = getExtendedBudgetBandId(budgetBandId);
+      
       // 第2候補A
       if (keywords[0] && keywords[0].length > 0) {
         secondaryA = await searchWithFallback({ 
-          budgetBandId: null, 
+          budgetBandId: extendedBudgetBandId, 
           anyOfKeywords: keywords[0], 
           limit: 3 
         });
@@ -510,7 +528,7 @@ export async function buildGroupsFromAPI(
       // 第2候補B
       if (keywords[1] && keywords[1].length > 0) {
         secondaryB = await searchWithFallback({ 
-          budgetBandId: null, 
+          budgetBandId: extendedBudgetBandId, 
           anyOfKeywords: keywords[1], 
           limit: 3 
         });
@@ -519,16 +537,17 @@ export async function buildGroupsFromAPI(
       // 第2候補C
       if (keywords[2] && keywords[2].length > 0) {
         secondaryC = await searchWithFallback({ 
-          budgetBandId: null, 
+          budgetBandId: extendedBudgetBandId, 
           anyOfKeywords: keywords[2], 
           limit: 3 
         });
       }
     } else {
-      // フォールバック: 従来の固定カテゴリ検索
-      secondaryA = await searchWithFallback({ budgetBandId: null, anyOfKeywords: ["横向き 枕","高反発 枕"], limit: 3 });
-      secondaryB = await searchWithFallback({ budgetBandId: null, anyOfKeywords: ["低反発 枕","仰向け 枕"], limit: 3 });
-      secondaryC = await searchWithFallback({ budgetBandId: null, anyOfKeywords: ["首 肩こり 枕","高さ 調整 枕"], limit: 3 });
+      // フォールバック: 従来の固定カテゴリ検索（予算制限あり）
+      const extendedBudgetBandId = getExtendedBudgetBandId(budgetBandId);
+      secondaryA = await searchWithFallback({ budgetBandId: extendedBudgetBandId, anyOfKeywords: ["横向き 枕","高反発 枕"], limit: 3 });
+      secondaryB = await searchWithFallback({ budgetBandId: extendedBudgetBandId, anyOfKeywords: ["低反発 枕","仰向け 枕"], limit: 3 });
+      secondaryC = await searchWithFallback({ budgetBandId: extendedBudgetBandId, anyOfKeywords: ["首 肩こり 枕","高さ 調整 枕"], limit: 3 });
       secondaryLabels = ["横向き × 高反発", "低反発 × 仰向け", "首肩サポート"];
     }
 
