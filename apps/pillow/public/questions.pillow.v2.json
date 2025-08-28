@@ -1,7 +1,7 @@
 {
-  "version": "pillow.v2.3",
+  "version": "pillow.v2.4",
   "locale": "ja-JP",
-  "title": "枕診断AI 質問フロー v2.3",
+  "title": "枕診断AI 質問フロー v2.4",
   "items": [
     {
       "id": "sex",
@@ -110,6 +110,18 @@
       "meta": { "group": "現在の枕", "order": 9 }
     },
     {
+      "id": "mattress_firmness",
+      "title": "マットレス/布団の硬さ",
+      "type": "single",
+      "choices": [
+        { "id": "soft", "label": "柔らかめ" },
+        { "id": "mid", "label": "普通" },
+        { "id": "firm", "label": "硬め" },
+        { "id": "unknown", "label": "不明 / 指定なし" }
+      ],
+      "meta": { "group": "現在の枕", "order": 10 }
+    },
+    {
       "id": "concerns",
       "title": "気になる点（複数選択可）",
       "type": "multiple",
@@ -120,55 +132,41 @@
         { "id": "sweat", "label": "蒸れる" },
         { "id": "sagging", "label": "へたる" }
       ],
-      "meta": { "group": "現在の枕", "order": 10 }
+      "meta": { "group": "現在の枕", "order": 11 }
     },
     {
       "id": "posture",
       "title": "主な寝姿勢",
       "type": "single",
-      "required": true,
       "choices": [
         { "id": "supine", "label": "仰向け" },
-        { "id": "prone", "label": "うつ伏せ" },
         { "id": "side", "label": "横向き" },
-        { "id": "mixed", "label": "いろいろ" }
+        { "id": "prone", "label": "うつ伏せ" }
       ],
-      "meta": { "group": "体型", "order": 20 }
+      "meta": { "group": "寝姿勢・体型", "order": 20 }
     },
     {
       "id": "rollover",
       "title": "寝返り頻度",
       "type": "single",
       "choices": [
-        { "id": "rare", "label": "少ない" },
+        { "id": "rare", "label": "ほとんどしない" },
         { "id": "mid", "label": "普通" },
-        { "id": "often", "label": "多い" }
+        { "id": "often", "label": "よくする" }
       ],
-      "meta": { "group": "体型", "order": 21 }
-    },
-    {
-      "id": "shoulder_width",
-      "title": "肩幅（あれば）",
-      "type": "single",
-      "choices": [
-        { "id": "narrow", "label": "狭い" },
-        { "id": "normal", "label": "普通" },
-        { "id": "wide", "label": "広い" },
-        { "id": "unknown", "label": "不明 / 指定なし" }
-      ],
-      "meta": { "group": "体型", "order": 22 }
+      "meta": { "group": "寝姿勢・体型", "order": 21 }
     },
     {
       "id": "height_band",
-      "title": "身長（任意）",
+      "title": "身長",
       "type": "single",
       "choices": [
-        { "id": "u155", "label": "〜155cm" },
-        { "id": "155-170", "label": "155〜170cm" },
-        { "id": "170p", "label": "170cm以上" },
-        { "id": "na", "label": "答えない" }
+        { "id": "150-155", "label": "150cm未満" },
+        { "id": "155-170", "label": "150-170cm" },
+        { "id": "170-180", "label": "170-180cm" },
+        { "id": "180+", "label": "180cm以上" }
       ],
-      "meta": { "group": "体型", "order": 23 }
+      "meta": { "group": "寝姿勢・体型", "order": 22 }
     },
     {
       "id": "neck_shoulder_issues",
@@ -204,18 +202,6 @@
         { "id": "no", "label": "いいえ" }
       ],
       "meta": { "group": "健康・快適性", "order": 42 }
-    },
-    {
-      "id": "mattress_firmness",
-      "title": "マットレスの硬さ",
-      "type": "single",
-      "choices": [
-        { "id": "soft", "label": "柔らかめ" },
-        { "id": "mid", "label": "普通" },
-        { "id": "firm", "label": "硬め" },
-        { "id": "unknown", "label": "不明 / 指定なし" }
-      ],
-      "meta": { "group": "環境・好み", "order": 50 }
     },
     {
       "id": "adjustable_pref",

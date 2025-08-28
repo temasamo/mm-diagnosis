@@ -163,9 +163,9 @@ export default function Page() {
         </div>
       </section>
 
-      {/* B. 今使っている枕 */}
+      {/* B. 今使っている枕・マットレス/布団 */}
       <section className="mb-10">
-        <h2 className="text-xl font-semibold mb-4">B. 今使っている枕</h2>
+        <h2 className="text-xl font-semibold mb-4">B. 今使っている枕・マットレス/布団</h2>
         <div className="space-y-6">
           {/* 使用年数 */}
           <div>
@@ -271,6 +271,57 @@ export default function Page() {
                   className="mr-2"
                 />
                 へたる
+              </label>
+            </div>
+          </div>
+
+          {/* マットレス/布団の硬さ */}
+          <div>
+            <label className="block text-sm font-medium mb-2">マットレス/布団の硬さ</label>
+            <div className="space-y-2">
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="mattress_firmness"
+                  value="soft"
+                  checked={answers?.mattress_firmness === "soft"}
+                  onChange={(e) => setAnswers({ mattress_firmness: e.target.value })}
+                  className="mr-2"
+                />
+                柔らかめ
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="mattress_firmness"
+                  value="mid"
+                  checked={answers?.mattress_firmness === "mid"}
+                  onChange={(e) => setAnswers({ mattress_firmness: e.target.value })}
+                  className="mr-2"
+                />
+                普通
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="mattress_firmness"
+                  value="firm"
+                  checked={answers?.mattress_firmness === "firm"}
+                  onChange={(e) => setAnswers({ mattress_firmness: e.target.value })}
+                  className="mr-2"
+                />
+                硬め
+              </label>
+              <label className="flex items-center">
+                <input
+                  type="radio"
+                  name="mattress_firmness"
+                  value="unknown"
+                  checked={answers?.mattress_firmness === "unknown"}
+                  onChange={(e) => setAnswers({ mattress_firmness: e.target.value })}
+                  className="mr-2"
+                />
+                不明 / 指定なし
               </label>
             </div>
           </div>
@@ -435,57 +486,6 @@ export default function Page() {
       <section className="mb-10">
         <h2 className="text-xl font-semibold mb-4">D. 好み・希望</h2>
         <div className="space-y-6">
-          {/* マットレスの硬さ */}
-          <div>
-            <label className="block text-sm font-medium mb-2">マットレスの硬さ</label>
-            <div className="space-y-2">
-              <label className="flex items-center">
-                <input
-                  type="radio"
-                  name="mattress_firmness"
-                  value="soft"
-                  checked={answers?.mattress_firmness === "soft"}
-                  onChange={(e) => setAnswers({ mattress_firmness: e.target.value })}
-                  className="mr-2"
-                />
-                柔らかめ
-              </label>
-              <label className="flex items-center">
-                <input
-                  type="radio"
-                  name="mattress_firmness"
-                  value="mid"
-                  checked={answers?.mattress_firmness === "mid"}
-                  onChange={(e) => setAnswers({ mattress_firmness: e.target.value })}
-                  className="mr-2"
-                />
-                普通
-              </label>
-              <label className="flex items-center">
-                <input
-                  type="radio"
-                  name="mattress_firmness"
-                  value="firm"
-                  checked={answers?.mattress_firmness === "firm"}
-                  onChange={(e) => setAnswers({ mattress_firmness: e.target.value })}
-                  className="mr-2"
-                />
-                硬め
-              </label>
-              <label className="flex items-center">
-                <input
-                  type="radio"
-                  name="mattress_firmness"
-                  value="unknown"
-                  checked={answers?.mattress_firmness === "unknown"}
-                  onChange={(e) => setAnswers({ mattress_firmness: e.target.value })}
-                  className="mr-2"
-                />
-                不明 / 指定なし
-              </label>
-            </div>
-          </div>
-
           {/* 枕の高さや硬さを調整できる方が良いですか？ */}
           <div>
             <label className="block text-sm font-medium mb-2">枕の高さや硬さを調整できる方が良いですか？</label>
