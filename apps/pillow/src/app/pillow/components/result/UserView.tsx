@@ -11,13 +11,38 @@ type Props = {
   firmnessKey?: 'soft_feel'|'firm_support';
   mattressFirmness?: 'soft'|'firm'|'mid';
   currentMaterial?: string;        // 現在の枕の素材
+  answers?: any;                   // AI診断用の全回答データ
   matchPercent?: number;           // 適合度（%）
 };
 
-export default function UserView({ scores = {}, problems = [], heightKey, firmnessKey, mattressFirmness, currentMaterial, matchPercent }: Props) {
+export default function UserView({ scores = {}, problems = [], heightKey, firmnessKey, mattressFirmness, currentMaterial, answers, matchPercent }: Props) {
   const chips = pickTopChips(scores);
   const bullets = problemsToBullets(problems);
-  const comment = buildComment({ heightKey, firmnessKey, mattressFirmness, currentMaterial });
+  const comment = buildComment({ heightKey, firmnessKey, mattressFirmness, currentMaterial, answers });
+
+  // AI診断の理由を取得
+  let aiReasons: string[] = [];
+  if (answers) {
+    try {
+      const { buildDiagnosisText } = require('@lib/diagnosis_text');
+      const targetLoft = heightKey === 'low_height' ? 'low' as const
+                        : heightKey === 'high_height' ? 'high' as const
+                        : 'mid' as const;
+      const targetFirm = firmnessKey === 'soft_feel' ? 'soft' as const
+                        : firmnessKey === 'firm_support' ? 'firm' as const
+                        : 'mid' as const;
+      
+      const result = buildDiagnosisText({
+        targetLoft,
+        targetFirm,
+        mattressFirmness,
+        answers
+      });
+      aiReasons = result.reasons;
+    } catch (error) {
+      console.warn('AI診断理由の取得に失敗:', error);
+    }
+  }
 
   return (
     <div className="space-y-8">
@@ -34,6 +59,18 @@ export default function UserView({ scores = {}, problems = [], heightKey, firmne
         <p className="mt-4 text-sm text-white/80">
           {comment}
         </p>
+        
+        {/* AI診断の理由 */}
+        {aiReasons.length > 0 && (
+          <div className="mt-4 pt-4 border-t border-white/10">
+            <h4 className="text-sm font-medium mb-2 text-white/90">診断理由</h4>
+            <ul className="list-disc list-inside space-y-1 text-xs text-white/70">
+              {aiReasons.map((reason, index) => (
+                <li key={index}>{reason}</li>
+              ))}
+            </ul>
+          </div>
+        )}
       </section>
 
       {/* あなたのお悩み */}

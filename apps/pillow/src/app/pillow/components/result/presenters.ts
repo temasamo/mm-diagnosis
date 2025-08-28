@@ -83,13 +83,41 @@ const MATERIAL_LABELS: Record<string, string> = {
   other: 'その他',
 };
 
-// 「高さは高め・柔らかさは硬め・素材は高反発ウレタン」形式の自然文を生成
+// AIらしい診断文を生成（高さ・硬さ・素材＋理由）
 export function buildComment(opts: {
   heightKey?: 'low_height'|'middle_height'|'high_height';
   firmnessKey?: 'soft_feel'|'firm_support';
   mattressFirmness?: 'soft'|'firm'|'mid';
   currentMaterial?: string;
+  answers?: any; // 新しいAI診断用
 }) {
+  // 新しいAI診断ロジックが利用可能な場合
+  if (opts.answers) {
+    try {
+      const { buildDiagnosisText } = require('@lib/diagnosis_text');
+      
+      // 高さ・硬さの変換
+      const targetLoft = opts.heightKey === 'low_height' ? 'low' as const
+                        : opts.heightKey === 'high_height' ? 'high' as const
+                        : 'mid' as const;
+      const targetFirm = opts.firmnessKey === 'soft_feel' ? 'soft' as const
+                        : opts.firmnessKey === 'firm_support' ? 'firm' as const
+                        : 'mid' as const;
+      
+      const result = buildDiagnosisText({
+        targetLoft,
+        targetFirm,
+        mattressFirmness: opts.mattressFirmness,
+        answers: opts.answers
+      });
+      
+      return result.headline;
+    } catch (error) {
+      console.warn('AI診断ロジックの読み込みに失敗、フォールバック使用:', error);
+    }
+  }
+
+  // フォールバック: 従来のシンプルな表示
   const heightPart =
     opts.heightKey === 'low_height' ? '低め' :
     opts.heightKey === 'high_height' ? '高め' :
