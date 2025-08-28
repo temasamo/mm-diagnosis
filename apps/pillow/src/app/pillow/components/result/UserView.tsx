@@ -76,7 +76,7 @@ export default function UserView({ scores = {}, problems = [], heightKey, firmne
       {/* あなたのお悩み */}
       {bullets.length > 0 && (
         <section className="rounded-2xl border border-white/15 p-5">
-          <h3 className="text-lg font-semibold mb-3">あなたのお悩み</h3>
+          <h3 className="text-lg font-semibold mb-3">あなたのお悩み/使っているマットレス・布団や枕の素材</h3>
           <ul className="list-disc list-inside space-y-1">
             {bullets.map((b, i) => <li key={i}>{b.replace(/^・/,'')}</li>)}
           </ul>
