@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { pickTopChips, problemsToBullets, buildComment } from './presenters';
 
 type Props = {
@@ -44,6 +44,95 @@ export default function UserView({ scores = {}, problems = [], heightKey, firmne
     }
   }
 
+  // AI理由文の状態
+  const [aiReason, setAiReason] = useState<string>('');
+  const [aiReasonLoading, setAiReasonLoading] = useState(false);
+
+  // AI理由文を生成
+  useEffect(() => {
+    if (!answers || !problems.length) return;
+
+    const generateAiReason = async () => {
+      setAiReasonLoading(true);
+      try {
+        // 推奨値を取得
+        let loftLabel = '中くらい';
+        let firmnessLabel = '標準';
+        let materialLabel = 'パイプ';
+        let budgetLabel = '6,000円〜10,000円';
+
+        if (answers) {
+          try {
+            const { buildDiagnosisText } = require('@lib/diagnosis_text');
+            const targetLoft = heightKey === 'low_height' ? 'low' as const
+                              : heightKey === 'high_height' ? 'high' as const
+                              : 'mid' as const;
+            const targetFirm = firmnessKey === 'soft_feel' ? 'soft' as const
+                              : firmnessKey === 'firm_support' ? 'firm' as const
+                              : 'mid' as const;
+            
+            const result = buildDiagnosisText({
+              targetLoft,
+              targetFirm,
+              mattressFirmness,
+              answers
+            });
+
+            // 診断結果からラベルを抽出
+            const headline = result.headline;
+            const heightMatch = headline.match(/高さは([^・]+)/);
+            const firmnessMatch = headline.match(/柔らかさは([^・]+)/);
+            const materialMatch = headline.match(/素材は([^」]+)/);
+
+            if (heightMatch) loftLabel = heightMatch[1];
+            if (firmnessMatch) firmnessLabel = firmnessMatch[1];
+            if (materialMatch) materialLabel = materialMatch[1];
+          } catch (error) {
+            console.warn('推奨値の取得に失敗:', error);
+          }
+        }
+
+        // 予算ラベルを取得
+        if (answers.budget) {
+          const budgetMap: Record<string, string> = {
+            '5k-10k': '5,000円〜10,000円',
+            '10k-20k': '10,000円〜20,000円',
+            '20k-30k': '20,000円〜30,000円',
+            '30k-50k': '30,000円〜50,000円',
+            '50k+': '50,000円以上'
+          };
+          budgetLabel = budgetMap[answers.budget] || budgetLabel;
+        }
+
+        // AI理由文を生成
+        const response = await fetch('/api/ai/generate-reason', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            problems: problems,
+            loft: loftLabel,
+            firmness: firmnessLabel,
+            material: materialLabel,
+            budget: budgetLabel
+          })
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setAiReason(data.reason);
+        } else {
+          console.warn('AI理由文の生成に失敗');
+        }
+      } catch (error) {
+        console.warn('AI理由文の生成エラー:', error);
+      } finally {
+        setAiReasonLoading(false);
+      }
+    };
+
+    generateAiReason();
+  }, [answers, problems, heightKey, firmnessKey, mattressFirmness]);
+
   return (
     <div className="space-y-8">
       {/* 診断結果 */}
@@ -72,6 +161,18 @@ export default function UserView({ scores = {}, problems = [], heightKey, firmne
           </div>
         )}
       </section>
+
+      {/* AIからのコメント */}
+      {(aiReason || aiReasonLoading) && (
+        <section className="rounded-xl border border-neutral-700 p-6">
+          <h3 className="text-lg font-semibold mb-2">AIからのコメント</h3>
+          {aiReasonLoading ? (
+            <p className="text-neutral-200 leading-relaxed">AIが診断理由を分析中...</p>
+          ) : (
+            <p className="text-neutral-200 leading-relaxed">{aiReason}</p>
+          )}
+        </section>
+      )}
 
       {/* あなたのお悩み */}
       {bullets.length > 0 && (
