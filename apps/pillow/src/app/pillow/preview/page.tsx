@@ -5,6 +5,7 @@ import { useDiagStore } from "@lib/state/diagStore";
 import { computeProvisional } from "@lib/scoring/engine";
 import { formatSummary } from "@/app/pillow/components/result/presenters";
 import { buildProblemList } from "@lib/recommend/buildProblemList";
+import { derivePosture } from "../../../lib/utils/posture";
 
 // お悩みの堅牢化ヘルパー
 function deriveProblems(answers: any): string[] {
@@ -61,22 +62,31 @@ export default function PreviewPage() {
   const [showMaterialPopup, setShowMaterialPopup] = useState(false);
   const [selectedMaterial, setSelectedMaterial] = useState<string>("");
 
+  // 姿勢の補完（安全ネット）
+  const fixedAnswers = useMemo(() => {
+    if (!answers.posture && answers.postures) {
+      const derived = derivePosture(answers.postures);
+      return { ...answers, posture: derived };
+    }
+    return answers;
+  }, [answers]);
+
   const height = toHeightLabel(
-    answers?.prefHeight ?? answers?.heightFeel ?? answers?.cur_height_feel
+    fixedAnswers?.prefHeight ?? fixedAnswers?.heightFeel ?? fixedAnswers?.cur_height_feel
   );
   const soft = toSoftnessLabel(
-    answers?.prefFirmness ?? answers?.firmnessFeel ?? answers?.cur_firm
+    fixedAnswers?.prefFirmness ?? fixedAnswers?.firmnessFeel ?? fixedAnswers?.cur_firm
   );
   const summary = formatSummary(height, soft);
 
   // お悩みの堅牢化
-  const problems = deriveProblems(answers);
+  const problems = deriveProblems(fixedAnswers);
 
   // TOP3 は scores が無ければ derive
   const scores: Record<string, number> =
     (store as any).scores && Object.keys((store as any).scores).length
       ? (store as any).scores
-      : deriveScores(answers);
+      : deriveScores(fixedAnswers);
 
   const top3 = useMemo(() => {
     return Object.entries(scores)
@@ -89,8 +99,8 @@ export default function PreviewPage() {
     let cancelled = false;
     (async () => {
       try {
-        if (!store.provisional && answers) {
-          const provisional = await computeProvisional(answers);
+        if (!store.provisional && fixedAnswers) {
+          const provisional = await computeProvisional(fixedAnswers);
           if (!cancelled) {
             // zustand の setter があればそれで。無ければ直接代入でも可。
             (store as any).setProvisional

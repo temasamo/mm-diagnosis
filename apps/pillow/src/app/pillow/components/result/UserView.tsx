@@ -104,17 +104,77 @@ export default function UserView({ scores = {}, problems = [], heightKey, firmne
           budgetLabel = budgetMap[answers.budget] || budgetLabel;
         }
 
+        // ユーティリティ（ファイル上部 or 近く）
+        const normTurn = (v: any): "low"|"mid"|"high" => {
+          const s = String(v ?? "").trim();
+          if (["low","mid","high"].includes(s)) return s as any;
+          if (/ほとん|少/i.test(s)) return "low";
+          if (/よく|多/i.test(s)) return "high";
+          return "mid";
+        };
+        const normMattress = (v:any): "soft"|"normal"|"firm"|undefined => {
+          const s = String(v ?? "").trim();
+          if (/(柔|soft)/i.test(s)) return "soft";
+          if (/(硬|firm)/i.test(s)) return "firm";
+          if (!s) return undefined;
+          return "normal";
+        };
+        const derivePosture = (arr?: string[], one?: string) => {
+          const map: Record<string,string> = {"横向き":"side","仰向け":"supine","うつ伏せ":"prone"};
+          const toE = (x?: string) => !x ? undefined : (map[x] ?? x?.toLowerCase());
+          const xs = (arr && arr.length ? arr : (one ? [one] : [])).map(toE).filter(Boolean) as string[];
+          if (xs.length === 0) return { postures: [], posture: undefined };
+          if (xs.length === 1) return { postures: xs as any, posture: xs[0] as any };
+          return { postures: xs as any, posture: "mixed" as const };
+        };
+        const mapConcerns = (raw: any): string[] => {
+          const arr = Array.isArray(raw) ? raw : raw ? [raw] : [];
+          const m: Record<string,string> = {
+            "ストレートネック":"stneck","stneck":"stneck",
+            "朝起きると首が痛い":"stneck","肩こりがひどい":"stneck",
+            "頭痛・偏頭痛持ち":"headache","headache":"headache",
+            "いびき":"snore","snore":"snore",
+            "蒸れる":"heat","暑がり":"heat","heat":"heat",
+            "へたる":"flatten","flatten":"flatten",
+          };
+          const allow = new Set(["stneck","headache","snore","heat","flatten"]);
+          return arr.map((x)=>m[String(x)] ?? String(x)).filter((x)=>allow.has(x));
+        };
+
+        // AIコメント取得前に payload を構築
+        const a = answers ?? {};
+        const { postures, posture } = derivePosture(a.postures, a.posture);
+        
+        // snore (いびき) は別ラジオなので concerns に吸収する
+        const snoreFlag = ["時々ある","よくある","sometimes","often","high"].includes(
+          String(a.snore ?? a.snoreFreq ?? "").trim()
+        );
+
+        // 既存の mapConcerns(...) の後で:
+        let concerns = mapConcerns(a.concerns ?? a.problems);
+        if (snoreFlag && !concerns.includes("snore")) concerns.push("snore");
+
+        const payload = {
+          posture,                     // "side"|"supine"|"prone"|"mixed"|undefined
+          postures,                    // ("side"|"supine"|"prone")[]
+          turnFreq: normTurn(a.turnFreq ?? a.turn ?? a.rollover),   // ラジオの日本語も吸収
+          mattress: normMattress(a.mattress ?? a.mattressHardness ?? a.bedFirmness),
+          sweaty: a.sweaty ?? (a.heat === "はい") ?? false,
+          concerns: concerns,
+          currentPillowMaterial: a.currentPillowMaterial ?? a.material ?? undefined,
+          materialPref: a.materialPref ?? null,
+        };
+
+        // デバッグ（開発のみ）
+        if (process.env.NODE_ENV !== "production") {
+          console.log("[result] payload@generate-reason", payload);
+        }
+
         // AI理由文を生成
         const response = await fetch('/api/ai/generate-reason', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            problems: problems,
-            loft: loftLabel,
-            firmness: firmnessLabel,
-            material: materialLabel,
-            budget: budgetLabel
-          })
+          body: JSON.stringify(payload)
         });
 
         if (response.ok) {

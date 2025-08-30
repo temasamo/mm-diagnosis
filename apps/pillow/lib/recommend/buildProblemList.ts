@@ -1,3 +1,7 @@
+// 姿勢関連の型定義
+export type Posture = "side" | "supine" | "prone";
+export type PostureDerived = Posture | "mixed" | undefined;
+
 export type Answers = {
   // Cブロックの複数選択。文字列/配列/カンマ区切りに揺れても吸収
   concerns?: string | string[];
@@ -6,6 +10,9 @@ export type Answers = {
   heat_sweat?: string;
   mattress_firmness?: string;
   current_pillow_material?: string;
+  // 姿勢関連（後方互換）
+  postures?: Posture[];          // 複数姿勢（新規）
+  posture?: PostureDerived;      // 既存フィールドを "mixed" 許容へ
   [key: string]: any;
 };
 
@@ -111,4 +118,7 @@ export function buildProblemList(answers: Answers): ProblemList {
       ? `主な問題点: ${uniqueProblems.slice(0, 3).join("、")}${uniqueProblems.length > 3 ? "など" : ""}`
       : "特に問題なし"
   };
-} 
+}
+
+// 将来用に re-export（他ファイルから参照されやすくするだけ。構造は変えない）
+export type { Answers as PillowAnswers }; 
