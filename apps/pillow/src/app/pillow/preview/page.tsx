@@ -118,13 +118,13 @@ export default function PreviewPage() {
 
   // ページ表示後に素材質問ポップアップを表示
   useEffect(() => {
-    if (ready && !answers.current_pillow_material) {
+    if (ready) {
       const timer = setTimeout(() => {
         setShowMaterialPopup(true);
       }, 1000); // 1秒後に表示
       return () => clearTimeout(timer);
     }
-  }, [ready, answers.current_pillow_material]);
+  }, [ready]);
 
   // 素材選択時の処理
   const handleMaterialSelect = (materialId: string) => {
@@ -200,7 +200,7 @@ export default function PreviewPage() {
               AIから追加の質問です
             </h3>
             <p className="text-sm text-gray-600 mb-4">
-              あなたのお使いの枕の素材はなんですか？より良いご提案のためにわかれば教えてください
+              現在お使いの枕の素材はなんですか？より良いご提案のためにわかれば教えてください
             </p>
             
             <div className="space-y-2 mb-6">

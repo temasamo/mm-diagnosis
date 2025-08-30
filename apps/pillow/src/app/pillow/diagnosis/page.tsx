@@ -528,7 +528,7 @@ export default function Page() {
 
           {/* 素材の好み */}
           <div>
-            <label className="block text-sm font-medium mb-2">素材の好み</label>
+            <label className="block text-sm font-medium mb-2">好きな素材</label>
             <div className="space-y-2">
               <label className="flex items-center">
                 <input
