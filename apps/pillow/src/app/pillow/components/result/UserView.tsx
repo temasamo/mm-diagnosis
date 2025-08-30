@@ -154,17 +154,20 @@ export default function UserView({ scores = {}, problems = [], heightKey, firmne
         let concerns = mapConcerns(a.concerns ?? a.problems);
         if (snoreFlag && !concerns.includes("snore")) concerns.push("snore");
 
-        // 「暑がり・汗かきですか？」の値をブール化（日本語・英語・真偽どれでも拾う）
-        const isYes = (v:any) => {
+        // 1) 日本語/英語/真偽どれでも拾う
+        const isYes = (v: any) => {
           const s = String(v ?? "").trim();
           return s === "はい" || /^(true|1|yes)$/i.test(s);
         };
 
+        // 2) 旧フィールドも吸収（heat/hot/problems["蒸れる"] など）
         const sweaty =
           a.sweaty === true ||
           isYes(a.sweaty) ||
-          isYes(a.heat) ||            // 旧キー吸収
-          (Array.isArray(a.problems) && a.problems.includes("蒸れる")); // 旧スキーマ救済
+          isYes(a.heat) ||
+          isYes(a.hot) ||
+          (Array.isArray(a.problems) && a.problems.includes("蒸れる")) ||
+          isYes(a?.environment?.sweaty);
 
         const payload = {
           posture,                     // "side"|"supine"|"prone"|"mixed"|undefined
@@ -179,7 +182,7 @@ export default function UserView({ scores = {}, problems = [], heightKey, firmne
 
         // デバッグ（開発のみ）
         if (process.env.NODE_ENV !== "production") {
-          console.log("[result] payload@generate-reason", payload);
+          console.log("[result] payload@generate-reason", { sweaty, payload });
         }
 
         // AI理由文を生成

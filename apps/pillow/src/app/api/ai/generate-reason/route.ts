@@ -35,6 +35,13 @@ export async function POST(request: NextRequest) {
   try {
     const raw = await request.json();
     console.log("[api] answers.raw", raw);
+    
+    // API 入口でも受け取れてるか確認
+    console.log("[api] answers in", {
+      sweaty: raw?.sweaty,
+      keys: Object.keys(raw || {})
+    });
+    
     const payload = normalizeRequest(raw);
     console.log("[api] answers.norm", payload);
     const text = await generateReason(payload);

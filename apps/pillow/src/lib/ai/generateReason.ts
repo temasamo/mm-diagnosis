@@ -159,17 +159,21 @@ export async function generateReason(a: Answers): Promise<string> {
     const out = resp.choices[0]?.message?.content?.trim();
     if (out) {
       // --- LLM 出力後のセーフティ: 必須語がなければ1文追記 ---
-      const COOL = ["通気","放熱","冷感","メッシュ","蒸れにく"];
+      const COOL = ["通気","通気性","放熱","冷感","メッシュ","蒸れ","蒸れにく"];
       const NECK = ["面で支える","頸椎","首のカーブ","形状保持","しっかりめ"];
       const hasAny = (t:string, words:string[]) => words.some(w => t.includes(w));
 
       let result = sanitize(out, forbidExtra);
       for (const w of forbidExtra) result = result.replaceAll(w, ""); // 最終禁止語クリーニング
 
-      // ★ ここから強制追記
-      if (normalizedSweaty && !hasAny(result, COOL)) {
-        result = result.replace(/。?$/, "。") +
-          " 蒸れを抑えられる通気・放熱性の高い『枕』や、冷感素材のカバーを組み合わせると暑い季節も快適です。";
+      // 最終ガード：暑がりなら必ず1文入れる
+      if (normalizedSweaty) {
+        if (!hasAny(result, COOL)) {
+          result = result.replace(/。?$/, "。") +
+            " 蒸れを抑えられる通気・放熱性の高い枕や、冷感素材のカバーを組み合わせると暑い季節も快適です。";
+        }
+        // デバッグ
+        console.log("[gen] sweaty=true, cool-phrase ensured");
       }
       if (a.concerns?.includes("stneck") && !hasAny(result, NECK)) {
         result = result.replace(/。?$/, "。") + " 首のカーブを面で支えやすい、少ししっかりめの『枕』だと負担を分散しやすくなります。";
