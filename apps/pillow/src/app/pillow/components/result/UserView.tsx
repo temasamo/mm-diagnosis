@@ -154,12 +154,24 @@ export default function UserView({ scores = {}, problems = [], heightKey, firmne
         let concerns = mapConcerns(a.concerns ?? a.problems);
         if (snoreFlag && !concerns.includes("snore")) concerns.push("snore");
 
+        // 「暑がり・汗かきですか？」の値をブール化（日本語・英語・真偽どれでも拾う）
+        const isYes = (v:any) => {
+          const s = String(v ?? "").trim();
+          return s === "はい" || /^(true|1|yes)$/i.test(s);
+        };
+
+        const sweaty =
+          a.sweaty === true ||
+          isYes(a.sweaty) ||
+          isYes(a.heat) ||            // 旧キー吸収
+          (Array.isArray(a.problems) && a.problems.includes("蒸れる")); // 旧スキーマ救済
+
         const payload = {
           posture,                     // "side"|"supine"|"prone"|"mixed"|undefined
           postures,                    // ("side"|"supine"|"prone")[]
           turnFreq: normTurn(a.turnFreq ?? a.turn ?? a.rollover),   // ラジオの日本語も吸収
           mattress: normMattress(a.mattress ?? a.mattressHardness ?? a.bedFirmness),
-          sweaty: a.sweaty ?? (a.heat === "はい") ?? false,
+          sweaty, // ←これで上書き
           concerns: concerns,
           currentPillowMaterial: a.currentPillowMaterial ?? a.material ?? undefined,
           materialPref: a.materialPref ?? null,

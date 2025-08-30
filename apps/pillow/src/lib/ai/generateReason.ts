@@ -15,6 +15,15 @@ export type Answers = {
   materialPref?: string | null;          // 好み（任意）
 };
 
+// normalizeSweaty をこうしておく
+function normalizeSweaty(v:any): boolean {
+  if (typeof v === "boolean") return v;
+  const s = String(v ?? "").trim();
+  if (s === "はい" || /^(true|1|yes)$/i.test(s)) return true;
+  if (s === "いいえ" || /^(false|0|no)$/i.test(s)) return false;
+  return false;
+}
+
 const jpPosture = (p: "side" | "supine" | "prone") =>
   p === "side" ? "横向き" : p === "supine" ? "仰向け" : "うつ伏せ";
 
@@ -102,17 +111,21 @@ export async function generateReason(a: Answers): Promise<string> {
   // Step 1-2: 生成入口でのログ（正規化後の値も確認）
   console.log("[gen] input(raw)", a);
   
-  const { pts, avoid, facts } = buildPoints(a);
-  const { opening, forbidden } = resolveOpening(a);
+  // 暑がり・汗かきの値を正規化
+  const normalizedSweaty = normalizeSweaty(a.sweaty);
+  const normalizedAnswers = { ...a, sweaty: normalizedSweaty };
+  
+  const { pts, avoid, facts } = buildPoints(normalizedAnswers);
+  const { opening, forbidden } = resolveOpening(normalizedAnswers);
 
   // 「暑がりでない時は"通気/蒸れ"ワード禁止」を明示
   const forbidExtra = new Set(forbidden);
-  if (!a.sweaty) ["通気", "蒸れ", "放熱", "冷感"].forEach((w) => forbidExtra.add(w));
+  if (!normalizedSweaty) ["通気", "蒸れ", "放熱", "冷感"].forEach((w) => forbidExtra.add(w));
   forbidExtra.add("マットレス"); // 枕以外の提案に逸れないように
 
   // Must 観点の組み立て（既存の must に追加）
   const must: string[] = [];
-  if (a.sweaty) must.push("暑さ対策（通気・放熱・冷感のいずれかの語を含める）");
+  if (normalizedSweaty) must.push("暑さ対策（通気・放熱・冷感のいずれかの語を含める）");
   if (a.concerns?.includes("stneck")) must.push("首肩の負担軽減（面で支える/頸椎/形状保持/しっかりめ のいずれかの語を含める）");
 
   const system = [
@@ -125,7 +138,7 @@ export async function generateReason(a: Answers): Promise<string> {
 
   const user = [
     `【書き出し】${opening}`,
-    `【利用者の状況】${facts.join(" / ") || "情報少"} / 寝返り=${a.turnFreq || "不明"} / マットレス=${a.mattress || "不明"} / 暑がり=${a.sweaty ? "はい" : "いいえ"}`,
+    `【利用者の状況】${facts.join(" / ") || "情報少"} / 寝返り=${a.turnFreq || "不明"} / マットレス=${a.mattress || "不明"} / 暑がり=${normalizedSweaty ? "はい" : "いいえ"}`,
     "【助言ポイント】",
     ...pts.map((p, i) => `${i + 1}. ${p}`),
     "上のポイントを元に、自然な2〜3文でまとめてください。",
@@ -146,15 +159,17 @@ export async function generateReason(a: Answers): Promise<string> {
     const out = resp.choices[0]?.message?.content?.trim();
     if (out) {
       // --- LLM 出力後のセーフティ: 必須語がなければ1文追記 ---
-      const COOL = ["通気","放熱","冷感","メッシュ"];
+      const COOL = ["通気","放熱","冷感","メッシュ","蒸れにく"];
       const NECK = ["面で支える","頸椎","首のカーブ","形状保持","しっかりめ"];
       const hasAny = (t:string, words:string[]) => words.some(w => t.includes(w));
 
       let result = sanitize(out, forbidExtra);
       for (const w of forbidExtra) result = result.replaceAll(w, ""); // 最終禁止語クリーニング
 
-      if (a.sweaty && !hasAny(result, COOL)) {
-        result = result.replace(/。?$/, "。") + " 蒸れを抑えられる通気・放熱性の高いカバーや構造の『枕』を選ぶと、暑い時期も快適です。";
+      // ★ ここから強制追記
+      if (normalizedSweaty && !hasAny(result, COOL)) {
+        result = result.replace(/。?$/, "。") +
+          " 蒸れを抑えられる通気・放熱性の高い『枕』や、冷感素材のカバーを組み合わせると暑い季節も快適です。";
       }
       if (a.concerns?.includes("stneck") && !hasAny(result, NECK)) {
         result = result.replace(/。?$/, "。") + " 首のカーブを面で支えやすい、少ししっかりめの『枕』だと負担を分散しやすくなります。";
@@ -166,7 +181,7 @@ export async function generateReason(a: Answers): Promise<string> {
   }
 
   // フォールバック（API失敗時でも必ず返す）
-  return fallbackText(a, opening, pts, forbidExtra);
+  return fallbackText(normalizedAnswers, opening, pts, forbidExtra);
 }
 
 // -------- 後処理（禁止語が紛れたら除去・微整形） --------
