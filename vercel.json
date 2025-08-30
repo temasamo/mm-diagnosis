@@ -3,5 +3,8 @@
     "env": {
       "NODE_VERSION": "18.20.3"
     }
-  }
+  },
+  "installCommand": "pnpm install",
+  "buildCommand": "cd apps/pillow && pnpm run build",
+  "outputDirectory": "apps/pillow/.next"
 } 

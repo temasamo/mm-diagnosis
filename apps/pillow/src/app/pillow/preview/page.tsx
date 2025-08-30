@@ -61,6 +61,7 @@ export default function PreviewPage() {
   const [ready, setReady] = useState(false);
   const [showMaterialPopup, setShowMaterialPopup] = useState(false);
   const [selectedMaterial, setSelectedMaterial] = useState<string>("");
+  const [isProcessing, setIsProcessing] = useState(true);
 
   // 姿勢の補完（安全ネット）
   const fixedAnswers = useMemo(() => {
@@ -97,10 +98,13 @@ export default function PreviewPage() {
   // 初回: provisional を必ず作る & scores を store に格納、スナップショット保存
   useEffect(() => {
     let cancelled = false;
+    setIsProcessing(true);
+    
     (async () => {
       try {
         if (!store.provisional && fixedAnswers) {
-          const provisional = await computeProvisional(fixedAnswers);
+          // computeProvisionalは同期的な関数なので、awaitを削除して同期的に実行
+          const provisional = computeProvisional(fixedAnswers);
           if (!cancelled) {
             // zustand の setter があればそれで。無ければ直接代入でも可。
             (store as any).setProvisional
@@ -116,9 +120,16 @@ export default function PreviewPage() {
           "pillow_snapshot",
           JSON.stringify({ answers, scores })
         );
-        if (!cancelled) setReady(true);
-      } catch {
-        if (!cancelled) setReady(!!store.provisional);
+        if (!cancelled) {
+          setReady(true);
+          setIsProcessing(false);
+        }
+      } catch (error) {
+        console.error('Error processing provisional:', error);
+        if (!cancelled) {
+          setReady(!!store.provisional);
+          setIsProcessing(false);
+        }
       }
     })();
     return () => {
@@ -151,6 +162,16 @@ export default function PreviewPage() {
   return (
     <main className="max-w-3xl mx-auto p-6 space-y-8">
       <h1 className="text-3xl md:text-4xl font-bold mb-6">一次診断</h1>
+      
+      {/* ローディング状態の表示 */}
+      {isProcessing && (
+        <section className="rounded-2xl border p-6 bg-zinc-900/40">
+          <div className="flex items-center justify-center space-x-3">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
+            <span className="text-lg">診断結果を処理中...</span>
+          </div>
+        </section>
+      )}
       
       <section className="rounded-2xl border p-6">
         <h2 className="text-xl md:text-2xl font-semibold">あなたの診断サマリー</h2>
@@ -192,13 +213,17 @@ export default function PreviewPage() {
       <section className="flex justify-end">
         <Link
           href="/pillow/result"
-          aria-disabled={!ready}
-          className={`px-6 py-3 rounded-xl ${ready ? "bg-white/10 hover:bg-white/20" : "bg-white/5 cursor-not-allowed opacity-50"}`}
+          aria-disabled={!ready || isProcessing}
+          className={`px-6 py-3 rounded-xl transition-all ${
+            ready && !isProcessing 
+              ? "bg-white/10 hover:bg-white/20" 
+              : "bg-white/5 cursor-not-allowed opacity-50"
+          }`}
           onClick={(e) => {
-            if (!ready) e.preventDefault();
+            if (!ready || isProcessing) e.preventDefault();
           }}
         >
-          {ready ? "診断結果へ" : "準備中…"}
+          {isProcessing ? "処理中..." : ready ? "診断結果へ" : "準備中…"}
         </Link>
       </section>
 
