@@ -246,11 +246,10 @@ export default function ResultPage() {
         const g1 = await buildGroupsFromAPI(rawProv, 12, budgetBandId, true, answers);
         if (!mounted) return;
 
-        // 商品候補の取得（重複を削除）
-        if (!g1 || Object.keys(g1).length === 0) {
-          const g2 = await buildGroupsFromAPI(rawProv, 12, budgetBandId);
-          if (!mounted) return;
-          setGroups(g2);
+        if (!isEmptyGroups(g1)) {
+          setGroups(g1);
+          console.log("[recommend] groups.raw", g1);
+          console.log("[recommend] primary", g1?.primary?.length, "secondaryA", g1?.secondaryA?.length);
           return;
         }
 
@@ -264,14 +263,15 @@ export default function ResultPage() {
           return;
         }
 
+        // フォールバック済みでも0件
         setGroups(g1);
-      } catch (error) {
-        console.error("[recommend] error", error);
-        setGroups({ primary: [], secondaryBuckets: [[], [], []] });
+        console.log("[recommend] groups.raw", g1);
+        console.log("[recommend] primary", g1?.primary?.length, "secondaryA", g1?.secondaryA?.length);
       } finally {
         setLoading(false);
       }
     })();
+  }, [rawProv, answers, triedFallback]);
 
   // 適合度は「候補が1件以上あるときだけ」計算・表示（MAX85%）
   useEffect(() => {
@@ -431,77 +431,77 @@ export default function ResultPage() {
               <Link href="/pillow/preview" className="underline ml-2">プレビューへ</Link>
             </div>
           )}
+          {!disableProposals && loading && <div>商品候補を取得中...</div>}
+          {!disableProposals && !loading && (
+            (() => {
+              const noCandidates = !groups || isEmptyGroups(groups);
 
-          {(() => {
-            const noCandidates = !groups || (!groups.primary && !groups.secondaryA && !groups.secondaryB && !groups.secondaryC);
-            
-            if (noCandidates) {
+              if (noCandidates) {
+                return (
+                  <div className="text-sm text-gray-400">
+                    候補を取得できませんでした。<br />
+                    ・予算条件を緩める／時間をおいて再実行する<br />
+                    ・検索語（カテゴリ）が厳しすぎる可能性があります
+                  </div>
+                );
+              }
+
               return (
-                <div className="text-sm text-gray-400">
-                  候補を取得できませんでした。<br />
-                  ・予算条件を緩める／時間をおいて再実行する<br />
-                  ・検索語（カテゴリ）が厳しすぎる可能性があります
-                </div>
-              );
-            }
-
-            return (
-              <div>
-                {/* --- 第一候補グループ --- */}
-                {Array.isArray(groups.primary) && groups.primary.length > 0 && (
-                  <>
-                    <h3 className="text-lg md:text-xl font-semibold mt-8 mb-3">第一候補グループ</h3>
-                    <div className="grid gap-4 sm:grid-cols-3 mb-6">
-                      {groups.primary.slice(0, 3).map((item: any, index: number) => (
-                        <ProductCard key={item.id} item={item} onCardClick={(productId) => onCardClick(productId, index)} />
+                <div>
+                  {/* --- 第一候補グループ --- */}
+                  {Array.isArray(groups.primary) && groups.primary.length > 0 && (
+                    <>
+                      <h3 className="text-lg md:text-xl font-semibold mt-8 mb-3">第一候補グループ</h3>
+                      <div className="grid gap-4 sm:grid-cols-3 mb-6">
+                        {groups.primary.slice(0, 3).map((item: any, index: number) => (
+                          <ProductCard key={item.id} item={item} onCardClick={(productId) => onCardClick(productId, index)} />
+                        ))}
+                      </div>
+                    </>
+                  )}
+                  
+                  {/* --- 第二候補グループ --- */}
+                  <h3 className="text-lg md:text-xl font-semibold mt-10 mb-3">第二候補グループ</h3>
+                  <div className="space-y-4">
+                    <div className="flex gap-2">
+                      <button
+                        className={`px-3 py-1 rounded ${secondaryOpen === "a" ? "bg-white/10" : "bg-white/5"}`}
+                        onClick={() => setSecondaryOpen("a")}
+                      >
+                        {groups.secondaryLabels?.[0] || "横向き・高反発"}
+                      </button>
+                      <button
+                        className={`px-3 py-1 rounded ${secondaryOpen === "b" ? "bg-white/10" : "bg-white/5"}`}
+                        onClick={() => setSecondaryOpen("b")}
+                      >
+                        {groups.secondaryLabels?.[1] || "低反発・仰向け"}
+                      </button>
+                      <button
+                        className={`px-3 py-1 rounded ${secondaryOpen === "c" ? "bg-white/10" : "bg-white/5"}`}
+                        onClick={() => setSecondaryOpen("c")}
+                      >
+                        {groups.secondaryLabels?.[2] || "首肩・調整"}
+                      </button>
+                    </div>
+                    
+                    <div className="grid gap-4 sm:grid-cols-3">
+                      {(secondaryOpen === "a" ? groups.secondaryA : 
+                        secondaryOpen === "b" ? groups.secondaryB : 
+                        groups.secondaryC)?.map((item: any, index: number) => (
+                        <ProductCard key={item.id} item={item} onCardClick={(productId) => onCardClick(productId, index + 3)} />
                       ))}
                     </div>
-                  </>
-                )}
-                
-                {/* --- 第二候補グループ --- */}
-                <h3 className="text-lg md:text-xl font-semibold mt-10 mb-3">第二候補グループ</h3>
-                <div className="space-y-4">
-                  <div className="flex gap-2">
-                    <button
-                      className={`px-3 py-1 rounded ${secondaryOpen === "a" ? "bg-white/10" : "bg-white/5"}`}
-                      onClick={() => setSecondaryOpen("a")}
-                    >
-                      {groups.secondaryLabels?.[0] || "横向き・高反発"}
-                    </button>
-                    <button
-                      className={`px-3 py-1 rounded ${secondaryOpen === "b" ? "bg-white/10" : "bg-white/5"}`}
-                      onClick={() => setSecondaryOpen("b")}
-                    >
-                      {groups.secondaryLabels?.[1] || "低反発・仰向け"}
-                    </button>
-                    <button
-                      className={`px-3 py-1 rounded ${secondaryOpen === "c" ? "bg-white/10" : "bg-white/5"}`}
-                      onClick={() => setSecondaryOpen("c")}
-                    >
-                      {groups.secondaryLabels?.[2] || "首肩・調整"}
-                    </button>
-                  </div>
-                  
-                  <div className="grid gap-4 sm:grid-cols-3">
-                    {(secondaryOpen === "a" ? groups.secondaryA : 
-                      secondaryOpen === "b" ? groups.secondaryB : 
-                      groups.secondaryC)?.map((item: any, index: number) => (
-                      <ProductCard key={item.id} item={item} onCardClick={(productId) => onCardClick(productId, index + 3)} />
-                    ))}
                   </div>
                 </div>
-              </div>
-            );
-          })()}
+              );
+            })()
+          )}
           {/* …（以降は既存の商品カード描画をそのまま）… */}
         </section>
       )}
 
       <div className="flex justify-end">
-        <Link href="/pillow" className="px-6 py-3 rounded-xl bg-white/10 hover:bg-white/20">
-          トップに戻る
-        </Link>
+        <Link href="/pillow" className="px-4 py-2 rounded-xl border">最初に戻る</Link>
       </div>
     </main>
   );

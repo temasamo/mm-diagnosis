@@ -12,12 +12,8 @@ import { derivePosture } from "../../../lib/utils/posture";
 // お悩みの堅牢化ヘルパー
 function deriveProblems(answers: any): string[] {
   const problemList = buildProblemList(answers);
-  return problemList.bullets;
+  return Array.isArray((problemList as any).bullets) ? (problemList as any).bullets : [];
 }
-
-  // ← ここを追加：常にスカラに正規化
-  const s = qp(params.s);
-  const h = qp(params.h);
 
 // 回答から最低限のカテゴリスコアを作る（既に store.scores があれば使う）
 function deriveScores(ans: any) {
@@ -67,12 +63,8 @@ export default function PreviewPage() {
     return answers;
   }, [answers]);
 
-  const height = toHeightLabel(
-    fixedAnswers?.prefHeight ?? fixedAnswers?.heightFeel ?? fixedAnswers?.cur_height_feel
-  );
-  const soft = toSoftnessLabel(
-    fixedAnswers?.prefFirmness ?? fixedAnswers?.firmnessFeel ?? fixedAnswers?.cur_firm
-  );
+  const height = fixedAnswers?.prefHeight ?? fixedAnswers?.heightFeel ?? fixedAnswers?.cur_height_feel ?? "指定なし";
+  const soft = fixedAnswers?.prefFirmness ?? fixedAnswers?.firmnessFeel ?? fixedAnswers?.cur_firm ?? "指定なし";
   const summary = formatSummary(height, soft);
 
   // お悩みの堅牢化
@@ -166,9 +158,9 @@ export default function PreviewPage() {
       {/* 「あなたのお悩み」 */}
       <section>
         <h2 className="text-lg font-semibold">あなたのお悩み</h2>
-        {problems.bullets.length ? (
+        {problems.length ? (
           <ul className="list-disc pl-6 space-y-1">
-            {problems.bullets.map((b: string) => <li key={b}>{b}</li>)}
+            {problems.map((b: string) => <li key={b}>{b}</li>)}
           </ul>
         ) : (
           <p className="text-muted-foreground">特筆すべきお悩みは選択されていません。</p>
