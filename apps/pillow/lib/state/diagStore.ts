@@ -1,6 +1,7 @@
 "use client";
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
+import { migrateBudget } from '../budget';
 
 // 購入理由を2択に変更
 export type PurchaseReason = "not-fit" | "better";
@@ -155,6 +156,33 @@ export const useDiagStore = create<DiagState>()(
             purchaseReason: normalizeReason(state?.purchaseReason),
           };
         }
+        
+        // バージョン2以降のマイグレーション
+        if (state?.answers) {
+          const answers = { ...state.answers };
+          
+          // 予算のマイグレーション
+          if (answers.budget) {
+            answers.budget = migrateBudget(answers.budget);
+          }
+          
+          // fatigueキーを削除
+          if (answers.fatigue) {
+            delete answers.fatigue;
+          }
+          
+          // cur_issuesをconcernsに変換
+          if (answers.cur_issues) {
+            answers.concerns = answers.cur_issues;
+            delete answers.cur_issues;
+          }
+          
+          return {
+            ...state,
+            answers,
+          };
+        }
+        
         return state;
       },
     }

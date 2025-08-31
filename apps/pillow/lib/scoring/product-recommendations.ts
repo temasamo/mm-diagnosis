@@ -208,10 +208,11 @@ export function filterByBudget(
   budget: string
 ): RecommendationGroups {
   const budgetRanges = {
-    "lt5k": { min: 0, max: 5000 },
-    "5k-15k": { min: 5000, max: 15000 },
-    "15k-30k": { min: 15000, max: 30000 },
-    "30k+": { min: 30000, max: Infinity }
+    "lt3000": { min: 0, max: 3000 },
+    "3k-6k": { min: 3000, max: 6000 },
+    "6k-10k": { min: 6000, max: 10000 },
+    "10k-20k": { min: 10000, max: 20000 },
+    "20kplus": { min: 20000, max: Infinity }
   };
 
   const range = budgetRanges[budget as keyof typeof budgetRanges];

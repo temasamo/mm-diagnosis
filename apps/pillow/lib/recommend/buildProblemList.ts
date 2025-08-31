@@ -1,43 +1,124 @@
-import { JP_PROBLEM_LABEL, ProblemKey } from "../../src/i18n/problems";
+// 姿勢関連の型定義
+export type Posture = "side" | "supine" | "prone";
+export type PostureDerived = Posture | "mixed" | undefined;
 
 export type Answers = {
   // Cブロックの複数選択。文字列/配列/カンマ区切りに揺れても吸収
-  problems?: ProblemKey[] | string[] | string | null;
-  notesC?: string | null;
+  concerns?: string | string[];
+  neck_shoulder_issues?: string | string[];
+  snore?: string;
+  heat_sweat?: string;
+  mattress_firmness?: string;
+  current_pillow_material?: string;
+  // 姿勢関連（後方互換）
+  postures?: Posture[];          // 複数姿勢（新規）
+  posture?: PostureDerived;      // 既存フィールドを "mixed" 許容へ
+  [key: string]: any;
 };
-
-/** 受け取り値を ProblemKey[] に正規化（未知値は捨てる） */
-function normalizeProblems(src: Answers["problems"]): ProblemKey[] {
-  const KNOWN = new Set<ProblemKey>(Object.keys(JP_PROBLEM_LABEL) as ProblemKey[]);
-  const arr = Array.isArray(src)
-    ? src
-    : typeof src === "string"
-      ? src.split(",").map(s => s.trim()).filter(Boolean)
-      : [];
-  const keys: ProblemKey[] = [];
-  for (const v of arr) {
-    // "C_snore" など前置詞付き・UI値を許容
-    const k = (String(v).replace(/^C[_-]/, "") as ProblemKey);
-    if (KNOWN.has(k)) keys.push(k);
-  }
-  // 重複除去
-  return Array.from(new Set(keys));
-}
 
 export type ProblemList = {
   bullets: string[];
-  sentence: string;
-  debugKeys: ProblemKey[];
+  summary: string;
 };
 
-export function buildProblemList(ans: Answers): ProblemList {
-  const keys = normalizeProblems(ans?.problems ?? []);
-  const bullets = keys.map(k => JP_PROBLEM_LABEL[k]).filter(Boolean);
+// 問題点のラベルマッピング
+const PROBLEM_LABELS: Record<string, string> = {
+  // concerns（気になる点）
+  neck_pain: "首が痛い",
+  height_mismatch: "高さが合わない",
+  poor_turn: "寝返りしづらい",
+  sweat: "蒸れる",
+  sagging: "へたる",
+  
+  // neck_shoulder_issues（首・肩の問題）
+  morning_neck_pain: "朝起きると首が痛い",
+  severe_shoulder_stiffness: "肩こりがひどい",
+  headache: "頭痛・偏頭痛持ち",
+  straight_neck: "ストレートネック",
+  
+  // snore（いびき）
+  often: "いびきをよくかく",
+  sometimes: "いびきを時々かく",
+  
+  // heat_sweat（暑がり）
+  yes: "暑がり・汗かき",
+  
+  // mattress_firmness（マットレス硬さ）
+  soft: "柔らかめマットレス",
+  firm: "硬めマットレス",
+  
+  // current_pillow_material（現在の枕の素材）
+  low_rebound: "低反発ウレタン枕",
+  high_rebound: "高反発ウレタン枕",
+  latex: "ラテックス枕",
+  pipe: "パイプ枕",
+  beads: "ビーズ枕",
+  feather: "羽毛・フェザー枕",
+  poly_cotton: "ポリエステル綿枕",
+  sobakawa: "そば殻枕",
+};
 
-  const sentence =
-    bullets.length > 0
-      ? bullets.join("、")
-      : "特筆すべきお悩みは選択されていません。";
+// 配列を正規化（文字列/配列/カンマ区切りに対応）
+function normalizeArray(value: any): string[] {
+  if (!value) return [];
+  if (Array.isArray(value)) return value;
+  if (typeof value === "string") {
+    return value.split(",").map(s => s.trim()).filter(Boolean);
+  }
+  return [];
+}
 
-  return { bullets, sentence, debugKeys: keys };
-} 
+export function buildProblemList(answers: Answers): ProblemList {
+  const problems: string[] = [];
+  
+  // 1. concerns（気になる点）から
+  const concerns = normalizeArray(answers.concerns);
+  concerns.forEach(concern => {
+    const label = PROBLEM_LABELS[concern];
+    if (label) problems.push(label);
+  });
+  
+  // 2. neck_shoulder_issues（首・肩の問題）から
+  const neckIssues = normalizeArray(answers.neck_shoulder_issues);
+  neckIssues.forEach(issue => {
+    const label = PROBLEM_LABELS[issue];
+    if (label) problems.push(label);
+  });
+  
+  // 3. snore（いびき）から
+  if (answers.snore && answers.snore !== "rarely" && answers.snore !== "unknown") {
+    const label = PROBLEM_LABELS[answers.snore];
+    if (label) problems.push(label);
+  }
+  
+  // 4. heat_sweat（暑がり）から
+  if (answers.heat_sweat === "yes") {
+    const label = PROBLEM_LABELS[answers.heat_sweat];
+    if (label) problems.push(label);
+  }
+  
+  // 5. mattress_firmness（マットレス硬さ）から
+  if (answers.mattress_firmness && answers.mattress_firmness !== "mid" && answers.mattress_firmness !== "unknown") {
+    const label = PROBLEM_LABELS[answers.mattress_firmness];
+    if (label) problems.push(label);
+  }
+  
+  // 6. current_pillow_material（現在の枕の素材）から
+  if (answers.current_pillow_material && answers.current_pillow_material !== "other") {
+    const label = PROBLEM_LABELS[answers.current_pillow_material];
+    if (label) problems.push(label);
+  }
+  
+  // 重複を除去
+  const uniqueProblems = Array.from(new Set(problems));
+  
+  return {
+    bullets: uniqueProblems,
+    summary: uniqueProblems.length > 0 
+      ? `主な問題点: ${uniqueProblems.slice(0, 3).join("、")}${uniqueProblems.length > 3 ? "など" : ""}`
+      : "特に問題なし"
+  };
+}
+
+// 将来用に re-export（他ファイルから参照されやすくするだけ。構造は変えない）
+export type { Answers as PillowAnswers }; 

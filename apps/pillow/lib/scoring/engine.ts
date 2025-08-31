@@ -63,9 +63,6 @@ export function computeProvisional(answers: Answers): ProvisionalResult {
   const snore = answers.snore ? `snore_${answers.snore}` : null;
   if (snore && COMFORT_WEIGHTS[snore]) sumWeights(COMFORT_WEIGHTS[snore], scores, "いびき傾向", reasons);
 
-  const fatigue = answers.fatigue ? `fatigue_${answers.fatigue}` : null;
-  if (fatigue && COMFORT_WEIGHTS[fatigue]) sumWeights(COMFORT_WEIGHTS[fatigue], scores, "起床時の疲れ", reasons);
-
   const heat = answers.heat_sweat ? `heat_${answers.heat_sweat}` : null;
   if (heat && COMFORT_WEIGHTS[heat]) sumWeights(COMFORT_WEIGHTS[heat], scores, "暑がり傾向", reasons);
 

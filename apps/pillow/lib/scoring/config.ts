@@ -59,9 +59,6 @@ export const COMFORT_WEIGHTS: Record<string, Partial<Record<CategoryId, number>>
   snore_often:      { "back-contour": 0.15, "side-contour": 0.15, "adjustable": 0.1 },
   snore_sometimes:  { "back-contour": 0.1,  "side-contour": 0.1 },
   snore_rarely:     {},
-  fatigue_remain:   { "adjustable": 0.1, "firm-support": 0.1 },
-  fatigue_normal:   {},
-  fatigue_clear:    {},
   heat_yes:         { "cooling": 0.3 },
   heat_no:          {},
 };
@@ -92,10 +89,11 @@ export const PREF_WEIGHTS = {
 
 // 予算→カテゴリの現実解（あくまで初期の傾向）
 export const BUDGET_WEIGHTS = {
-  "lt5k":    { "natural-fill": 0.1, "low-loft": 0.05, "mid-loft": 0.05 },
-  "5k-15k":  { "mid-loft": 0.1, "adjustable": 0.05, "side-contour": 0.05 },
-  "15k-30k": { "adjustable": 0.1, "back-contour": 0.1, "cooling": 0.05 },
-  "30k+":    { "cooling": 0.1, "firm-support": 0.1, "back-contour": 0.1 },
+  "lt3000":  { "natural-fill": 0.1, "low-loft": 0.05, "mid-loft": 0.05 },
+  "3k-6k":   { "mid-loft": 0.1, "adjustable": 0.05, "side-contour": 0.05 },
+  "6k-10k":  { "adjustable": 0.1, "back-contour": 0.1, "cooling": 0.05 },
+  "10k-20k": { "adjustable": 0.15, "back-contour": 0.15, "cooling": 0.1, "firm-support": 0.1 },
+  "20kplus": { "cooling": 0.15, "firm-support": 0.15, "back-contour": 0.15 },
 };
 
  

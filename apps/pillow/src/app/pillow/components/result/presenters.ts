@@ -19,6 +19,18 @@ export const labelMap: Record<string, string> = {
   firm_support: '硬めでしっかり支持',
   soft_feel: 'やわらかめ',
   cervical_support_supine: '仰向け 首サポート',
+  // マットレス硬さ
+  soft_mattress: '柔らかめマットレス対応',
+  firm_mattress: '硬めマットレス対応',
+  // 素材
+  low_rebound_pillow: '低反発ウレタン枕使用',
+  high_rebound_pillow: '高反発ウレタン枕使用',
+  latex_pillow: 'ラテックス枕使用',
+  pipe_pillow: 'パイプ枕使用',
+  beads_pillow: 'ビーズ枕使用',
+  feather_pillow: '羽毛・フェザー枕使用',
+  poly_cotton_pillow: 'ポリエステル綿枕使用',
+  sobakawa_pillow: 'そば殻枕使用',
   // 足りなければ随時追加
 };
 
@@ -32,6 +44,18 @@ export const helpTextMap: Record<string, string> = {
   firm_support: '沈み込みを抑えて負担を分散',
   soft_feel: '包まれる感触でリラックス',
   cervical_support_supine: '仰向け時の頸椎をやさしく支持',
+  // マットレス硬さ
+  soft_mattress: '柔らかめマットレスに合わせた枕の高さ調整',
+  firm_mattress: '硬めマットレスに合わせた枕の高さ調整',
+  // 素材
+  low_rebound_pillow: '低反発ウレタン枕から素材改善を提案',
+  high_rebound_pillow: '高反発ウレタン枕から素材改善を提案',
+  latex_pillow: 'ラテックス枕から素材改善を提案',
+  pipe_pillow: 'パイプ枕から素材改善を提案',
+  beads_pillow: 'ビーズ枕から素材改善を提案',
+  feather_pillow: '羽毛・フェザー枕から素材改善を提案',
+  poly_cotton_pillow: 'ポリエステル綿枕から素材改善を提案',
+  sobakawa_pillow: 'そば殻枕から素材改善を提案',
 };
 
 export function rankSymbol(rank: Rank): '◎' | '○' | '△' {
@@ -46,11 +70,54 @@ export function pickTopChips(scores: Record<string, number> = {}): Array<{key:st
     .map(([k]) => ({ key: k, label: labelMap[k] ?? k }));
 }
 
-// 「高さは高め・柔らかさは硬め」形式の自然文を生成
+// 素材のラベルマッピング
+const MATERIAL_LABELS: Record<string, string> = {
+  low_rebound: '低反発ウレタン',
+  high_rebound: '高反発ウレタン',
+  latex: 'ラテックス',
+  pipe: 'パイプ',
+  beads: 'ビーズ',
+  feather: '羽毛・フェザー',
+  poly_cotton: 'ポリエステル綿',
+  sobakawa: 'そば殻',
+  other: 'その他',
+};
+
+// AIらしい診断文を生成（高さ・硬さ・素材＋理由）
 export function buildComment(opts: {
   heightKey?: 'low_height'|'middle_height'|'high_height';
   firmnessKey?: 'soft_feel'|'firm_support';
+  mattressFirmness?: 'soft'|'firm'|'mid';
+  currentMaterial?: string;
+  answers?: any; // 新しいAI診断用
 }) {
+  // 新しいAI診断ロジックが利用可能な場合
+  if (opts.answers) {
+    try {
+      const { buildDiagnosisText } = require('@lib/diagnosis_text');
+      
+      // 高さ・硬さの変換
+      const targetLoft = opts.heightKey === 'low_height' ? 'low' as const
+                        : opts.heightKey === 'high_height' ? 'high' as const
+                        : 'mid' as const;
+      const targetFirm = opts.firmnessKey === 'soft_feel' ? 'soft' as const
+                        : opts.firmnessKey === 'firm_support' ? 'firm' as const
+                        : 'mid' as const;
+      
+      const result = buildDiagnosisText({
+        targetLoft,
+        targetFirm,
+        mattressFirmness: opts.mattressFirmness,
+        answers: opts.answers
+      });
+      
+      return result.headline;
+    } catch (error) {
+      console.warn('AI診断ロジックの読み込みに失敗、フォールバック使用:', error);
+    }
+  }
+
+  // フォールバック: 従来のシンプルな表示
   const heightPart =
     opts.heightKey === 'low_height' ? '低め' :
     opts.heightKey === 'high_height' ? '高め' :
@@ -60,7 +127,24 @@ export function buildComment(opts: {
     opts.firmnessKey === 'firm_support' ? '硬め' :
     '標準';
 
-  return `あなたにおすすめの枕は「高さは${heightPart}・柔らかさは${firmnessPart}」タイプです。`;
+  // 素材情報を追加
+  let materialPart = '';
+  if (opts.currentMaterial && opts.currentMaterial !== 'other') {
+    const materialLabel = MATERIAL_LABELS[opts.currentMaterial];
+    if (materialLabel) {
+      materialPart = `・素材は${materialLabel}`;
+    }
+  }
+
+  // マットレス硬さを考慮したコメント
+  let mattressPart = '';
+  if (opts.mattressFirmness === 'soft') {
+    mattressPart = '（柔らかめマットレスに合わせて低め枕を推奨）';
+  } else if (opts.mattressFirmness === 'firm') {
+    mattressPart = '（硬めマットレスに合わせて高め枕を推奨）';
+  }
+
+  return `あなたにおすすめの枕は「高さは${heightPart}・柔らかさは${firmnessPart}${materialPart}」タイプです。${mattressPart}`;
 }
 
 // formatSummary関数（height/softness のラベルを渡す）
