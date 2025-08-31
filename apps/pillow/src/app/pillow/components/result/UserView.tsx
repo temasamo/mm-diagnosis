@@ -3,6 +3,34 @@
 import React, { useEffect, useState } from 'react';
 import { pickTopChips, problemsToBullets, buildComment } from './presenters';
 
+// ❶ 補助: 文字や真偽を yes/true 判定に寄せる
+function isYes(v: unknown): boolean {
+  if (typeof v === 'boolean') return v;
+  if (v == null) return false;
+  const s = String(v).trim().toLowerCase();
+  return ['yes','true','1','y','はい','うん','ok'].some(x => s.includes(x));
+}
+
+// ❷ 補助: "暑がり/蒸れる"入力を複数ソースから正規化
+function normalizeSweaty(a: any): boolean {
+  // 新UI: heat_sweat=はい/いいえ
+  const byHeatFlag =
+    isYes(a?.heat_sweat) ||
+    ['はい','high','hot','暑','汗'].some(k => String(a?.heat_sweat ?? a?.heat ?? '').includes(k));
+
+  // 旧UI・別名フォールバック
+  const byLegacy =
+    isYes(a?.sweaty) ||
+    String(a?.heat ?? '').includes('暑') ||
+    String(a?.heat ?? '').includes('汗');
+
+  // "気になる点/今の悩み"で「蒸れる」が含まれているか
+  const concerns: string[] = (a?.concerns ?? a?.problems ?? []);
+  const byConcerns = concerns.some((w) => /蒸れ|ムレ|汗|暑/i.test(String(w)));
+
+  return !!(byHeatFlag || byLegacy || byConcerns);
+}
+
 type Props = {
   // 既存ストア/結果から受け取る想定
   scores?: Record<string, number>;
@@ -154,30 +182,18 @@ export default function UserView({ scores = {}, problems = [], heightKey, firmne
         let concerns = mapConcerns(a.concerns ?? a.problems);
         if (snoreFlag && !concerns.includes("snore")) concerns.push("snore");
 
-        // 1) 日本語/英語/真偽どれでも拾う
-        const isYes = (v: any) => {
-          const s = String(v ?? "").trim();
-          return s === "はい" || /^(true|1|yes)$/i.test(s);
-        };
-
-        // 2) 旧フィールドも吸収（heat/hot/problems["蒸れる"] など）
-        const sweaty =
-          a.sweaty === true ||
-          isYes(a.sweaty) ||
-          isYes(a.heat) ||
-          isYes(a.hot) ||
-          (Array.isArray(a.problems) && a.problems.includes("蒸れる")) ||
-          isYes(a?.environment?.sweaty);
+        // 正規化した sweaty を載せる
+        const sweaty = normalizeSweaty(a);
 
         const payload = {
-          posture,                     // "side"|"supine"|"prone"|"mixed"|undefined
-          postures,                    // ("side"|"supine"|"prone")[]
-          turnFreq: normTurn(a.turnFreq ?? a.turn ?? a.rollover),   // ラジオの日本語も吸収
-          mattress: normMattress(a.mattress ?? a.mattressHardness ?? a.bedFirmness),
-          sweaty, // ←これで上書き
-          concerns: concerns,
-          currentPillowMaterial: a.currentPillowMaterial ?? a.material ?? undefined,
-          materialPref: a.materialPref ?? null,
+          posture: answers?.posture,             // 既存
+          postures: answers?.postures ?? [],     // 既存
+          turnFreq: answers?.rollover ?? answers?.turnFreq ?? 'mid',
+          mattress: answers?.material ?? answers?.mattress,
+          // ⬇️ 新規: 正規化した sweaty を載せる
+          sweaty: sweaty,
+          // （必要なら concerns も送る）
+          concerns: answers?.concerns ?? answers?.problems ?? [],
         };
 
         // デバッグ（開発のみ）

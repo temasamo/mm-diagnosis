@@ -44,7 +44,18 @@ export async function POST(request: NextRequest) {
     
     const payload = normalizeRequest(raw);
     console.log("[api] answers.norm", payload);
-    const text = await generateReason(payload);
+    
+    // 取りこぼし防止：古い/新しいキーを吸収
+    const input = {
+      posture: payload.posture,
+      postures: payload.postures ?? [],
+      turnFreq: payload.turnFreq ?? 'mid',
+      mattress: payload.mattress,
+      sweaty: !!(payload.sweaty),  // ⬅ そのまま通す
+      concerns: payload.concerns ?? [],
+    };
+    
+    const text = await generateReason(input);
     return NextResponse.json({ reason: text });
   } catch (error) {
     console.error('AI理由文生成エラー:', error);

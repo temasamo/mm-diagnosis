@@ -15,6 +15,16 @@ export type Answers = {
   materialPref?: string | null;          // 好み（任意）
 };
 
+// 型を軽く緩め/受け取り
+type ReasonInput = {
+  posture?: string;
+  postures?: string[];
+  turnFreq?: 'low'|'mid'|'high'|string;
+  mattress?: string;
+  sweaty?: boolean;           // ⬅ 追加（存在しなくてもOK）
+  concerns?: string[];
+};
+
 // normalizeSweaty をこうしておく
 function normalizeSweaty(v:any): boolean {
   if (typeof v === "boolean") return v;
@@ -26,6 +36,17 @@ function normalizeSweaty(v:any): boolean {
 
 const jpPosture = (p: "side" | "supine" | "prone") =>
   p === "side" ? "横向き" : p === "supine" ? "仰向け" : "うつ伏せ";
+
+// 後付け関数を用意
+function ensureCoolAdvice(out: string, sweaty?: boolean): string {
+  if (!sweaty) return out;
+
+  // 既に触れていれば二重に書かない
+  const hasCool = /(通気|放熱|ムレ|蒸れ|冷感|メッシュ|リネン|風通し|放湿|吸湿)/.test(out);
+  if (hasCool) return out;
+
+  return out + ' また、蒸れやすい方は通気性や放熱性に優れた枕（例：パイプ素材やメッシュ構造、冷感カバーの併用）を選ぶと、熱がこもりにくく快適に眠れます。';
+}
 
 // -------- ルール: 事実→助言ポイントを抽出（ここが可変性の源） --------
 function buildPoints(a: Answers) {
@@ -166,6 +187,9 @@ export async function generateReason(a: Answers): Promise<string> {
       let result = sanitize(out, forbidExtra);
       for (const w of forbidExtra) result = result.replaceAll(w, ""); // 最終禁止語クリーニング
 
+      // ここで強制追記（※禁則語クリーニングの「後」に）
+      result = ensureCoolAdvice(result, normalizedSweaty);
+      
       // 最終ガード：暑がりなら必ず1文入れる
       if (normalizedSweaty) {
         if (!hasAny(result, COOL)) {
