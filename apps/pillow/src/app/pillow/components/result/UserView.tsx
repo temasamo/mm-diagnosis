@@ -31,6 +31,62 @@ function normalizeSweaty(a: any): boolean {
   return !!(byHeatFlag || byLegacy || byConcerns);
 }
 
+// ❸ 補助: "今の悩み"を正規化トークンに変換
+type ConcernTag = "morning_pain" | "stiff_shoulder" | "headache" | "straight_neck";
+
+// 配列化ユーティリティ
+const toArray = (v: unknown): string[] => {
+  if (Array.isArray(v)) return v.map(String);
+  if (v == null) return [];
+  if (typeof v === "string") {
+    // JSON配列 or カンマ区切り 両対応
+    try {
+      const j = JSON.parse(v);
+      if (Array.isArray(j)) return j.map(String);
+    } catch {}
+    return v.split(",").map(s => s.trim()).filter(Boolean);
+  }
+  return [String(v)];
+};
+
+// 既存/新キーをまとめるエイリアス表
+const CONCERN_ALIASES: Record<string, ConcernTag> = {
+  // 日本語ラベル
+  "朝起きると首が痛い": "morning_pain",
+  "首が痛い": "morning_pain",
+  "肩こりがひどい": "stiff_shoulder",
+  "頭痛": "headache",
+  "偏頭痛持ち": "headache",
+  "ストレートネックと診断": "straight_neck",
+  // 旧キー/英語想定
+  "morning_pain": "morning_pain",
+  "morning_neck_pain": "morning_pain",     // ★ 新規：neck_shoulder_issues 由来
+  "stiff_shoulder": "stiff_shoulder",
+  "shoulder_stiffness": "stiff_shoulder",
+  "headache": "headache",
+  "migraine": "headache",
+  "headache_migraine": "headache",
+  "straight_neck": "straight_neck",
+};
+
+// 既存 normalizeConcerns を "複数ソース" 対応に
+const normalizeConcerns = (answers: any): ConcernTag[] => {
+  // ここに見るべきソースを増やす
+  const raw = [
+    ...toArray(answers.concerns),
+    ...toArray(answers.problems),
+    ...toArray(answers.neck_shoulder_issues),   // ★ これを追加
+    ...toArray(answers.neckIssues),             // 念のため別名も拾う
+  ];
+
+  const mapped = raw
+    .map((s) => CONCERN_ALIASES[String(s)])
+    .filter(Boolean) as ConcernTag[];
+
+  // 重複排除
+  return Array.from(new Set(mapped));
+};
+
 type Props = {
   // 既存ストア/結果から受け取る想定
   scores?: Record<string, number>;
@@ -185,6 +241,16 @@ export default function UserView({ scores = {}, problems = [], heightKey, firmne
         // 正規化した sweaty を載せる
         const sweaty = normalizeSweaty(a);
 
+        // 正規化した concerns を載せる
+        const normalizedConcerns = normalizeConcerns(a);
+        console.log("[result] normalizedConcerns", normalizedConcerns, {
+          from: {
+            concerns: answers.concerns,
+            problems: answers.problems,
+            neck_shoulder_issues: answers.neck_shoulder_issues,
+          },
+        });
+
         const payload = {
           posture: answers?.posture,             // 既存
           postures: answers?.postures ?? [],     // 既存
@@ -192,14 +258,11 @@ export default function UserView({ scores = {}, problems = [], heightKey, firmne
           mattress: answers?.material ?? answers?.mattress,
           // ⬇️ 新規: 正規化した sweaty を載せる
           sweaty: sweaty,
-          // （必要なら concerns も送る）
-          concerns: answers?.concerns ?? answers?.problems ?? [],
+          // ⬇️ 新規: 正規化した concerns を載せる
+          concerns: normalizedConcerns,  // ★ 必ずこの名前で入れる（normalizedConcerns のままにしない）
         };
 
-        // デバッグ（開発のみ）
-        if (process.env.NODE_ENV !== "production") {
-          console.log("[result] payload@generate-reason", { sweaty, payload });
-        }
+        console.log("[result] payload@generate-reason", payload);
 
         // AI理由文を生成
         const response = await fetch('/api/ai/generate-reason', {

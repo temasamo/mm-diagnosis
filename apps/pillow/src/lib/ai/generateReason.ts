@@ -10,10 +10,14 @@ export type Answers = {
   turnFreq?: "low" | "mid" | "high";
   mattress?: "soft" | "normal" | "firm";
   sweaty?: boolean;                      // 暑がり・汗かき
-  concerns?: string[];                   // 例: ["stneck","headache","snore","heat","flatten"]
+  concerns?: ConcernTok[];               // ★更新: 正規化トークン
   currentPillowMaterial?: string;        // 例: "pipe"|"LR"|"HR"|"latex"|...
   materialPref?: string | null;          // 好み（任意）
 };
+
+// 正規化トークン型
+type ConcernTag = "morning_pain" | "stiff_shoulder" | "headache" | "straight_neck";
+type ConcernTok = ConcernTag|'stneck'|'snore'|'flatten';
 
 // 型を軽く緩め/受け取り
 type ReasonInput = {
@@ -22,7 +26,7 @@ type ReasonInput = {
   turnFreq?: 'low'|'mid'|'high'|string;
   mattress?: string;
   sweaty?: boolean;           // ⬅ 追加（存在しなくてもOK）
-  concerns?: string[];
+  concerns?: ConcernTok[];    // ★追加
 };
 
 // normalizeSweaty をこうしておく
@@ -36,6 +40,45 @@ function normalizeSweaty(v:any): boolean {
 
 const jpPosture = (p: "side" | "supine" | "prone") =>
   p === "side" ? "横向き" : p === "supine" ? "仰向け" : "うつ伏せ";
+
+// ベース文（共通）
+const BASE: Record<ConcernTok, string> = {
+  morning_pain:
+    '首の自然なカーブを保てるよう、高さの微調整がしやすい枕が安心です。',
+  stiff_shoulder:
+    '少ししっかりめで沈み込み過ぎない、形状保持性のあるタイプが向いています。',
+  headache:
+    '圧が安定して分散される構造を選ぶと、過度な高すぎ／硬すぎを避けやすくなります。',
+  straight_neck:
+    '頸椎カーブを補う形（波型や頸椎サポート）＋適切な高さ調整が有効です。',
+  stneck: '面で支えて頸椎のカーブを保ちやすい形状の『枕』だと負担を分散しやすい',
+  snore: '気道が確保されやすい高さ調整や横向き対応の形状の『枕』が役立つことがある',
+  flatten: 'へたりが気になるなら復元性の高い素材・調整式の『枕』を検討',
+};
+
+// 姿勢別の軽い追記
+const BY_POSTURE: Partial<Record<ConcernTok, Partial<Record<'side'|'supine'|'prone'|'mixed', string>>>> = {
+  morning_pain: {
+    supine: '仰向け中心なら「中くらい基準」で微調整できるものが扱いやすいでしょう。',
+    side:   '横向き中心なら肩の厚みを支えられる少し高め設定が楽です。',
+    prone:  'うつ伏せが多い場合は低め＋呼吸確保を優先し、硬すぎは避けましょう。',
+  },
+  stiff_shoulder: {
+    side:   '横向きでは面で支えられるタイプや、やや高めが効きやすいです。',
+  },
+  headache: {
+    mixed:  '寝姿勢が変わる場合は調整式だと負担分散をキープしやすいです。',
+  },
+  straight_neck: {
+    side:   '横向き時は中央やや高めの形と相性が良いことがあります。',
+  },
+};
+
+function pointFor(c: ConcernTok, posture?: 'side'|'supine'|'prone'|'mixed'): string {
+  const base = BASE[c];
+  const extra = posture && BY_POSTURE[c]?.[posture] ? ' ' + BY_POSTURE[c]![posture]! : '';
+  return base + extra;
+}
 
 // 後付け関数を用意
 function ensureCoolAdvice(out: string, sweaty?: boolean): string {
@@ -83,17 +126,8 @@ function buildPoints(a: Answers) {
   }
 
   // 悩み（首肩/ストレートネック/頭痛/いびき等）
-  if (a.concerns?.includes("stneck")) {
-    pts.push("面で支えて頸椎のカーブを保ちやすい形状の『枕』だと負担を分散しやすい");
-  }
-  if (a.concerns?.includes("headache")) {
-    pts.push("朝の張りや頭痛がある時は「高すぎ/低すぎ」を避け、少しずつ高さを合わせる『枕』を選ぶ");
-  }
-  if (a.concerns?.includes("snore")) {
-    pts.push("気道が確保されやすい高さ調整や横向き対応の形状の『枕』が役立つことがある");
-  }
-  if (a.concerns?.includes("flatten")) {
-    pts.push("へたりが気になるなら復元性の高い素材・調整式の『枕』を検討");
+  for (const c of a.concerns ?? []) {
+    pts.push(pointFor(c, a.posture));
   }
 
   // 現在素材からの改善ヒント（軽めに）
@@ -104,6 +138,10 @@ function buildPoints(a: Answers) {
     pts.push("音や当たりが気になるパイプ使用時は、粒の細かさやカバーで当たりを和らげる/別素材の『枕』を試すのも有効");
   }
 
+  // 文章の重複除去＆過剰な長文を抑制
+  const uniq = Array.from(new Set(pts));
+  const limited = uniq.slice(0, 3); // 最大3ポイント
+
   // 事実（opening 決定に使用）
   if (a.posture === "side" || a.posture === "supine" || a.posture === "prone") {
     facts.push(`主姿勢=${jpPosture(a.posture)}`);
@@ -111,7 +149,7 @@ function buildPoints(a: Answers) {
     facts.push("主姿勢=混在");
   }
 
-  return { pts, avoid, facts };
+  return { pts: limited, avoid, facts };
 }
 
 // -------- 1文目と禁止語を決定 --------
@@ -147,7 +185,9 @@ export async function generateReason(a: Answers): Promise<string> {
   // Must 観点の組み立て（既存の must に追加）
   const must: string[] = [];
   if (normalizedSweaty) must.push("暑さ対策（通気・放熱・冷感のいずれかの語を含める）");
-  if (a.concerns?.includes("stneck")) must.push("首肩の負担軽減（面で支える/頸椎/形状保持/しっかりめ のいずれかの語を含める）");
+  if (a.concerns?.some(c => c === 'stneck' || c === 'morning_pain' || c === 'stiff_shoulder' || c === 'straight_neck')) {
+    must.push("首肩の負担軽減（面で支える/頸椎/形状保持/しっかりめ のいずれかの語を含める）");
+  }
 
   const system = [
     "あなたは寝具（枕）の専門アドバイザーです。対象は枕。マットレスの推奨はしない。",
@@ -199,7 +239,7 @@ export async function generateReason(a: Answers): Promise<string> {
         // デバッグ
         console.log("[gen] sweaty=true, cool-phrase ensured");
       }
-      if (a.concerns?.includes("stneck") && !hasAny(result, NECK)) {
+      if (a.concerns?.some(c => c === 'stneck' || c === 'morning_pain' || c === 'stiff_shoulder' || c === 'straight_neck') && !hasAny(result, NECK)) {
         result = result.replace(/。?$/, "。") + " 首のカーブを面で支えやすい、少ししっかりめの『枕』だと負担を分散しやすくなります。";
       }
       return result;
