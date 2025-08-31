@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { useDiagStore } from "@lib/state/diagStore";
 import { computeProvisional } from "@lib/scoring/engine";
@@ -56,6 +57,7 @@ const MATERIAL_OPTIONS = [
 ];
 
 export default function PreviewPage() {
+  const router = useRouter();
   const store = useDiagStore();
   const answers = store.answers ?? {};
   const [ready, setReady] = useState(false);
@@ -97,44 +99,32 @@ export default function PreviewPage() {
 
   // 初回: provisional を必ず作る & scores を store に格納、スナップショット保存
   useEffect(() => {
-    let cancelled = false;
     setIsProcessing(true);
     
-    (async () => {
-      try {
-        if (!store.provisional && fixedAnswers) {
-          // computeProvisionalは同期的な関数なので、awaitを削除して同期的に実行
-          const provisional = computeProvisional(fixedAnswers);
-          if (!cancelled) {
-            // zustand の setter があればそれで。無ければ直接代入でも可。
-            (store as any).setProvisional
-              ? (store as any).setProvisional({ provisional })
-              : ((store as any).provisional = { provisional });
-          }
-        }
-        if ((store as any).setScores) {
-          (store as any).setScores(scores);
-        }
-        // 保険: セッション保存（結果側で復旧可能に）
-        sessionStorage.setItem(
-          "pillow_snapshot",
-          JSON.stringify({ answers, scores })
-        );
-        if (!cancelled) {
-          setReady(true);
-          setIsProcessing(false);
-        }
-      } catch (error) {
-        console.error('Error processing provisional:', error);
-        if (!cancelled) {
-          setReady(!!store.provisional);
-          setIsProcessing(false);
-        }
+    try {
+      if (!store.provisional && fixedAnswers) {
+        // computeProvisionalは同期的な関数なので、同期的に実行
+        const provisional = computeProvisional(fixedAnswers);
+        // zustand の setter があればそれで。無ければ直接代入でも可。
+        (store as any).setProvisional
+          ? (store as any).setProvisional({ provisional })
+          : ((store as any).provisional = { provisional });
       }
-    })();
-    return () => {
-      cancelled = true;
-    };
+      if ((store as any).setScores) {
+        (store as any).setScores(scores);
+      }
+      // 保険: セッション保存（結果側で復旧可能に）
+      sessionStorage.setItem(
+        "pillow_snapshot",
+        JSON.stringify({ answers, scores })
+      );
+      setReady(true);
+      setIsProcessing(false);
+    } catch (error) {
+      console.error('Error processing provisional:', error);
+      setReady(!!store.provisional);
+      setIsProcessing(false);
+    }
   }, [answers, store, scores]);
 
   // ページ表示後に素材質問ポップアップを表示
@@ -211,20 +201,21 @@ export default function PreviewPage() {
       )}
 
       <section className="flex justify-end">
-        <Link
-          href="/pillow/result"
-          aria-disabled={!ready || isProcessing}
+        <button
+          onClick={() => {
+            if (ready && !isProcessing) {
+              router.push("/pillow/result");
+            }
+          }}
+          disabled={!ready || isProcessing}
           className={`px-6 py-3 rounded-xl transition-all ${
             ready && !isProcessing 
               ? "bg-white/10 hover:bg-white/20" 
               : "bg-white/5 cursor-not-allowed opacity-50"
           }`}
-          onClick={(e) => {
-            if (!ready || isProcessing) e.preventDefault();
-          }}
         >
           {isProcessing ? "処理中..." : ready ? "診断結果へ" : "準備中…"}
-        </Link>
+        </button>
       </section>
 
       {/* 素材質問ポップアップ */}

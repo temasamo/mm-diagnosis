@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { useDiagStore } from "@lib/state/diagStore";
 import {
   buildGroupsFromAPI,
@@ -11,6 +11,7 @@ import { buildProfileFromAnswers } from "@lib/diag/profile";
 import { computeMatchPercent } from "@lib/match/score";
 import UserView from "../components/result/UserView";
 import { buildProblemList } from "@lib/recommend/buildProblemList";
+import { track, trackOnce } from "@/lib/analytics/track";
 
 /** store から診断向けスナップショットに正規化（deriveProblems 互換想定） */
 function toSnapshot(s: any) {
@@ -69,7 +70,7 @@ function deriveProblemsRobust(store: any): string[] {
 }
 
 /** 商品カード（モール名は画像の下・中央） */
-function ProductCard({ item }: { item: any }) {
+function ProductCard({ item, onCardClick }: { item: any; onCardClick?: (productId: string, position: number) => void }) {
   const mallLabel =
     item.mall === "rakuten"
       ? "RAKUTEN"
@@ -82,7 +83,8 @@ function ProductCard({ item }: { item: any }) {
       href={item.url}
       target="_blank"
       rel="noreferrer"
-      onClick={() =>
+      onClick={() => {
+        // 既存のtrack呼び出し
         fetch("/api/track", {
           method: "POST",
           body: JSON.stringify({
@@ -92,8 +94,10 @@ function ProductCard({ item }: { item: any }) {
             mall: item.mall,
             ts: Date.now(),
           }),
-        })
-      }
+        });
+        // 新しいtrack呼び出し
+        onCardClick?.(item.id || item.url, 0);
+      }}
       className="rounded-xl border p-3 hover:shadow-sm relative"
     >
       {item.outOfBudget && (
@@ -142,6 +146,40 @@ export default function ResultPage() {
   const [topMatch, setTopMatch] = useState(0);
   const [score, setScore] = useState<number | null>(null);
   const [problems, setProblems] = useState<string[]>([]);
+  const recSetRef = useRef<string | null>(null);
+
+  // 初回インプレッション
+  useEffect(() => {
+    const rec_set_id = (globalThis as any).__REC_SET_ID__ ?? crypto.randomUUID();
+    recSetRef.current = rec_set_id;
+    trackOnce(`rec_imp_${rec_set_id}`, 'rec_impression', {
+      rec_set_id,
+      diag_id: (globalThis as any).__DIAG_ID__,
+      variant: (globalThis as any).__REC_VARIANT__, // 後続T3で利用可
+    });
+  }, []);
+
+  // AIコメント描画時（サーバで生成→props渡し済み想定）
+  useEffect(() => {
+    const meta = (globalThis as any).__AI_COMMENT_META__; // {version, prompt_hash, model, tags, length}
+    if (meta) {
+      track('ai_comment_rendered', {
+        diag_id: (globalThis as any).__DIAG_ID__,
+        rec_set_id: recSetRef.current,
+        ...meta,
+      });
+    }
+  }, []);
+
+  // 推薦カードクリックで発火（カードコンポーネント側で利用）
+  function onCardClick(productId: string, position: number) {
+    track('rec_click', {
+      diag_id: (globalThis as any).__DIAG_ID__,
+      rec_set_id: recSetRef.current,
+      product_id: productId,
+      position
+    });
+  }
 
   // 空配列検査ヘルパー
   const isEmptyGroups = (g: any) => {
@@ -415,8 +453,8 @@ export default function ResultPage() {
                     <>
                       <h3 className="text-lg md:text-xl font-semibold mt-8 mb-3">第一候補グループ</h3>
                       <div className="grid gap-4 sm:grid-cols-3 mb-6">
-                        {groups.primary.slice(0, 3).map((item: any) => (
-                          <ProductCard key={item.id} item={item} />
+                        {groups.primary.slice(0, 3).map((item: any, index: number) => (
+                          <ProductCard key={item.id} item={item} onCardClick={(productId) => onCardClick(productId, index)} />
                         ))}
                       </div>
                     </>
@@ -449,8 +487,8 @@ export default function ResultPage() {
                     <div className="grid gap-4 sm:grid-cols-3">
                       {(secondaryOpen === "a" ? groups.secondaryA : 
                         secondaryOpen === "b" ? groups.secondaryB : 
-                        groups.secondaryC)?.map((item: any) => (
-                        <ProductCard key={item.id} item={item} />
+                        groups.secondaryC)?.map((item: any, index: number) => (
+                        <ProductCard key={item.id} item={item} onCardClick={(productId) => onCardClick(productId, index + 3)} />
                       ))}
                     </div>
                   </div>

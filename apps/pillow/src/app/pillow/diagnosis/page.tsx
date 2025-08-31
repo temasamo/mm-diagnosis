@@ -1,10 +1,12 @@
 "use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useDiagStore } from "../../../../lib/state/diagStore";
 import { derivePosture } from "../../../lib/utils/posture";
 
 export default function Page() {
+  const router = useRouter();
   const answers = useDiagStore((s: any) => s.answers);
   const setAnswers = useDiagStore((s: any) => s.setAnswers);
 
@@ -36,7 +38,7 @@ export default function Page() {
   const handleNext = () => {
     // 古いJSON圧縮方式で一次診断へ遷移
     const compressed = JSON.stringify(answers);
-    window.location.href = `/pillow/preview?c=${encodeURIComponent(compressed)}`;
+    router.push(`/pillow/preview?c=${encodeURIComponent(compressed)}`);
   };
 
   return (
