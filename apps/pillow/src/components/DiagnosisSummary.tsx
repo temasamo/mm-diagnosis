@@ -84,7 +84,7 @@ export default function DiagnosisSummary({ profile, answers }: { profile: Profil
       {(complaints.length > 0 || purchase.length > 0) && (
         <div className="mt-2">
           <div className="mb-2 font-semibold">診断理由（あなたのお悩み）</div>
-          <ul className="list-disc space-y-1 pl-5 text-sm opacity-90">
+          <ul className="list-disc space-y-1 pl-5 text-sm">
             {[...purchase, ...complaints].map((r, i) => (
               <li key={i}>{r}</li>
             ))}

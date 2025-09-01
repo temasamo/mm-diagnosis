@@ -10,7 +10,7 @@ export default function Page(){
         <h3 className="font-semibold">第二候補グループ</h3>
         <ul className="list-disc ml-6"><li>商品Z（ダミー）</li></ul>
       </section>
-      <p className="opacity-70 mt-4">※「診断理由」「悩みの要約」をここに表示します。</p>
+      <p className="mt-4">※「診断理由」「悩みの要約」をここに表示します。</p>
     </main>
   );
 }

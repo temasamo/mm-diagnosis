@@ -48,7 +48,7 @@ export default function QuestionRenderer({ data }: { data: Questionnaire }) {
       <div className="pt-2">
         <Link
           href="/insights"
-          className={`inline-block underline ${!allRequiredOk ? "pointer-events-none opacity-50" : ""}`}
+          className={`inline-block underline ${!allRequiredOk ? "pointer-events-none" : ""}`}
         >
           回答を送信 →
         </Link>

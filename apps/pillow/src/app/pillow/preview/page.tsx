@@ -204,7 +204,7 @@ export default function PreviewPage() {
 
       {/* 素材質問ポップアップ */}
       {showMaterialPopup && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl p-6 max-w-md w-full max-h-[80vh] overflow-y-auto">
             <h3 className="text-lg font-semibold mb-2 text-gray-900">
               AIから追加の質問です

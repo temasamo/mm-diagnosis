@@ -67,7 +67,7 @@ export default function QuestionRenderer({ questions, answers, onChange }: Props
           )}
           {q.type === "text" && (
             <textarea
-              className="w-full rounded-xl border p-3 bg-black/20 border-gray-600 focus:outline-none focus:ring-2 focus:ring-white/40"
+              className="w-full rounded-xl border p-3 bg-black border-gray-600 focus:outline-none focus:ring-2 focus:ring-white/40"
               rows={3}
               placeholder="自由記述（任意）"
               value={(answers[q.id] as string) ?? ""}

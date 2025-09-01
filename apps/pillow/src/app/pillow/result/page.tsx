@@ -137,12 +137,12 @@ function ProductCard({ item, onCardClick }: { item: any; onCardClick?: (productI
         className="w-full h-28 object-cover rounded-lg mt-2"
       />
       {/* 画像下・中央にモール名 */}
-      <div className="mt-2 text-center text-[10px] uppercase tracking-[0.08em] opacity-80">
+      <div className="mt-2 text-center text-[10px] uppercase tracking-[0.08em]">
         {mallLabel}
       </div>
       {/* 適合度（マッチ%） */}
       {typeof item.match === "number" && (
-        <div className="mt-1 text-center text-[11px] opacity-80">
+        <div className="mt-1 text-center text-[11px]">
           適合度 <span className="font-semibold">{item.match}%</span>
         </div>
       )}
@@ -211,12 +211,12 @@ function ProductCardWithBudget({ item, userBudget, onCardClick }: {
         className="w-full h-28 object-cover rounded-lg mt-2"
       />
       {/* 画像下・中央にモール名 */}
-      <div className="mt-2 text-center text-[10px] uppercase tracking-[0.08em] opacity-80">
+      <div className="mt-2 text-center text-[10px] uppercase tracking-[0.08em]">
         {mallLabel}
       </div>
       {/* 適合度（マッチ%） */}
       {typeof item.match === "number" && (
-        <div className="mt-1 text-center text-[11px] opacity-80">
+        <div className="mt-1 text-center text-[11px]">
           適合度 <span className="font-semibold">{item.match}%</span>
         </div>
       )}
@@ -588,7 +588,7 @@ export default function ResultPage() {
                 <div className="text-5xl font-bold font-mono">
                   {score} <span className="text-2xl">%</span>
                 </div>
-                <p className="text-sm mt-3 opacity-80">
+                <p className="text-sm mt-3">
                   ※ 無料版のわかりやすいスコアです。詳細コンサル診断ではより精密に判定します。
                 </p>
               </section>
@@ -647,7 +647,7 @@ export default function ResultPage() {
                     <>
                       <h3 className="text-lg md:text-xl font-semibold mt-8 mb-3">
                         第一候補グループ
-                        {variant && <span className="text-sm font-normal opacity-70 ml-2">(variant: {variant})</span>}
+                        {variant && <span className="text-sm font-normal ml-2">(variant: {variant})</span>}
                       </h3>
                       <div className="grid gap-4 sm:grid-cols-3 mb-6">
                         {groups.primary.slice(0, 3).map((item: any, index: number) => (

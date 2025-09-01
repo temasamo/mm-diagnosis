@@ -18,9 +18,17 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #000000;
+    --foreground: #ffffff;
   }
+}
+
+/* iOS対策: ダーク時の背景を純黒に */
+.dark {
+  --background: 0 0% 0%;         /* #000000 */
+  --foreground: 0 0% 100%;       /* #ffffff */
+  --card: 0 0% 0%;               /* カードも黒に寄せる */
+  --muted: 0 0% 7%;              /* 区切り用のわずかに明るい面 */
 }
 
 body {

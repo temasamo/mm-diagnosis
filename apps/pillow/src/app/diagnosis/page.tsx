@@ -79,7 +79,7 @@ export default function DiagnosisPage() {
     <section className="p-6 space-y-4">
       <h2 className="text-xl font-semibold">一次診断</h2>
       <div className="text-lg">{insightText.summary}</div>
-      <ul className="list-disc pl-6 opacity-80">
+      <ul className="list-disc pl-6">
         {insightText.reasons.map((r, i) => <li key={i}>{r}</li>)}
       </ul>
       <div className="flex gap-2">
@@ -129,14 +129,14 @@ export default function DiagnosisPage() {
     <section className="p-6 space-y-4">
       <h2 className="text-xl font-semibold">最終診断結果</h2>
       <div>
-        <div className="text-sm opacity-70">第一候補グループ</div>
+        <div className="text-sm">第一候補グループ</div>
         <div className="text-lg">{finalView.primary.join(" / ")}</div>
       </div>
       <div>
-        <div className="text-sm opacity-70">第二候補グループ</div>
+        <div className="text-sm">第二候補グループ</div>
         <div>{finalView.secondary.join(" / ") || "—"}</div>
       </div>
-      <ul className="list-disc pl-6 opacity-80">
+      <ul className="list-disc pl-6">
         {finalView.reasons.map((r, i) => <li key={i}>{r}</li>)}
       </ul>
       <div className="flex gap-2">
