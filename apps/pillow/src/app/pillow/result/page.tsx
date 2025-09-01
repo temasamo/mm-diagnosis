@@ -12,6 +12,9 @@ import { computeMatchPercent } from "@lib/match/score";
 import UserView from "../components/result/UserView";
 import { buildProblemList } from "@lib/recommend/buildProblemList";
 import { track, trackOnce } from "@/lib/analytics/track";
+import { type PriceBandId } from "@/lib/recommend/priceBand";
+import { extractPriceInfo } from "@/lib/recommend/extractPrice";
+import { buildBudgetMeta, BANDS, bandIndexOf, type BudgetBandKey } from "@/lib/recommend/budget";
 
 // セグメントキー： sweaty × posture(3)
 function segmentOf({ sweaty, posture }: { sweaty?: boolean; posture?: string }) {
@@ -76,6 +79,21 @@ function deriveProblemsRobust(store: any): string[] {
     : ["現在の枕に関する不満をお聞かせください"];
 }
 
+function decorateItemsWithPriceAndBudget(items: any[], userBand: BudgetBandKey) {
+  return items.map((it) => {
+    const _price = extractPriceInfo(it);
+    const _budget = buildBudgetMeta(userBand, _price.value);
+    return { ...it, _price, _budget };
+  });
+}
+
+function filterSecondaryByAdjacency(buckets: any[][], userBand: BudgetBandKey) {
+  // ±1レンジ外のものは第二候補では出さない
+  return buckets.map(bucket =>
+    bucket.filter(it => it?._budget?.withinAdjacency !== false)
+  );
+}
+
 /** 商品カード（モール名は画像の下・中央） */
 function ProductCard({ item, onCardClick }: { item: any; onCardClick?: (productId: string, position: number) => void }) {
   const mallLabel =
@@ -107,11 +125,6 @@ function ProductCard({ item, onCardClick }: { item: any; onCardClick?: (productI
       }}
       className="rounded-xl border p-3 hover:shadow-sm relative"
     >
-      {item.outOfBudget && (
-        <span className="absolute left-3 top-3 rounded bg-rose-600/90 px-2 py-0.5 text-xs text-white z-10">
-          予算外
-        </span>
-      )}
       <div className="font-medium line-clamp-2">{item.title}</div>
       <img
         src={item.image ?? "/images/mall-placeholder.svg"}
@@ -140,8 +153,86 @@ function ProductCard({ item, onCardClick }: { item: any; onCardClick?: (productI
   );
 }
 
+
+
+/** 予算外バッジ付き商品カード */
+function ProductCardWithBudget({ item, userBudget, onCardClick }: { 
+  item: any; 
+  userBudget?: PriceBandId;
+  onCardClick?: (productId: string, position: number) => void;
+}) {
+  const mallLabel =
+    item.mall === "rakuten"
+      ? "RAKUTEN"
+      : item.mall === "yahoo"
+      ? "YAHOO"
+      : (item.mall ?? "").toUpperCase();
+
+  const priceText =
+    item?._price?.display ??
+    (typeof item?.price === "number" ? "¥" + item.price.toLocaleString() : undefined);
+
+  const isOut = item?._budget?.outOfBudget === true;
+
+  return (
+    <a
+      href={item.url}
+      target="_blank"
+      rel="noreferrer"
+      onClick={() => {
+        // 既存のtrack呼び出し
+        fetch("/api/track", {
+          method: "POST",
+          body: JSON.stringify({
+            type: "click",
+            group: "secondary",
+            url: item.url,
+            mall: item.mall,
+            ts: Date.now(),
+          }),
+        });
+        // 新しいtrack呼び出し
+        onCardClick?.(item.id || item.url, 0);
+      }}
+      className="rounded-xl border p-3 hover:shadow-sm relative"
+    >
+      <div className="mb-2 flex items-center gap-2">
+        {isOut && <span className="inline-block rounded-full border border-red-400/50 bg-red-400/10 px-2 py-0.5 text-xs text-red-300">予算外</span>}
+      </div>
+      <div className="font-medium line-clamp-2">{item.title}</div>
+      <img
+        src={item.image ?? "/images/mall-placeholder.svg"}
+        alt={item.title ?? ""}
+        loading="lazy"
+        onError={(e) => {
+            (e.currentTarget as HTMLImageElement).src =
+              "/images/mall-placeholder.svg";
+        }}
+        className="w-full h-28 object-cover rounded-lg mt-2"
+      />
+      {/* 画像下・中央にモール名 */}
+      <div className="mt-2 text-center text-[10px] uppercase tracking-[0.08em] opacity-80">
+        {mallLabel}
+      </div>
+      {/* 適合度（マッチ%） */}
+      {typeof item.match === "number" && (
+        <div className="mt-1 text-center text-[11px] opacity-80">
+          適合度 <span className="font-semibold">{item.match}%</span>
+        </div>
+      )}
+      {/* 価格表示 */}
+      <div className="mt-2 text-lg font-medium">
+        {priceText ? priceText : <span className="text-gray-400">価格情報なし</span>}
+      </div>
+    </a>
+  );
+}
+
 export default function ResultPage() {
   const store = useDiagStore();
+  
+  // デバッグモードの確認
+  const isDebug = typeof window !== 'undefined' && window.location.search.includes('debug=1');
   let { provisional, answers } = store;
   // 既定タブ: diagnosis → recommend
   const [activeTab, setActiveTab] = useState<"diagnosis" | "recommend">("diagnosis");
@@ -164,6 +255,9 @@ export default function ResultPage() {
   const candidates: string[] = ["A", "B"]; // 1位枠の候補（variant識別子）
   const [armKey, setArmKey] = useState<string | null>(null);
   const [variant, setVariant] = useState<string>(candidates[0]);
+
+  // ユーザー予算を取得
+  const userBudget: PriceBandId | undefined = (answers?.budget ?? answers?.budgetBandId) as any;
 
   // 初回インプレッション
   useEffect(() => {
@@ -218,11 +312,21 @@ export default function ResultPage() {
 
   // 推薦カードクリックで発火（カードコンポーネント側で利用）
   function onCardClick(productId: string, position: number) {
+    const item = groups?.primary?.[position] || 
+                 groups?.secondaryA?.[position - 3] || 
+                 groups?.secondaryB?.[position - 3] || 
+                 groups?.secondaryC?.[position - 3];
+    
+                    const budget_rel = (userBudget && item?._budget?.outOfBudget !== undefined)
+                  ? (item._budget.outOfBudget ? 'out' : 'within')
+                  : 'unknown';
+
     track('rec_click', {
       diag_id: (globalThis as any).__DIAG_ID__,
       rec_set_id: recSetRef.current,
       product_id: productId,
-      position
+      position,
+      budget_rel
     });
   }
 
@@ -304,9 +408,42 @@ export default function ResultPage() {
         if (!mounted) return;
 
         if (!isEmptyGroups(g1)) {
-          setGroups(g1);
-          console.log("[recommend] groups.raw", g1);
-          console.log("[recommend] primary", g1?.primary?.length, "secondaryA", g1?.secondaryA?.length);
+          // ユーザーの予算帯キー（answers / payload から取得している既存値を流用）
+          const userBand: BudgetBandKey = (answers?.budget ?? "3k-6k") as BudgetBandKey;
+
+          // 1) まず全配列にメタ付与
+          const primaryDecorated = decorateItemsWithPriceAndBudget(g1.primary ?? [], userBand);
+          const secondaryBucketsDecorated = (g1.secondaryBuckets ?? []).map((arr: any[]) =>
+            decorateItemsWithPriceAndBudget(arr ?? [], userBand)
+          );
+
+          // 2) 第二候補は ±1 レンジのみ残す
+          const secondaryBucketsFiltered = filterSecondaryByAdjacency(secondaryBucketsDecorated, userBand);
+
+          // 3) state へ「付与済みの配列」をそのまま採用（コピーで失わない）
+          const filteredGroups = {
+            ...g1,
+            primary: primaryDecorated,
+            secondaryBuckets: secondaryBucketsFiltered,
+            // 二段構造を個別に持っているUIなら、ここで同期
+            secondaryA: secondaryBucketsFiltered[0] ?? [],
+            secondaryB: secondaryBucketsFiltered[1] ?? [],
+            secondaryC: secondaryBucketsFiltered[2] ?? [],
+          };
+
+          setGroups(filteredGroups);
+          console.log("[recommend] groups.raw", filteredGroups);
+          console.log("[recommend] primary", filteredGroups?.primary?.length, "secondaryA", filteredGroups?.secondaryA?.length);
+          
+          // デバッグ: 第二候補の価格情報を確認
+          if (isDebug) {
+            console.log("[recommend] secondaryA prices:", filteredGroups?.secondaryA?.map((item: any) => ({
+              title: item.title?.substring(0, 30),
+              _price: item._price,
+              _budget: item._budget,
+              originalPrice: item.price
+            })));
+          }
           return;
         }
 
@@ -328,7 +465,7 @@ export default function ResultPage() {
         setLoading(false);
       }
     })();
-  }, [rawProv, answers, triedFallback]);
+  }, [rawProv, answers, triedFallback, userBudget]);
 
   // 適合度は「候補が1件以上あるときだけ」計算・表示（MAX85%）
   useEffect(() => {
@@ -532,6 +669,13 @@ export default function ResultPage() {
                   
                   {/* --- 第二候補グループ --- */}
                   <h3 className="text-lg md:text-xl font-semibold mt-10 mb-3">第二候補グループ</h3>
+                  {(() => {
+                    const secondaryCount = (groups?.secondaryBuckets ?? []).flat().length;
+                    const showAdjNote = secondaryCount > 0 && secondaryCount < 3;
+                    return showAdjNote && (
+                      <div className="text-sm text-gray-500 mb-3">該当が少ないため、近い価格帯（±1レンジ）も表示しています。</div>
+                    );
+                  })()}
                   <div className="space-y-4">
                     <div className="flex gap-2">
                       <button
@@ -558,7 +702,12 @@ export default function ResultPage() {
                       {(secondaryOpen === "a" ? groups.secondaryA : 
                         secondaryOpen === "b" ? groups.secondaryB : 
                         groups.secondaryC)?.map((item: any, index: number) => (
-                        <ProductCard key={item.id} item={item} onCardClick={(productId) => onCardClick(productId, index + 3)} />
+                        <ProductCardWithBudget 
+                          key={item.id} 
+                          item={item} 
+                          userBudget={userBudget}
+                          onCardClick={(productId) => onCardClick(productId, index + 3)} 
+                        />
                       ))}
                     </div>
                   </div>

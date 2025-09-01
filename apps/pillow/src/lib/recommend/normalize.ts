@@ -1,3 +1,5 @@
+import { parsePriceJpy, priceToBandId, type PriceBandId } from './priceBand';
+
 export type Product = {
   id: string; title: string; price: number; mall: "rakuten"|"yahoo"|"amazon";
   url: string; thumb?: string;
@@ -7,6 +9,8 @@ export type Product = {
   shape: ("flat"|"contour"|"grid"|"wave"|"ear-dent"|"adjustable")[];
   tags: ("vent"|"cooling"|"washable"|"neck-plain"|"anti-snore"|"wide"|"anti-dust")[];
   review: { stars:number; count:number };
+  priceNum?: number | null;
+  priceBandId?: PriceBandId;
 };
 
 const re = (s:string, ...words:string[]) => words.some(w=>new RegExp(w,"i").test(s));
@@ -50,6 +54,10 @@ export function normalize(raw:any, mall: Product["mall"]): Product {
 
   const review = { stars: Number(raw.stars||raw.rating||4), count: Number(raw.reviews||raw.reviewCount||10) };
 
+  // 価格バンド情報を追加
+  const priceNum = parsePriceJpy(price);
+  const priceBandId = priceNum != null ? priceToBandId(priceNum) : undefined;
+
   return {
     id: String(raw.id || raw.code || raw.asin || t),
     title: t, price, mall,
@@ -57,5 +65,7 @@ export function normalize(raw:any, mall: Product["mall"]): Product {
     thumb: raw.image || raw.thumbnail,
     heightClass: height, firmness, materialClass: material,
     shape: [...new Set(shape)], tags: [...new Set(tags)], review,
+    priceNum,
+    priceBandId,
   };
 } 
