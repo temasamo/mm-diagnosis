@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useDiagStore } from "../../../../lib/state/diagStore";
 import { derivePosture } from "../../../lib/utils/posture";
+import { AGE_BAND_LABELS, GENDER_LABELS, type AgeBand, type Gender } from "../../../types/answers";
 
 export default function Page() {
   const router = useRouter();
@@ -692,6 +693,45 @@ export default function Page() {
               </label>
             </div>
           </div>
+
+          {/* E. 基本情報（任意） */}
+          <section className="space-y-4">
+            <h2 className="text-lg font-semibold">E. 基本情報（任意）</h2>
+
+            <div>
+              <p className="mb-2">年代</p>
+              {Object.entries(AGE_BAND_LABELS).map(([value, label]) => (
+                <label key={value} className="flex items-center space-x-2 mb-1">
+                  <input
+                    type="radio"
+                    name="age_band"
+                    value={value}
+                    checked={answers.age_band === value}
+                    onChange={(e) => setAnswers({ ...answers, age_band: e.target.value as AgeBand })}
+                    className="h-4 w-4"
+                  />
+                  <span>{label}</span>
+                </label>
+              ))}
+            </div>
+
+            <div>
+              <p className="mb-2">性別</p>
+              {Object.entries(GENDER_LABELS).map(([value, label]) => (
+                <label key={value} className="flex items-center space-x-2 mb-1">
+                  <input
+                    type="radio"
+                    name="gender"
+                    value={value}
+                    checked={answers.gender === value}
+                    onChange={(e) => setAnswers({ ...answers, gender: e.target.value as Gender })}
+                    className="h-4 w-4"
+                  />
+                  <span>{label}</span>
+                </label>
+              ))}
+            </div>
+          </section>
 
           {/* ご予算 */}
           <div>

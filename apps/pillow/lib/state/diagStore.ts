@@ -2,6 +2,7 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { migrateBudget } from '../budget';
+import type { AgeBand, Gender } from '../../src/types/answers';
 
 // 購入理由を2択に変更
 export type PurchaseReason = "not-fit" | "better";
@@ -15,7 +16,10 @@ export type DiagSnapshot = {
   problems?: string[]; // 例: ['首が痛い','蒸れる','寝返りしづらい']
 };
 
-type Answers = Record<string, any>;
+type Answers = Record<string, any> & {
+  age_band?: AgeBand;
+  gender?: Gender;
+};
 type Provisional = any;
 type Groups = any;
 
@@ -93,7 +97,10 @@ export const useDiagStore = create<DiagState>()(
       setPurchaseReason: (reason) => set({ purchaseReason: reason }),
       
       // 既存の状態
-      answers: {},
+      answers: {
+        age_band: "na",
+        gender: "na"
+      },
       provisional: null,
       groups: null,
       hasHydrated: false,
@@ -102,7 +109,10 @@ export const useDiagStore = create<DiagState>()(
       setGroups: (g) => set({ groups: g }),
       reset: () => set({ 
         purchaseReason: null,
-        answers: {}, 
+        answers: {
+          age_band: "na",
+          gender: "na"
+        }, 
         provisional: null, 
         groups: null,
         hasHydrated: false
