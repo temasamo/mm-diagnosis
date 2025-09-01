@@ -15,6 +15,8 @@ import { track, trackOnce } from "@/lib/analytics/track";
 import { type PriceBandId } from "@/lib/recommend/priceBand";
 import { extractPriceInfo } from "@/lib/recommend/extractPrice";
 import { buildBudgetMeta, BANDS, bandIndexOf, type BudgetBandKey } from "@/lib/recommend/budget";
+import BasicInfoSection from "@/components/BasicInfoSection";
+import { calcTargetHeightRange } from "@/lib/recommend/height";
 
 // セグメントキー： sweaty × posture(3)
 function segmentOf({ sweaty, posture }: { sweaty?: boolean; posture?: string }) {
@@ -557,6 +559,25 @@ export default function ResultPage() {
     (store as any).firmnessKey ??
     (scores.firm_support ? "firm_support" : scores.soft_feel ? "soft_feel" : undefined);
 
+  // 基本情報用のpayloadを構築
+  const basicInfoPayload = {
+    posture: answers?.posture,
+    mattressFirmness: answers?.mattress_firmness,
+    sweaty_yes: answers?.heat_sweat === "yes",
+    adjustable: answers?.adjustable_pref === "yes",
+    material: answers?.material_pref,
+    size: answers?.size_pref,
+    budgetBandId: answers?.budget,
+    shoulderThickness: "normal" // デフォルト値（今後拡張可能）
+  };
+
+  // 目標高さを計算
+  const targetHeight = calcTargetHeightRange({
+    posture: answers?.posture,
+    mattressFirmness: answers?.mattress_firmness,
+    shoulderThickness: basicInfoPayload.shoulderThickness,
+  });
+
   return (
     <main className="max-w-3xl mx-auto p-6 space-y-6">
       <h1 className="text-2xl font-bold">診断結果 ＋ 商品提案</h1>
@@ -594,6 +615,14 @@ export default function ResultPage() {
               </section>
             )}
           </section>
+
+          {/* --- 基本情報 Card --- */}
+          <BasicInfoSection 
+            payload={basicInfoPayload} 
+            targetHeight={targetHeight} 
+            className="mb-6" 
+          />
+
           {/* 診断内容（answers だけで描画可能） */}
           <UserView
             scores={scores}
