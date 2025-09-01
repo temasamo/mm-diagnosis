@@ -13,6 +13,13 @@ import UserView from "../components/result/UserView";
 import { buildProblemList } from "@lib/recommend/buildProblemList";
 import { track, trackOnce } from "@/lib/analytics/track";
 
+// セグメントキー： sweaty × posture(3)
+function segmentOf({ sweaty, posture }: { sweaty?: boolean; posture?: string }) {
+  const s = sweaty ? "sweaty_yes" : "sweaty_no";
+  const p = ["side", "supine", "prone"].includes(String(posture)) ? posture : "mixed";
+  return `${s}+posture_${p}`;
+}
+
 /** store から診断向けスナップショットに正規化（deriveProblems 互換想定） */
 function toSnapshot(s: any) {
   const a = s?.answers ?? {};
@@ -148,6 +155,16 @@ export default function ResultPage() {
   const [problems, setProblems] = useState<string[]>([]);
   const recSetRef = useRef<string | null>(null);
 
+  // バンディット関連の状態
+  const segment = useMemo(() => segmentOf({ 
+    sweaty: !!answers?.heat_sweat || answers?.sweaty, 
+    posture: answers?.posture 
+  }), [answers]);
+  const slot = "1";
+  const candidates: string[] = ["A", "B"]; // 1位枠の候補（variant識別子）
+  const [armKey, setArmKey] = useState<string | null>(null);
+  const [variant, setVariant] = useState<string>(candidates[0]);
+
   // 初回インプレッション
   useEffect(() => {
     const rec_set_id = (globalThis as any).__REC_SET_ID__ ?? crypto.randomUUID();
@@ -158,6 +175,34 @@ export default function ResultPage() {
       variant: (globalThis as any).__REC_VARIANT__, // 後続T3で利用可
     });
   }, []);
+
+  // バンディット選定 → imp
+  useEffect(() => {
+    const qs = new URLSearchParams({ slot, segment, candidates: candidates.join(",") });
+    fetch(`/api/bandit/select?${qs}`)
+      .then(r => r.json())
+      .then(j => {
+        const key: string | undefined = j?.arm_key;
+        if (j?.ok && key) {
+          setArmKey(key);
+          const v = key.split("variant:")[1] ?? candidates[0];
+          setVariant(v);
+          // imp
+          fetch("/api/bandit/update", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ arm_key: key, event: "imp" }),
+          }).catch(() => {});
+          trackOnce(`bandit_imp_${key}`, "bandit_impression", { arm_key: key, slot, segment, variant: v });
+        } else {
+          // fail-open: 既定variant
+          setVariant(candidates[0]);
+        }
+      })
+      .catch(() => {
+        setVariant(candidates[0]); // fail-open
+      });
+  }, [slot, segment, candidates]);
 
   // AIコメント描画時（サーバで生成→props渡し済み想定）
   useEffect(() => {
@@ -179,6 +224,18 @@ export default function ResultPage() {
       product_id: productId,
       position
     });
+  }
+
+  // バンディットクリック時
+  function onTop1Click(productId: string) {
+    if (armKey) {
+      fetch("/api/bandit/update", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ arm_key: armKey, event: "click" }),
+      }).catch(() => {});
+      track("bandit_click", { arm_key: armKey, slot, segment, variant, product_id: productId });
+    }
   }
 
   // 空配列検査ヘルパー
@@ -451,10 +508,23 @@ export default function ResultPage() {
                   {/* --- 第一候補グループ --- */}
                   {Array.isArray(groups.primary) && groups.primary.length > 0 && (
                     <>
-                      <h3 className="text-lg md:text-xl font-semibold mt-8 mb-3">第一候補グループ</h3>
+                      <h3 className="text-lg md:text-xl font-semibold mt-8 mb-3">
+                        第一候補グループ
+                        {variant && <span className="text-sm font-normal opacity-70 ml-2">(variant: {variant})</span>}
+                      </h3>
                       <div className="grid gap-4 sm:grid-cols-3 mb-6">
                         {groups.primary.slice(0, 3).map((item: any, index: number) => (
-                          <ProductCard key={item.id} item={item} onCardClick={(productId) => onCardClick(productId, index)} />
+                          <ProductCard 
+                            key={item.id} 
+                            item={item} 
+                            onCardClick={(productId) => {
+                              onCardClick(productId, index);
+                              // バンディットクリック（1位のみ）
+                              if (index === 0) {
+                                onTop1Click(productId);
+                              }
+                            }} 
+                          />
                         ))}
                       </div>
                     </>
