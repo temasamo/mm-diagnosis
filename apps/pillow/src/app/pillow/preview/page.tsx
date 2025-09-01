@@ -32,6 +32,8 @@ function deriveScores(ans: any) {
   return s;
 }
 
+// 重複排除ユーティリティ（ジェネリクス廃止）
+
 // 素材選択肢
 const MATERIAL_OPTIONS = [
   { id: "low_rebound", label: "低反発ウレタン" },
@@ -71,10 +73,11 @@ export default function PreviewPage() {
   const problems = deriveProblems(fixedAnswers);
 
   // TOP3 は scores が無ければ derive
-  const scores: Record<string, number> =
-    (store as any).scores && Object.keys((store as any).scores).length
+  const scores: Record<string, number> = useMemo(() => {
+    return (store as any).scores && Object.keys((store as any).scores).length
       ? (store as any).scores
       : deriveScores(fixedAnswers);
+  }, [store, fixedAnswers]);
 
   const top3 = useMemo(() => {
     return Object.entries(scores)
@@ -95,7 +98,7 @@ export default function PreviewPage() {
           ? (store as any).setProvisional({ provisional })
           : ((store as any).provisional = { provisional });
       }
-      if ((store as any).setScores) {
+      if ((store as any).setScores && !(store as any).scores) {
         (store as any).setScores(scores);
       }
       // 保険: セッション保存（結果側で復旧可能に）
@@ -110,7 +113,7 @@ export default function PreviewPage() {
       setReady(!!store.provisional);
       setIsProcessing(false);
     }
-  }, [answers, store, scores]);
+  }, [fixedAnswers]); // 依存配列を fixedAnswers のみに変更
 
   // ページ表示後に素材質問ポップアップを表示
   useEffect(() => {
@@ -155,24 +158,26 @@ export default function PreviewPage() {
         </p>
       </section>
 
-      {/* 「あなたのお悩み」 */}
-      <section>
-        <h2 className="text-lg font-semibold">あなたのお悩み</h2>
-        {problems.length ? (
-          <ul className="list-disc pl-6 space-y-1">
-            {problems.map((b: string) => <li key={b}>{b}</li>)}
-          </ul>
-        ) : (
-          <p className="text-muted-foreground">特筆すべきお悩みは選択されていません。</p>
-        )}
-      </section>
+      {/* 「あなたのお悩み」 - 重複回避のため無効化 */}
+      {false && (
+        <section>
+          <h2 className="text-lg font-semibold">あなたのお悩み</h2>
+          {problems.length ? (
+            <ul className="list-disc pl-6 space-y-1">
+              {problems.map((b: string) => <li key={b}>{b}</li>)}
+            </ul>
+          ) : (
+            <p className="text-muted-foreground">特筆すべきお悩みは選択されていません。</p>
+          )}
+        </section>
+      )}
 
       {/* お悩みセクション */}
       {problems.length > 0 && (
         <section className="rounded-2xl border p-6">
           <h3 className="text-lg font-semibold mb-3">あなたのお悩み/使っているマットレス・布団や枕の素材</h3>
           <ul className="list-disc pl-5 space-y-1">
-            {problems.map((problem, index) => (
+            {Array.from(new Set(problems)).map((problem: string, index: number) => (
               <li key={index} className="text-sm">{problem}</li>
             ))}
           </ul>
