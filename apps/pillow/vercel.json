@@ -3,7 +3,5 @@
     "env": {
       "NODE_VERSION": "18.18.0"
     }
-  },
-  "installCommand": "pnpm install",
-  "buildCommand": "pnpm run build"
+  }
 } 

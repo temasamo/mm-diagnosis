@@ -1,4 +1,4 @@
-import { Questionnaire, Insight, ProvisionalResult, FinalResult, Question } from "@core/mm";
+import { Questionnaire, Insight, ProvisionalResult, FinalResult, Question } from "../../../lib/types";
 
 // 回答の型：{ 質問ID: 選択肢ID配列 }（singleでも配列で統一）
 export type Answers = Record<string, string[]>;
@@ -37,10 +37,13 @@ export function makeInsights(qn: Questionnaire, ans: Answers): {
 
   const insight: Insight = {
     summary: `一次診断：${category}が合いそうです。`,
-    reasons
+    reasons,
+    concerns: [],          // ←追加
+    recommendations: [],   // ←追加
   };
 
   const provisional: ProvisionalResult = {
+    score: 0.7,
     category,
     confidence: 0.7,
     insight

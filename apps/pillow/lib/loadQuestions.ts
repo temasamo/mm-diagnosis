@@ -1,6 +1,6 @@
 import path from "path";
 import fs from "fs/promises";
-import type { Questionnaire } from "@core/mm";
+import type { Questionnaire } from "./types";
 
 export async function loadPillowQuestions(): Promise<Questionnaire> {
   const filePath = path.join(process.cwd(), "apps/pillow/public/questions.pillow.v2.json");

@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { StepId, nextStep, prevStep, Questionnaire } from "@core/mm";
+import { StepId, nextStep, prevStep, Questionnaire } from "../../../lib/types";
 import data from "@/data/questions.json";
-import { Answers, makeInsights, finalizeResult } from "@/lib/logic/score";
+import { Answers, makeInsights } from "@/lib/logic/score";
+import { finalizeResult } from "@/lib/recommend/finalizeResult";
 
 export default function DiagnosisPage() {
   const questionnaire = data as Questionnaire;
@@ -64,7 +65,10 @@ export default function DiagnosisPage() {
           className="px-3 py-2 rounded bg-white text-black"
           onClick={() => {
             const res = makeInsights(questionnaire, answers);
-            setInsightText(res.insight);
+            setInsightText({
+              summary: res.insight.summary,
+              reasons: res.insight.reasons ?? []
+            });
             if (res.followUp) setFollowUpQ(res.followUp);
             setStep("insights");
           }}
@@ -115,7 +119,11 @@ export default function DiagnosisPage() {
           className="px-3 py-2 rounded bg-white text-black"
           onClick={() => {
             const final = finalizeResult(answers);
-            setFinalView({ primary: final.primaryGroup, secondary: final.secondaryGroup, reasons: final.reasons });
+            setFinalView({ 
+              primary: final.primaryGroup,
+              secondary: final.secondaryGroup,
+              reasons: final.reasons,
+            });
             setStep("results");
           }}
         >

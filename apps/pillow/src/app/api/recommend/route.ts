@@ -1,6 +1,6 @@
 export const runtime = "nodejs";
-import { NextResponse } from "next/server";
-import { ENABLED_MALLS, type RecommendRequest, type MallProduct } from "@core/mm";
+import { NextRequest, NextResponse } from "next/server";
+import { ENABLED_MALLS, type RecommendRequest, type MallProduct } from "../../../../lib/types";
 
 export async function POST(req: Request) {
   const body = (await req.json()) as RecommendRequest;
@@ -11,7 +11,7 @@ export async function POST(req: Request) {
   const picks: MallProduct[] = [
     {
       id: "stub-1",
-      title: `[Stub] ${body.primaryGroup[0] ?? "スタンダード"} / 高反発系`,
+      title: `[Stub] ${body.primaryGroup ?? "スタンダード"} / 高反発系`,
       image: "/placeholder.png",
       url: "#",
       price: 32980,

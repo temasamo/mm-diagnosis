@@ -1,8 +1,10 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: [
-    "./src/**/*.{ts,tsx,js,jsx}",
-    "../../packages/**/*.{ts,tsx,js,jsx}"
+    "./src/app/**/*.{ts,tsx}",
+    "./src/components/**/*.{ts,tsx}",
+    "./src/**/*.{ts,tsx}",
+    "../../packages/**/*.{ts,tsx}", // 共有UIがあれば
   ],
   theme: { extend: {} },
   plugins: [],

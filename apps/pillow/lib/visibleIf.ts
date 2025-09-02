@@ -1,4 +1,4 @@
-import type { VisibleIf, VisiblePredicate } from "@core/mm";
+import type { VisibleIf, VisiblePredicate } from "./types";
 
 type Answers = Record<string, string | string[] | undefined>;
 
