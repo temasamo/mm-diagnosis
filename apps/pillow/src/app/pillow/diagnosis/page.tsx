@@ -571,9 +571,9 @@ export default function Page() {
             </div>
           </div>
 
-          {/* 好きな素材 */}
+          {/* 好きな枕の素材 */}
           <div>
-            <label className="text-sm md:text-base font-semibold text-zinc-200 mb-3 block">好きな素材</label>
+            <label className="text-sm md:text-base font-semibold text-zinc-200 mb-3 block">好きな枕の素材</label>
             <div className="space-y-2">
               <label className="flex items-center gap-3 py-2">
                 <input
@@ -618,17 +618,6 @@ export default function Page() {
                   className="h-4 w-4"
                 />
                 <span className="text-sm md:text-base">そば殻</span>
-              </label>
-              <label className="flex items-center gap-3 py-2">
-                <input
-                  type="radio"
-                  name="material_pref"
-                  value="none"
-                  checked={answers?.material_pref === "none"}
-                  onChange={(e) => setAnswers({ material_pref: e.target.value })}
-                  className="h-4 w-4"
-                />
-                <span className="text-sm md:text-base">特になし</span>
               </label>
               <label className="flex items-center gap-3 py-2">
                 <input
