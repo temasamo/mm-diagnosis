@@ -5,6 +5,7 @@ import { StepId, nextStep, prevStep, Questionnaire } from "../../../lib/types";
 import data from "@/data/questions.json";
 import { Answers, makeInsights } from "@/lib/logic/score";
 import { finalizeResult } from "@/lib/recommend/finalizeResult";
+import { APP_NAME } from "@/lib/constants";
 
 export default function DiagnosisPage() {
   const questionnaire = data as Questionnaire;
@@ -29,7 +30,7 @@ export default function DiagnosisPage() {
   // components
   const Greet = () => (
     <section className="p-6 space-y-4">
-      <h1 className="text-2xl font-bold">枕診断へようこそ</h1>
+      <h1 className="text-2xl font-bold">{APP_NAME}へようこそ</h1>
       <p>いくつかの質問に答えるだけで、あなたに合う候補を提示します。</p>
       <div className="flex gap-2">
         <button className="px-3 py-2 rounded bg-white/10" onClick={goNext}>はじめる</button>

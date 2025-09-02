@@ -2,6 +2,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useDiagStore } from "../../../../lib/state/diagStore";
+import { APP_NAME } from "@/lib/constants";
 
 export default function Page() {
   const answers = useDiagStore((s: any) => s.answers);
@@ -9,7 +10,7 @@ export default function Page() {
 
   return (
     <main className="max-w-3xl mx-auto p-6 space-y-6">
-      <h1 className="text-2xl font-bold">枕診断</h1>
+      <h1 className="text-2xl font-bold">{APP_NAME}</h1>
       
       {/* A. 体・寝姿勢 */}
       <section className="mb-10">

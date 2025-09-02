@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useDiagStore } from "../../../../lib/state/diagStore";
 import { derivePosture } from "../../../lib/utils/posture";
 import { AGE_BAND_LABELS, GENDER_LABELS, type AgeBand, type Gender } from "../../../types/answers";
+import { APP_NAME } from "@/lib/constants";
 
 export default function Page() {
   const router = useRouter();
@@ -44,7 +45,7 @@ export default function Page() {
 
   return (
     <main className="max-w-4xl mx-auto p-4 md:p-6">
-      <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-6">枕診断</h1>
+      <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-6">{APP_NAME}</h1>
       
       {/* A. 体・寝姿勢 */}
       <section className="rounded-xl border border-zinc-700/60 bg-zinc-900/40 p-5 md:p-6 mb-8">
