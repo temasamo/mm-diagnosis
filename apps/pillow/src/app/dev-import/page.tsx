@@ -1,6 +1,6 @@
 "use client";
 
-import { StepId, nextStep, Questionnaire, FinalResult, DEFAULT_STEPS } from "@core/mm";
+import { StepId, nextStep, Questionnaire, FinalResult, STEP_ORDER } from "../../../lib/types";
 
 export default function DevImportPage() {
   const step: StepId = "greet";
@@ -14,7 +14,7 @@ export default function DevImportPage() {
       <div>questions.version: <b>{q.version}</b></div>
       <div>final.reasons.length: <b>{fr.reasons.length}</b></div>
       <ul className="text-sm text-gray-600">
-        {DEFAULT_STEPS.map(s => <li key={s.id}>{s.id} — {s.title}</li>)}
+        {STEP_ORDER.map(s => <li key={s}>{s}</li>)}
       </ul>
     </main>
   );
