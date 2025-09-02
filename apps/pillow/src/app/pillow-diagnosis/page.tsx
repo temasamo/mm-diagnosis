@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import QuestionRenderer from "../../../components/QuestionRenderer";
-import type { Questionnaire } from "@core/mm";
+import type { Questionnaire } from "../../../lib/types";
 import { computeProvisional } from "../../../lib/scoring/engine";
 import { CATEGORY_LABEL } from "../../../lib/scoring/config";
 import { generateProductRecommendations, filterByBudget } from "../../../lib/scoring/product-recommendations";

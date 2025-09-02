@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import type { Questionnaire, Question } from "@core/mm";
+import type { Questionnaire, Question } from "../../../lib/types";
 import { loadAnswers, saveAnswers } from "../lib/answers";
 import Link from "next/link";
 

@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import type { Questionnaire } from "@core/mm";
+import type { Questionnaire } from "../../../lib/types";
 import QuestionRenderer from "./QuestionRenderer";
 
 export default function Page() {

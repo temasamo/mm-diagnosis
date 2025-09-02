@@ -1,6 +1,6 @@
 "use client";
 import { useMemo } from "react";
-import type { Question } from "@core/mm";
+import type { Question } from "../lib/types";
 import { isVisible } from "../lib/visibleIf";
 
 type Props = {
