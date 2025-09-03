@@ -682,19 +682,19 @@ export default function ResultPage() {
                         className={`px-3 py-1 rounded ${secondaryOpen === "a" ? "bg-white/10" : "bg-white/5"}`}
                         onClick={() => setSecondaryOpen("a")}
                       >
-                        {groups.secondaryLabels?.[0] || "横向き・高反発"}
+                        A
                       </button>
                       <button
                         className={`px-3 py-1 rounded ${secondaryOpen === "b" ? "bg-white/10" : "bg-white/5"}`}
                         onClick={() => setSecondaryOpen("b")}
                       >
-                        {groups.secondaryLabels?.[1] || "低反発・仰向け"}
+                        B
                       </button>
                       <button
                         className={`px-3 py-1 rounded ${secondaryOpen === "c" ? "bg-white/10" : "bg-white/5"}`}
                         onClick={() => setSecondaryOpen("c")}
                       >
-                        {groups.secondaryLabels?.[2] || "首肩・調整"}
+                        C
                       </button>
                     </div>
                     
