@@ -120,50 +120,41 @@ function generateSecondaryKeywords(answers: any): { keywords: string[][], labels
   // 第2候補A: 姿勢ベースの代替案（マットレス硬さを考慮）
   if (posture) {
     let postureKeywords: string[] = [];
-    let postureLabel = "";
+    let postureLabel = "Aタイプ";
     
     if (posture === "side") {
       postureKeywords = ["横向き 枕", "横向き寝 枕"];
-      postureLabel = "横向き寝向け";
       
       // マットレス硬さと枕の高さの組み合わせ
       if (mattressFirmness && mattressFirmness !== "unknown") {
         if (mattressFirmness === "soft") {
           // 柔らかめマットレス → 低め枕
           postureKeywords.push("低め 枕", "横向き 低め 枕");
-          postureLabel += " × 低め枕";
         } else if (mattressFirmness === "firm") {
           // 硬めマットレス → 高め枕
           postureKeywords.push("高め 枕", "横向き 高め 枕");
-          postureLabel += " × 高め枕";
         }
       }
     } else if (posture === "supine") {
       postureKeywords = ["仰向け 枕", "仰向け寝 枕"];
-      postureLabel = "仰向け寝向け";
       
       // マットレス硬さを考慮
       if (mattressFirmness && mattressFirmness !== "unknown") {
         if (mattressFirmness === "soft") {
           postureKeywords.push("仰向け 低め 枕");
-          postureLabel += " × 低め枕";
         } else if (mattressFirmness === "firm") {
           postureKeywords.push("仰向け 高め 枕");
-          postureLabel += " × 高め枕";
         }
       }
     } else if (posture === "prone") {
       postureKeywords = ["うつ伏せ 枕", "うつ伏せ寝 枕"];
-      postureLabel = "うつ伏せ寝向け";
       
       // うつ伏せの場合は低め枕が基本
       if (mattressFirmness && mattressFirmness !== "unknown") {
         if (mattressFirmness === "soft") {
           postureKeywords.push("うつ伏せ 低め 枕");
-          postureLabel += " × 低め枕";
         } else if (mattressFirmness === "firm") {
           postureKeywords.push("うつ伏せ 枕", "薄め 枕");
-          postureLabel += " × 薄め枕";
         }
       }
     }
@@ -172,13 +163,10 @@ function generateSecondaryKeywords(answers: any): { keywords: string[][], labels
     if (materialPref && materialPref !== "unknown" && materialPref !== "none") {
       if (materialPref === "lp") {
         postureKeywords.push("低反発");
-        postureLabel += " × 低反発";
       } else if (materialPref === "hp") {
         postureKeywords.push("高反発");
-        postureLabel += " × 高反発";
       } else if (materialPref === "feather") {
         postureKeywords.push("羽毛");
-        postureLabel += " × 羽毛";
       }
     }
     
@@ -192,14 +180,7 @@ function generateSecondaryKeywords(answers: any): { keywords: string[][], labels
   if (currentMaterial && currentMaterial !== "other" && materialRemedyMap[currentMaterial]) {
     const remedyMaterials = materialRemedyMap[currentMaterial];
     const remedyKeywords = remedyMaterials.map(material => `${material} 枕`);
-    const remedyLabel = `素材改善提案（${currentMaterial === "low_rebound" ? "低反発" : 
-      currentMaterial === "high_rebound" ? "高反発" : 
-      currentMaterial === "latex" ? "ラテックス" :
-      currentMaterial === "pipe" ? "パイプ" :
-      currentMaterial === "beads" ? "ビーズ" :
-      currentMaterial === "feather" ? "羽毛" :
-      currentMaterial === "poly_cotton" ? "ポリエステル綿" :
-      currentMaterial === "sobakawa" ? "そば殻" : "現在の素材"}から改善）`;
+    const remedyLabel = "Bタイプ";
     
     keywords.push(remedyKeywords);
     labels.push(remedyLabel);
@@ -208,7 +189,7 @@ function generateSecondaryKeywords(answers: any): { keywords: string[][], labels
   // 第2候補C: 悩みベースの代替案（マットレス硬さを考慮）
   if (concerns.length > 0 || neckIssues.length > 0) {
     let problemKeywords = [];
-    let problemLabel = "お悩み対応";
+    let problemLabel = "Cタイプ";
     
     // 気になる点からキーワード生成
     if (concerns.includes("neck_pain")) {
@@ -236,11 +217,9 @@ function generateSecondaryKeywords(answers: any): { keywords: string[][], labels
         if (mattressFirmness === "soft") {
           // 柔らかめマットレス + 肩こり → 首肩サポート重視
           problemKeywords.push("首肩 サポート 枕", "肩こり 低め 枕");
-          problemLabel += " × 首肩サポート";
         } else if (mattressFirmness === "firm") {
           // 硬めマットレス + 肩こり → 高め枕で首肩サポート
           problemKeywords.push("首肩 サポート 枕", "肩こり 高め 枕");
-          problemLabel += " × 首肩サポート";
         }
       }
     }
@@ -252,10 +231,8 @@ function generateSecondaryKeywords(answers: any): { keywords: string[][], labels
     if (mattressFirmness && mattressFirmness !== "unknown") {
       if (mattressFirmness === "soft") {
         problemKeywords.push("柔らかマットレス 対応 枕");
-        problemLabel += " × 柔らかマットレス対応";
       } else if (mattressFirmness === "firm") {
         problemKeywords.push("硬めマットレス 対応 枕");
-        problemLabel += " × 硬めマットレス対応";
       }
     }
     
@@ -276,12 +253,10 @@ function generateSecondaryKeywords(answers: any): { keywords: string[][], labels
   // いびき・暑がり情報を追加
   if (answers?.snore === "often" || answers?.snore === "sometimes") {
     specialKeywords.push("いびき 枕", "いびき 対策 枕");
-    specialLabel += " × いびき対策";
   }
   
   if (answers?.heat_sweat === "yes") {
     specialKeywords.push("涼しい 枕", "通気性 枕", "冷却 枕");
-    specialLabel += " × 涼感";
   }
   
   // 寝返り頻度を考慮
@@ -295,10 +270,8 @@ function generateSecondaryKeywords(answers: any): { keywords: string[][], labels
   if (adjustablePref === "yes" && mattressFirmness && mattressFirmness !== "unknown") {
     if (mattressFirmness === "soft") {
       specialKeywords.push("柔らかマットレス 調整 枕");
-      specialLabel += " × 柔らかマットレス対応";
     } else if (mattressFirmness === "firm") {
       specialKeywords.push("硬めマットレス 調整 枕");
-      specialLabel += " × 硬めマットレス対応";
     }
   }
   
@@ -311,13 +284,13 @@ function generateSecondaryKeywords(answers: any): { keywords: string[][], labels
   while (keywords.length < 3) {
     if (keywords.length === 0) {
       keywords.push(["枕", "快眠 枕"]);
-      labels.push("快眠重視");
+      labels.push("Aタイプ");
     } else if (keywords.length === 1) {
       keywords.push(["低反発 枕", "高反発 枕"]);
-      labels.push("素材重視");
+      labels.push("Bタイプ");
     } else {
       keywords.push(["首 肩 枕", "調整 枕"]);
-      labels.push("首肩サポート");
+      labels.push("Cタイプ");
     }
   }
   

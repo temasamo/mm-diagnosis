@@ -52,68 +52,50 @@ export default function Page() {
         <h2 className="text-xl md:text-2xl font-bold mb-4">A. 体・寝姿勢</h2>
         <div className="space-y-6">
           {/* 主な寝姿勢 */}
-          <div>
-            <label className="text-sm md:text-base font-semibold text-zinc-200 mb-3 block">主な寝姿勢</label>
-            <div className="space-y-2">
+          <fieldset>
+            <legend className="text-sm md:text-base font-semibold text-zinc-200 mb-3 block">主な寝姿勢</legend>
+            <div className="options space-y-2">
               <label className="flex items-center gap-3 py-2">
-                <input
-                  type="checkbox"
-                  checked={answers?.postures?.includes("supine") || false}
-                  onChange={(e) => {
-                    const currentPostures = answers?.postures || [];
-                    const newPostures = e.target.checked
-                      ? [...currentPostures, "supine"]
-                      : currentPostures.filter((p: string) => p !== "supine");
-                    const derived = derivePosture(newPostures);
-                    setAnswers({ 
-                      postures: newPostures,
-                      posture: derived
-                    });
-                  }}
+                <input 
+                  type="radio" 
+                  id="pos-supine" 
+                  name="sleepingPosition" 
+                  value="supine" 
+                  checked={answers?.sleepingPosition === "supine"}
+                  onChange={(e) => setAnswers({ sleepingPosition: e.target.value })}
                   className="h-4 w-4"
+                  required 
                 />
                 <span className="text-sm md:text-base">仰向け</span>
               </label>
+
               <label className="flex items-center gap-3 py-2">
-                <input
-                  type="checkbox"
-                  checked={answers?.postures?.includes("prone") || false}
-                  onChange={(e) => {
-                    const currentPostures = answers?.postures || [];
-                    const newPostures = e.target.checked
-                      ? [...currentPostures, "prone"]
-                      : currentPostures.filter((p: string) => p !== "prone");
-                    const derived = derivePosture(newPostures);
-                    setAnswers({ 
-                      postures: newPostures,
-                      posture: derived
-                    });
-                  }}
+                <input 
+                  type="radio" 
+                  id="pos-prone" 
+                  name="sleepingPosition" 
+                  value="prone" 
+                  checked={answers?.sleepingPosition === "prone"}
+                  onChange={(e) => setAnswers({ sleepingPosition: e.target.value })}
                   className="h-4 w-4"
                 />
                 <span className="text-sm md:text-base">うつ伏せ</span>
               </label>
+
               <label className="flex items-center gap-3 py-2">
-                <input
-                  type="checkbox"
-                  checked={answers?.postures?.includes("side") || false}
-                  onChange={(e) => {
-                    const currentPostures = answers?.postures || [];
-                    const newPostures = e.target.checked
-                      ? [...currentPostures, "side"]
-                      : currentPostures.filter((p: string) => p !== "side");
-                    const derived = derivePosture(newPostures);
-                    setAnswers({ 
-                      postures: newPostures,
-                      posture: derived
-                    });
-                  }}
+                <input 
+                  type="radio" 
+                  id="pos-side" 
+                  name="sleepingPosition" 
+                  value="side" 
+                  checked={answers?.sleepingPosition === "side"}
+                  onChange={(e) => setAnswers({ sleepingPosition: e.target.value })}
                   className="h-4 w-4"
                 />
                 <span className="text-sm md:text-base">横向き</span>
               </label>
             </div>
-          </div>
+          </fieldset>
 
           {/* 寝返り頻度 */}
           <div>

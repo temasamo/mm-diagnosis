@@ -35,4 +35,14 @@ export function budgetRelation(a: PriceBandId, b: PriceBandId): 'within' | 'lowe
   const ai = bandIndex(a), bi = bandIndex(b);
   if (ai === bi) return 'within';
   return ai < bi ? 'lower' : 'higher';
+}
+
+export type Band = '<5k'|'5_10k'|'10_20k'|'20k_plus';
+
+export function inAllowedBands(band: Band, target: Band) {
+  if (target === '20k_plus') return band === '20k_plus' || band === '10_20k' || band === '5_10k';
+  if (target === '10_20k')  return band === '10_20k' || band === '5_10k' || band === '20k_plus';
+  if (target === '5_10k')   return band === '5_10k'  || band === '10_20k';
+  if (target === '<5k')     return band === '5_10k'; // <5k は常時除外
+  return false;
 } 
