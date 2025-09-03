@@ -54,4 +54,29 @@ OPENAI_API_KEY=your_openai_api_key_here
 PILLOW_ENABLE_AI_REASON=true
 ```
 
-**注意**: APIキーが未設定の場合でも、フォールバック機能によりアプリは正常に動作します。 
+**注意**: APIキーが未設定の場合でも、フォールバック機能によりアプリは正常に動作します。
+
+---
+
+# 枕診断AI / mm-diagnosis-pillow
+
+## 開発フロー
+- `main` = 開発・検証用（Preview Deploy）
+- `release/pillow-stable` = 本番用（Production Deploy）
+
+## デプロイ
+- Preview: `vercel --cwd apps/pillow`
+- Production: `release/pillow-stable` にマージすると自動デプロイ
+
+## ロールバック
+- Vercel Dashboard → Deployments → 安定版を `Promote to Production`
+- CLI: `vercel rollback <deployment-id>`
+
+## 環境変数（最低限）
+- `RAKUTEN_APP_ID`（必須）
+- `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`（任意）
+- `SUPABASE_SERVICE_ROLE`（任意、無ければ no-op）
+
+## 注意点
+- `release/*-stable` への直 push 禁止（必ず PR）
+- CI smoke test (items.length >= 3) が通らないと Merge 不可 

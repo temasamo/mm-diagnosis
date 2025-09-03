@@ -2,6 +2,14 @@ import { asArray } from "../util/asArray";
 import type { FinalResult } from "../../types/types";
 
 export function finalizeResult(answers: any): FinalResult {
+  // 値の想定外を握りつぶさないガード
+  const pos = answers?.sleepingPosition;
+  if (pos !== 'supine' && pos !== 'prone' && pos !== 'side') {
+    console.warn('[diagnosis] invalid sleepingPosition', pos);
+    // デフォルトを与える（例：横向き）
+    answers.sleepingPosition = 'side';
+  }
+
   // 既存のロジックを仮実装（実際の実装に合わせて調整が必要）
   const raw = {
     primaryGroup: "standard",
