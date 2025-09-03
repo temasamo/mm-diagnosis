@@ -22,7 +22,8 @@
     "paths": {
       "@/*": ["src/*"],          // アプリ内 src 用
       "@lib/*": ["lib/*"],       // アプリ直下 lib 用（diagStore など）
-      "@shared/*": ["../../src/*"] // レポジトリ直下 src 用（必要な場合）
+      "@shared/*": ["../../src/*"], // レポジトリ直下 src 用（必要な場合）
+      "lib/*": ["src/lib/*"]     // 旧習慣の "lib/..." も src/lib に向ける
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],

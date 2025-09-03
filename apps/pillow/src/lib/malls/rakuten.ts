@@ -69,7 +69,7 @@ export async function searchRakuten(query: string, limit: number, budgetBand?: {
       mall: 'rakuten' as const,
       title: Item.itemName,
       url: Item.itemUrl,
-      image: pickImage(Item.mediumImageUrls || Item.smallImageUrls || null),
+      imageUrl: pickImage(Item.mediumImageUrls || Item.smallImageUrls || null),
       price: normalizePriceToNumber(Item.itemPrice),
       shop: Item.shopName ?? null,
     })).filter(i => i.price > 0);

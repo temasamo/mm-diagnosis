@@ -2,8 +2,8 @@ import { CATEGORY_LABEL, type CategoryId } from "../scoring/config";
 import { CATEGORY_QUERIES, buildQueryWords } from "../catalog/category_query";
 import { searchAllMalls, type MallProduct } from "../catalog/mall_search";
 import type { Provisional } from "../scoring/engine";
-import { dedupeProductGroups } from "../dedupe";
-import { getBandById } from "../budget";
+import { dedupeProductGroups } from "@/lib/dedupe";
+import { getBandById } from "@/lib/budget";
 import { inAllowedBands, bandOf, type BudgetBandId, neighbors, inAllowedBandsNew, type BandId } from "./priceBand";
 
 // 第二候補の埋めロジック用の型定義

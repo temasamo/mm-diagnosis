@@ -17,7 +17,7 @@ export function dedupeAndPickCheapest(items: SearchItem[]): SearchItem[] {
     // 優先キー: オリジンid or 正規化URL
     const key = `${it.mall}:${it.id || canonicalUrl(it.url)}`;
     const exist = map.get(key);
-    if (!exist || (it.price > 0 && it.price < exist.price)) {
+    if (!exist || (it.price != null && it.price > 0 && exist.price != null && it.price < exist.price)) {
       map.set(key, { ...it, url: canonicalUrl(it.url) });
     }
   }

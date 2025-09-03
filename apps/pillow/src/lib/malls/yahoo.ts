@@ -52,7 +52,7 @@ export async function searchYahoo(query: string, limit: number, budgetBand?: { m
     mall: 'yahoo' as const,
     title: h.name,
     url: h.url,
-    image: toSafeImageUrl(h.image?.medium || h.image?.small) || null, // 安全化
+    imageUrl: toSafeImageUrl(h.image?.medium || h.image?.small) || null, // 安全化
     price: normalizePriceToNumber(h.price),
     shop: h.seller?.name ?? null,
   })).filter(i => i.price > 0);

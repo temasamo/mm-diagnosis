@@ -1,7 +1,7 @@
 "use client";
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-import { migrateBudget } from '../budget';
+import { migrateBudget } from '@/lib/budget';
 import type { AgeBand, Gender } from '../../src/types/answers';
 
 // 購入理由を2択に変更

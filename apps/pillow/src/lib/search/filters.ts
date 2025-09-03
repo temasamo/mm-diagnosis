@@ -1,4 +1,4 @@
-import type { SearchItem } from '../../lib/malls/types';
+import type { SearchItem } from '@/lib/malls/types';
 
 // NGワード（タイトル/説明/ショップ名/URL どれかに含んだら除外）
 export const NG_PATTERNS = [

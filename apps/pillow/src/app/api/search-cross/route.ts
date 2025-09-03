@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { searchRakuten } from '../../../../lib/malls/rakuten';
-import { searchYahoo } from '../../../../lib/malls/yahoo';
-import { cacheGet, cacheSet } from '../../../../lib/cache';
-import { dedupeAndPickCheapest } from '../../../../lib/dedupe';
-import { getBandById, inBand } from '../../../../lib/budget';
-import { priceDistanceToBand } from '../../../../lib/price';
+import { searchRakuten } from '@/lib/malls/rakuten';
+import { searchYahoo } from '@/lib/malls/yahoo';
+import { cacheGet, cacheSet } from '@/lib/cache';
+import { dedupeAndPickCheapest } from '@/lib/dedupe';
+import { getBandById, inBand } from '@/lib/budget';
+import { priceDistanceToBand } from '@/lib/price';
 import { excludeNG } from '../../../lib/search/filters';
-import type { SearchItem } from '../../../../lib/malls/types';
+import type { SearchItem } from '@/lib/malls/types';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

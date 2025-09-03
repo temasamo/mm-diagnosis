@@ -4,17 +4,14 @@ export type Mall = 'rakuten' | 'yahoo' | 'amazon';
 
 export type SearchItem = {
   id?: string;
-
-  // 判定で使うフィールド（NGワード判定コメントに合わせて）
-  title: string;
-  description?: string;
-  shopName?: string;
+  title?: string | null;
+  description?: string | null;
+  // どちらでも入って来る可能性があるため両方許可
+  shop?: string | null;        // 新
+  shopName?: string | null;    // 既存
   url: string;
-
-  // 表示やフィルタで使うかもしれない項目（任意）
-  price?: number;
+  price?: number | null;
   currency?: 'JPY';
-  imageUrl?: string;
-
+  imageUrl?: string | null;
   mall: Mall;
 };
