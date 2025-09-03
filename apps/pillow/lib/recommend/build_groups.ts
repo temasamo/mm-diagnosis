@@ -103,6 +103,35 @@ function generateSecondaryKeywords(answers: any): { keywords: string[][], labels
   const mattressFirmness = answers?.mattress_firmness;
   const adjustablePref = answers?.adjustable_pref;
   const currentMaterial = answers?.current_pillow_material;
+  const budget = answers?.budget;
+  
+  // 高級枕向けの検索クエリ（予算が2万円以上の場合）
+  const isLuxuryBudget = budget === "20kplus" || budget === "30k+";
+  
+  // 高級枕で確実に結果が得られる具体的な検索クエリ
+  const getLuxuryPillowQueries = (baseKeywords: string[]) => {
+    if (!isLuxuryBudget) return baseKeywords;
+    
+    // 高級枕で確実に結果が得られる具体的なキーワード
+    const luxuryKeywords = [
+      "テンピュール 枕",
+      "メモリーフォーム 枕 高級",
+      "羽毛 枕 高級",
+      "ラテックス 枕 高級",
+      "枕 ホテル 高級",
+      "枕 高級 ブランド"
+    ];
+    
+    // ベースキーワードと高級キーワードを組み合わせ
+    const combined = [...baseKeywords];
+    luxuryKeywords.forEach(luxury => {
+      if (!combined.includes(luxury)) {
+        combined.push(luxury);
+      }
+    });
+    
+    return combined;
+  };
   
   // 素材リメディマッピング（現在の素材→推奨素材）
   const materialRemedyMap: Record<string, string[]> = {
@@ -123,46 +152,98 @@ function generateSecondaryKeywords(answers: any): { keywords: string[][], labels
     let postureLabel = "";
     
     if (posture === "side") {
-      postureKeywords = ["横向き 枕", "横向き寝 枕"];
+      // 高級予算の場合は高級枕向けの検索クエリを追加
+      if (isLuxuryBudget) {
+        postureKeywords = ["横向き 枕 高級", "横向き寝 枕 ホテル 高級"];
+      } else {
+        postureKeywords = ["横向き 枕", "横向き寝 枕"];
+      }
       postureLabel = "横向き寝向け";
+      
+      // 高級予算の場合は具体的な高級枕キーワードを追加
+      if (isLuxuryBudget) {
+        postureKeywords = getLuxuryPillowQueries(postureKeywords);
+      }
       
       // マットレス硬さと枕の高さの組み合わせ
       if (mattressFirmness && mattressFirmness !== "unknown") {
         if (mattressFirmness === "soft") {
           // 柔らかめマットレス → 低め枕
-          postureKeywords.push("低め 枕", "横向き 低め 枕");
+          if (isLuxuryBudget) {
+            postureKeywords.push("低め 枕 高級", "横向き 低め 枕 ホテル");
+          } else {
+            postureKeywords.push("低め 枕", "横向き 低め 枕");
+          }
           postureLabel += " × 低め枕";
         } else if (mattressFirmness === "firm") {
           // 硬めマットレス → 高め枕
-          postureKeywords.push("高め 枕", "横向き 高め 枕");
+          if (isLuxuryBudget) {
+            postureKeywords.push("高め 枕 高級", "横向き 高め 枕 ホテル");
+          } else {
+            postureKeywords.push("高め 枕", "横向き 高め 枕");
+          }
           postureLabel += " × 高め枕";
         }
       }
     } else if (posture === "supine") {
-      postureKeywords = ["仰向け 枕", "仰向け寝 枕"];
+      if (isLuxuryBudget) {
+        postureKeywords = ["仰向け 枕 高級", "仰向け寝 枕 ホテル 高級"];
+      } else {
+        postureKeywords = ["仰向け 枕", "仰向け寝 枕"];
+      }
       postureLabel = "仰向け寝向け";
+      
+      // 高級予算の場合は具体的な高級枕キーワードを追加
+      if (isLuxuryBudget) {
+        postureKeywords = getLuxuryPillowQueries(postureKeywords);
+      }
       
       // マットレス硬さを考慮
       if (mattressFirmness && mattressFirmness !== "unknown") {
         if (mattressFirmness === "soft") {
-          postureKeywords.push("仰向け 低め 枕");
+          if (isLuxuryBudget) {
+            postureKeywords.push("仰向け 低め 枕 高級");
+          } else {
+            postureKeywords.push("仰向け 低め 枕");
+          }
           postureLabel += " × 低め枕";
         } else if (mattressFirmness === "firm") {
-          postureKeywords.push("仰向け 高め 枕");
+          if (isLuxuryBudget) {
+            postureKeywords.push("仰向け 高め 枕 高級");
+          } else {
+            postureKeywords.push("仰向け 高め 枕");
+          }
           postureLabel += " × 高め枕";
         }
       }
     } else if (posture === "prone") {
-      postureKeywords = ["うつ伏せ 枕", "うつ伏せ寝 枕"];
+      if (isLuxuryBudget) {
+        postureKeywords = ["うつ伏せ 枕 高級", "うつ伏せ寝 枕 ホテル 高級"];
+      } else {
+        postureKeywords = ["うつ伏せ 枕", "うつ伏せ寝 枕"];
+      }
       postureLabel = "うつ伏せ寝向け";
+      
+      // 高級予算の場合は具体的な高級枕キーワードを追加
+      if (isLuxuryBudget) {
+        postureKeywords = getLuxuryPillowQueries(postureKeywords);
+      }
       
       // うつ伏せの場合は低め枕が基本
       if (mattressFirmness && mattressFirmness !== "unknown") {
         if (mattressFirmness === "soft") {
-          postureKeywords.push("うつ伏せ 低め 枕");
+          if (isLuxuryBudget) {
+            postureKeywords.push("うつ伏せ 低め 枕 高級");
+          } else {
+            postureKeywords.push("うつ伏せ 低め 枕");
+          }
           postureLabel += " × 低め枕";
         } else if (mattressFirmness === "firm") {
-          postureKeywords.push("うつ伏せ 枕", "薄め 枕");
+          if (isLuxuryBudget) {
+            postureKeywords.push("うつ伏せ 枕 高級", "薄め 枕 ホテル");
+          } else {
+            postureKeywords.push("うつ伏せ 枕", "薄め 枕");
+          }
           postureLabel += " × 薄め枕";
         }
       }
@@ -171,13 +252,25 @@ function generateSecondaryKeywords(answers: any): { keywords: string[][], labels
     // 素材の好みを組み合わせ
     if (materialPref && materialPref !== "unknown" && materialPref !== "none") {
       if (materialPref === "lp") {
-        postureKeywords.push("低反発");
+        if (isLuxuryBudget) {
+          postureKeywords.push("低反発 枕 高級");
+        } else {
+          postureKeywords.push("低反発");
+        }
         postureLabel += " × 低反発";
       } else if (materialPref === "hp") {
-        postureKeywords.push("高反発");
+        if (isLuxuryBudget) {
+          postureKeywords.push("高反発 枕 高級");
+        } else {
+          postureKeywords.push("高反発");
+        }
         postureLabel += " × 高反発";
       } else if (materialPref === "feather") {
-        postureKeywords.push("羽毛");
+        if (isLuxuryBudget) {
+          postureKeywords.push("羽毛 枕 高級", "羽毛 枕 ホテル");
+        } else {
+          postureKeywords.push("羽毛");
+        }
         postureLabel += " × 羽毛";
       }
     }
@@ -191,7 +284,19 @@ function generateSecondaryKeywords(answers: any): { keywords: string[][], labels
   // 第2候補B: 素材リメディベースの代替案
   if (currentMaterial && currentMaterial !== "other" && materialRemedyMap[currentMaterial]) {
     const remedyMaterials = materialRemedyMap[currentMaterial];
-    const remedyKeywords = remedyMaterials.map(material => `${material} 枕`);
+    let remedyKeywords: string[];
+    
+    if (isLuxuryBudget) {
+      // 高級予算の場合は高級枕向けの検索クエリを生成
+      remedyKeywords = remedyMaterials.map(material => `${material} 枕 高級`);
+      // ホテル向けの検索クエリも追加
+      remedyKeywords.push(...remedyMaterials.map(material => `${material} 枕 ホテル 高級`));
+      // 具体的な高級枕キーワードを追加
+      remedyKeywords = getLuxuryPillowQueries(remedyKeywords);
+    } else {
+      remedyKeywords = remedyMaterials.map(material => `${material} 枕`);
+    }
+    
     const remedyLabel = `素材改善提案（${currentMaterial === "low_rebound" ? "低反発" : 
       currentMaterial === "high_rebound" ? "高反発" : 
       currentMaterial === "latex" ? "ラテックス" :
@@ -212,49 +317,93 @@ function generateSecondaryKeywords(answers: any): { keywords: string[][], labels
     
     // 気になる点からキーワード生成
     if (concerns.includes("neck_pain")) {
-      problemKeywords.push("首痛 枕", "首 痛み 枕");
+      if (isLuxuryBudget) {
+        problemKeywords.push("首痛 枕 高級", "首 痛み 枕 ホテル");
+      } else {
+        problemKeywords.push("首痛 枕", "首 痛み 枕");
+      }
     }
     if (concerns.includes("height_mismatch")) {
-      problemKeywords.push("高さ調整 枕", "調整可能 枕");
+      if (isLuxuryBudget) {
+        problemKeywords.push("高さ調整 枕 高級", "調整可能 枕 ホテル");
+      } else {
+        problemKeywords.push("高さ調整 枕", "調整可能 枕");
+      }
     }
     if (concerns.includes("poor_turn")) {
-      problemKeywords.push("寝返り しやすい 枕");
+      if (isLuxuryBudget) {
+        problemKeywords.push("寝返り しやすい 枕 高級");
+      } else {
+        problemKeywords.push("寝返り しやすい 枕");
+      }
     }
     if (concerns.includes("sweat")) {
-      problemKeywords.push("通気性 枕", "涼しい 枕");
+      if (isLuxuryBudget) {
+        problemKeywords.push("通気性 枕 高級", "涼しい 枕 ホテル");
+      } else {
+        problemKeywords.push("通気性 枕", "涼しい 枕");
+      }
     }
     
     // 首・肩の問題からキーワード生成
     if (neckIssues.includes("morning_neck_pain")) {
-      problemKeywords.push("朝 首痛 枕", "起床時 首痛 枕");
+      if (isLuxuryBudget) {
+        problemKeywords.push("朝 首痛 枕 高級", "起床時 首痛 枕 ホテル");
+      } else {
+        problemKeywords.push("朝 首痛 枕", "起床時 首痛 枕");
+      }
     }
     if (neckIssues.includes("severe_shoulder_stiffness")) {
-      problemKeywords.push("肩こり 枕", "肩 こり 枕");
+      if (isLuxuryBudget) {
+        problemKeywords.push("肩こり 枕 高級", "肩 こり 枕 ホテル");
+      } else {
+        problemKeywords.push("肩こり 枕", "肩 こり 枕");
+      }
       
       // 肩こり + マットレス硬さの組み合わせ
       if (mattressFirmness && mattressFirmness !== "unknown") {
         if (mattressFirmness === "soft") {
           // 柔らかめマットレス + 肩こり → 首肩サポート重視
-          problemKeywords.push("首肩 サポート 枕", "肩こり 低め 枕");
+          if (isLuxuryBudget) {
+            problemKeywords.push("首肩 サポート 枕 高級", "肩こり 低め 枕 ホテル");
+          } else {
+            problemKeywords.push("首肩 サポート 枕", "肩こり 低め 枕");
+          }
           problemLabel += " × 首肩サポート";
         } else if (mattressFirmness === "firm") {
           // 硬めマットレス + 肩こり → 高め枕で首肩サポート
-          problemKeywords.push("首肩 サポート 枕", "肩こり 高め 枕");
+          if (isLuxuryBudget) {
+            problemKeywords.push("首肩 サポート 枕 高級", "肩こり 高め 枕 ホテル");
+          } else {
+            problemKeywords.push("首肩 サポート 枕", "肩こり 高め 枕");
+          }
           problemLabel += " × 首肩サポート";
         }
       }
     }
     if (neckIssues.includes("straight_neck")) {
-      problemKeywords.push("ストレートネック 枕", "首 矯正 枕");
+      if (isLuxuryBudget) {
+        problemKeywords.push("ストレートネック 枕 高級", "首 矯正 枕 ホテル");
+      } else {
+        problemKeywords.push("ストレートネック 枕", "首 矯正 枕");
+      }
     }
     
     // マットレス硬さを組み合わせ
     if (mattressFirmness && mattressFirmness !== "unknown") {
       if (mattressFirmness === "soft") {
-        problemKeywords.push("柔らかマットレス 対応 枕");
+        if (isLuxuryBudget) {
+          problemKeywords.push("柔らかマットレス 対応 枕 高級");
+        } else {
+          problemKeywords.push("柔らかマットレス 対応 枕");
+        }
         problemLabel += " × 柔らかマットレス対応";
       } else if (mattressFirmness === "firm") {
-        problemKeywords.push("硬めマットレス 対応 枕");
+        if (isLuxuryBudget) {
+          problemKeywords.push("硬めマットレス 対応 枕 高級");
+        } else {
+          problemKeywords.push("硬めマットレス 対応 枕");
+        }
         problemLabel += " × 硬めマットレス対応";
       }
     }
@@ -270,34 +419,62 @@ function generateSecondaryKeywords(answers: any): { keywords: string[][], labels
   let specialLabel = "調整・機能重視";
   
   if (adjustablePref === "yes") {
-    specialKeywords.push("調整可能 枕", "高さ調整 枕");
+    if (isLuxuryBudget) {
+      specialKeywords.push("調整可能 枕 高級", "高さ調整 枕 ホテル");
+    } else {
+      specialKeywords.push("調整可能 枕", "高さ調整 枕");
+    }
   }
   
   // いびき・暑がり情報を追加
   if (answers?.snore === "often" || answers?.snore === "sometimes") {
-    specialKeywords.push("いびき 枕", "いびき 対策 枕");
+    if (isLuxuryBudget) {
+      specialKeywords.push("いびき 枕 高級", "いびき 対策 枕 ホテル");
+    } else {
+      specialKeywords.push("いびき 枕", "いびき 対策 枕");
+    }
     specialLabel += " × いびき対策";
   }
   
   if (answers?.heat_sweat === "yes") {
-    specialKeywords.push("涼しい 枕", "通気性 枕", "冷却 枕");
+    if (isLuxuryBudget) {
+      specialKeywords.push("涼しい 枕 高級", "通気性 枕 ホテル", "冷却 枕 高級");
+    } else {
+      specialKeywords.push("涼しい 枕", "通気性 枕", "冷却 枕");
+    }
     specialLabel += " × 涼感";
   }
   
   // 寝返り頻度を考慮
   if (rollover === "often") {
-    specialKeywords.push("寝返り しやすい 枕");
+    if (isLuxuryBudget) {
+      specialKeywords.push("寝返り しやすい 枕 高級");
+    } else {
+      specialKeywords.push("寝返り しやすい 枕");
+    }
   } else if (rollover === "rare") {
-    specialKeywords.push("安定 枕", "固定 枕");
+    if (isLuxuryBudget) {
+      specialKeywords.push("安定 枕 高級", "固定 枕 ホテル");
+    } else {
+      specialKeywords.push("安定 枕", "固定 枕");
+    }
   }
   
   // マットレス硬さと調整機能の組み合わせ
   if (adjustablePref === "yes" && mattressFirmness && mattressFirmness !== "unknown") {
     if (mattressFirmness === "soft") {
-      specialKeywords.push("柔らかマットレス 調整 枕");
+      if (isLuxuryBudget) {
+        specialKeywords.push("柔らかマットレス 調整 枕 高級");
+      } else {
+        specialKeywords.push("柔らかマットレス 調整 枕");
+      }
       specialLabel += " × 柔らかマットレス対応";
     } else if (mattressFirmness === "firm") {
-      specialKeywords.push("硬めマットレス 調整 枕");
+      if (isLuxuryBudget) {
+        specialKeywords.push("硬めマットレス 調整 枕 高級");
+      } else {
+        specialKeywords.push("硬めマットレス 調整 枕");
+      }
       specialLabel += " × 硬めマットレス対応";
     }
   }
@@ -310,13 +487,28 @@ function generateSecondaryKeywords(answers: any): { keywords: string[][], labels
   // 最低3つになるようにフォールバック
   while (keywords.length < 3) {
     if (keywords.length === 0) {
-      keywords.push(["枕", "快眠 枕"]);
+      if (isLuxuryBudget) {
+        const fallbackKeywords = ["枕 高級", "快眠 枕 ホテル 高級"];
+        keywords.push(getLuxuryPillowQueries(fallbackKeywords));
+      } else {
+        keywords.push(["枕", "快眠 枕"]);
+      }
       labels.push("快眠重視");
     } else if (keywords.length === 1) {
-      keywords.push(["低反発 枕", "高反発 枕"]);
+      if (isLuxuryBudget) {
+        const fallbackKeywords = ["低反発 枕 高級", "高反発 枕 ホテル"];
+        keywords.push(getLuxuryPillowQueries(fallbackKeywords));
+      } else {
+        keywords.push(["低反発 枕", "高反発 枕"]);
+      }
       labels.push("素材重視");
     } else {
-      keywords.push(["首 肩 枕", "調整 枕"]);
+      if (isLuxuryBudget) {
+        const fallbackKeywords = ["首 肩 枕 高級", "調整 枕 ホテル"];
+        keywords.push(getLuxuryPillowQueries(fallbackKeywords));
+      } else {
+        keywords.push(["首 肩 枕", "調整 枕"]);
+      }
       labels.push("首肩サポート");
     }
   }

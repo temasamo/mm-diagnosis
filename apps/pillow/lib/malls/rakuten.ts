@@ -24,7 +24,10 @@ function pickImage(urls?: { imageUrl: string }[] | null): string | null {
 
 export async function searchRakuten(query: string, limit: number): Promise<SearchItem[]> {
   const appId = process.env.RAKUTEN_APP_ID;
-  if (!appId) return [];
+  if (!appId) {
+    console.log('[Rakuten] No APP_ID found');
+    return [];
+  }
 
   const url = new URL(RAKUTEN_ENDPOINT);
   url.searchParams.set('applicationId', appId);
@@ -32,6 +35,8 @@ export async function searchRakuten(query: string, limit: number): Promise<Searc
   url.searchParams.set('hits', String(Math.min(Math.max(limit, 1), 30)));
   url.searchParams.set('imageFlag', '1');
   url.searchParams.set('availability', '1'); // 在庫あり
+
+  console.log('[Rakuten] Searching with URL:', url.toString());
 
   type R = {
     Items: { Item: {
@@ -45,16 +50,24 @@ export async function searchRakuten(query: string, limit: number): Promise<Searc
     }}[];
   };
 
-  const data = await fetchJsonWithRetry<R>(url.toString());
-  const items: SearchItem[] = (data.Items || []).map(({ Item }) => ({
-    id: Item.itemCode || Item.itemUrl,
-    mall: 'rakuten' as const,
-    title: Item.itemName,
-    url: Item.itemUrl,
-    image: pickImage(Item.mediumImageUrls || Item.smallImageUrls || null),
-    price: normalizePriceToNumber(Item.itemPrice),
-    shop: Item.shopName ?? null,
-  })).filter(i => i.price > 0);
+  try {
+    const data = await fetchJsonWithRetry<R>(url.toString());
+    console.log('[Rakuten] Raw response:', JSON.stringify(data, null, 2));
+    
+    const items: SearchItem[] = (data.Items || []).map(({ Item }) => ({
+      id: Item.itemCode || Item.itemUrl,
+      mall: 'rakuten' as const,
+      title: Item.itemName,
+      url: Item.itemUrl,
+      image: pickImage(Item.mediumImageUrls || Item.smallImageUrls || null),
+      price: normalizePriceToNumber(Item.itemPrice),
+      shop: Item.shopName ?? null,
+    })).filter(i => i.price > 0);
 
-  return items;
+    console.log('[Rakuten] Processed items:', items.length, 'items found');
+    return items;
+  } catch (error) {
+    console.error('[Rakuten] Error:', error);
+    return [];
+  }
 } 
