@@ -20,6 +20,10 @@ export default function Page() {
       if (cParam) {
         try {
           const jsonData = JSON.parse(decodeURIComponent(cParam));
+          // 既存のsleepingPositionをposturesに変換（互換性のため）
+          if (jsonData.sleepingPosition && !jsonData.postures) {
+            jsonData.postures = [jsonData.sleepingPosition];
+          }
           setAnswers(jsonData);
         } catch (e) {
           console.warn('Failed to parse legacy JSON format:', e);
@@ -52,50 +56,32 @@ export default function Page() {
         <h2 className="text-xl md:text-2xl font-bold mb-4">A. 体・寝姿勢</h2>
         <div className="space-y-6">
           {/* 主な寝姿勢 */}
-          <fieldset>
-            <legend className="text-sm md:text-base font-semibold text-zinc-200 mb-3 block">主な寝姿勢</legend>
-            <div className="options space-y-2">
-              <label className="flex items-center gap-3 py-2">
-                <input 
-                  type="radio" 
-                  id="pos-supine" 
-                  name="sleepingPosition" 
-                  value="supine" 
-                  checked={answers?.sleepingPosition === "supine"}
-                  onChange={(e) => setAnswers({ sleepingPosition: e.target.value })}
-                  className="h-4 w-4"
-                  required 
+          <div>
+            <div className="text-lg font-semibold">主な寝姿勢</div>
+            {[
+              { key: 'supine', label: '仰向け' },
+              { key: 'prone', label: 'うつ伏せ' },
+              { key: 'side', label: '横向き' },
+            ].map(o => (
+              <label key={o.key} className="flex items-center gap-3 py-2">
+                <input
+                  type="checkbox"
+                  name="postures"
+                  value={o.key}
+                  checked={Array.isArray(answers?.postures) && answers.postures.includes(o.key)}
+                  onChange={(e) => {
+                    const currentValues = Array.isArray(answers?.postures) ? answers.postures : [];
+                    const newValues = e.target.checked
+                      ? [...currentValues, o.key]
+                      : currentValues.filter((item: string) => item !== o.key);
+                    setAnswers({ postures: newValues });
+                  }}
+                  className="h-5 w-5"
                 />
-                <span className="text-sm md:text-base">仰向け</span>
+                <span className="text-sm md:text-base">{o.label}</span>
               </label>
-
-              <label className="flex items-center gap-3 py-2">
-                <input 
-                  type="radio" 
-                  id="pos-prone" 
-                  name="sleepingPosition" 
-                  value="prone" 
-                  checked={answers?.sleepingPosition === "prone"}
-                  onChange={(e) => setAnswers({ sleepingPosition: e.target.value })}
-                  className="h-4 w-4"
-                />
-                <span className="text-sm md:text-base">うつ伏せ</span>
-              </label>
-
-              <label className="flex items-center gap-3 py-2">
-                <input 
-                  type="radio" 
-                  id="pos-side" 
-                  name="sleepingPosition" 
-                  value="side" 
-                  checked={answers?.sleepingPosition === "side"}
-                  onChange={(e) => setAnswers({ sleepingPosition: e.target.value })}
-                  className="h-4 w-4"
-                />
-                <span className="text-sm md:text-base">横向き</span>
-              </label>
-            </div>
-          </fieldset>
+            ))}
+          </div>
 
           {/* 寝返り頻度 */}
           <div>

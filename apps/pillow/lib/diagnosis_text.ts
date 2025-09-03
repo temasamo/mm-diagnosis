@@ -10,6 +10,17 @@ export function buildDiagnosisText(input: {
   mattressFirmness?: "soft"|"mid"|"firm"|"unknown";
   answers: any;         // Answers
 }) {
+  // 既存のsleepingPositionとの互換性を保つ
+  let postures = input.answers?.postures;
+  if (!Array.isArray(postures) || postures.length === 0) {
+    const legacyPos = input.answers?.sleepingPosition;
+    if (legacyPos === 'supine' || legacyPos === 'prone' || legacyPos === 'side') {
+      postures = [legacyPos];
+    } else {
+      postures = ['side']; // デフォルト
+    }
+  }
+
   const { material, reasons: matReasons } = recommendMaterial(input.answers);
 
   const heightLabel = input.targetLoft === "low" ? "低め"
@@ -31,6 +42,10 @@ export function buildDiagnosisText(input: {
   const reasons = [
     `寝姿勢とマットレスの硬さから目標の高さを算出`,
     ...matReasons,
+    // posturesフィールドから理由付けタグを追加
+    ...(postures?.includes('side') ? ['横向き寝に合う形状'] : []),
+    ...(postures?.includes('supine') ? ['仰向け寝の首カーブ対応'] : []),
+    ...(postures?.includes('prone') ? ['うつ伏せ派向け薄め/柔らかめ'] : []),
   ].slice(0,3);
 
   return { headline, reasons, material };
