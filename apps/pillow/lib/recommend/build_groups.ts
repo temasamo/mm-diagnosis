@@ -3,6 +3,147 @@ import { CATEGORY_QUERIES, buildQueryWords } from "../catalog/category_query";
 import { searchAllMalls, type MallProduct } from "../catalog/mall_search";
 import type { Provisional } from "../scoring/engine";
 import { dedupeProductGroups } from "../dedupe";
+import { getBandById } from "../budget";
+import { inAllowedBands, bandOf, type BudgetBandId, neighbors, inAllowedBandsNew, type BandId } from "./priceBand";
+
+// 第二候補の埋めロジック用の型定義
+type Item = {
+  id: string;
+  url: string;
+  title: string;
+  price: number; // 円
+  image?: string | null;
+  mall?: "rakuten" | "yahoo" | string;
+  shop?: string | null;
+};
+
+// 価格 → band を判定（priceBand.tsと閾値を合わせる）
+const bands = [0, 10000, 20000, Infinity]; // priceBand.tsの境界値と一致
+const getBandIndex = (price: number) =>
+  Math.max(0, bands.findIndex((b, i) => price >= b && price < bands[i + 1]));
+
+// 重複判定（ID or URL で）
+const makeDupSet = (arr: Item[]) => new Set(arr.map(x => x.id || x.url));
+const dedupPush = (dst: Item[], src: Item[], used: Set<string>, n: number) => {
+  for (const it of src) {
+    const key = it.id || it.url;
+    if (!key || used.has(key)) continue;
+    dst.push(it);
+    used.add(key);
+    if (dst.length >= n) break;
+  }
+};
+
+// 第二候補の埋めロジック
+const fillSecondaryGroups = (
+  primary: Item[],
+  secondaryA: Item[],
+  secondaryB: Item[],
+  secondaryC: Item[],
+  allCandidates: Item[],
+  context: { budgetMin?: number; suggestedPrice?: number }
+) => {
+  const used = makeDupSet([...primary, ...secondaryA, ...secondaryB, ...secondaryC]);
+
+  // 近傍価格帯プール（±1 band 許容）
+  const targetBand = getBandIndex(context.budgetMin ?? context.suggestedPrice ?? 20000);
+  const nearPool = allCandidates
+    .filter(x => Math.abs(getBandIndex(x.price) - targetBand) <= 1)
+    .filter(x => !used.has(x.id || x.url));
+
+  // スコア/人気順などがあればそのキーで並べ替え（なければ価格昇順などで安定化）
+  nearPool.sort((a, b) => a.price - b.price);
+
+  const fill = (group: Item[], need: number) => {
+    if (group.length >= 1) return group;            // 0 件のときだけ埋める（基準は任意）
+    dedupPush(group, nearPool, used, need);         // 例：3件狙い
+    return group;
+  };
+
+  secondaryA = fill(secondaryA, 3);
+  secondaryB = fill(secondaryB, 3);
+  secondaryC = fill(secondaryC, 3);
+
+  console.debug('[rec] secondary fill', {
+    nearPool: nearPool.length,
+    A: secondaryA.length,
+    B: secondaryB.length,
+    C: secondaryC.length,
+  });
+
+  return { secondaryA, secondaryB, secondaryC };
+};
+
+// 第二候補の穴埋め強化ロジック
+const MIN_PER_GROUP = 2; // 体裁として "各グループ最低2件" にする
+
+async function buildSecondaryGroups(ctx: {
+  query: string;
+  budgetBandId: BandId;
+  category: string;
+  existingItems: any[];
+}) {
+  const { query, budgetBandId, existingItems } = ctx;
+  const allowed = neighbors(budgetBandId, { includeSelf: true, maxDistance: 1 });
+
+  // 第一候補で使ったプールとは独立に、第二候補用のプールを取得
+  // 既存の検索ロジックを活用
+  const pool = existingItems.filter((p: any) => 
+    p && p.price != null && p.price > 0 && inAllowedBandsNew(p.price, allowed)
+  );
+
+  // 価格近傍で抽出（±1レンジ）: まずここで候補を作る
+  const nearby = pool.filter((p: any) => inAllowedBandsNew(p.price, allowed));
+
+  // brand/ショップなどで軽い多様性を付けて3分割
+  const diversify = (items: any[]) => {
+    const seen = new Set<string>();
+    return items.filter(x => {
+      const k = `${x.brand ?? ""}/${x.shop ?? ""}`;
+      if (seen.has(k)) return false;
+      seen.add(k);
+      return true;
+    });
+  };
+
+  const seed = diversify(nearby);
+
+  const groups = { A: [] as any[], B: [] as any[], C: [] as any[] };
+
+  // ラウンドロビンで A/B/C に配る
+  seed.forEach((it, i) => {
+    const g = (["A","B","C"] as const)[i % 3];
+    groups[g].push(it);
+  });
+
+  // 足りないところを全体プール（価格外含む）から埋める（ただし1万円未満は除外）
+  const safeFillPool = pool.filter((p: any) => p.price >= 10000);
+
+  (["A","B","C"] as const).forEach(g => {
+    let i = 0;
+    while (groups[g].length < MIN_PER_GROUP && i < safeFillPool.length) {
+      const cand = safeFillPool[i++];
+      if (!groups[g].some(x => x.id === cand.id)) groups[g].push(cand);
+    }
+  });
+
+  return {
+    secondaryA: groups.A,
+    secondaryB: groups.B,
+    secondaryC: groups.C
+  };
+}
+
+// 第2候補の絞り込みフィルタ
+function filterForSecondary(items: Array<{ price?: number }>, budget: BudgetBandId) {
+  return items.filter(it => {
+    const p = Number(it.price ?? 0);
+    // 価格が無い/0 は弾く
+    if (!Number.isFinite(p) || p <= 0) return false;
+    // 近傍を許容しつつ、20k+ のときは 1万円未満を除外 & 10-20k だけを近傍に
+    return inAllowedBands(p, budget, { includeNeighbors: true });
+  });
+}
 
 // --- 予算のワンランク上を計算する関数 ---
 function getExtendedBudgetBandId(budgetBandId?: string | null): string | null {
@@ -750,9 +891,14 @@ export async function buildGroupsFromAPI(
       const extendedBudgetBandId = getExtendedBudgetBandId(budgetBandId);
       
       // 予算「20k+」の場合は、第2候補でも最低価格を1万円以上に制限
-      const secondaryBudgetBandId = (budgetBandId === "20k+" || budgetBandId === "30k+") 
-        ? null  // 一時的に予算制限を外してデバッグ
-        : extendedBudgetBandId;
+      // 新しい価格帯ユーティリティを使用
+      const secondaryBudgetBandId: BandId = (() => {
+        if (budgetBandId === "20kplus" || budgetBandId === "30k+") return "20kplus";
+        if (budgetBandId === "10k-20k") return "10-20k";
+        if (budgetBandId === "6k-10k") return "5-10k";
+        if (budgetBandId === "3k-6k" || budgetBandId === "lt3000") return "5-10k";
+        return "20kplus"; // デフォルト
+      })();
       
       // 第2候補A
       if (keywords[0] && keywords[0].length > 0) {
@@ -785,9 +931,14 @@ export async function buildGroupsFromAPI(
       const extendedBudgetBandId = getExtendedBudgetBandId(budgetBandId);
       
       // 予算「20k+」の場合は、第2候補でも最低価格を1万円以上に制限
-      const secondaryBudgetBandId = (budgetBandId === "20k+" || budgetBandId === "30k+") 
-        ? null  // 一時的に予算制限を外してデバッグ
-        : extendedBudgetBandId;
+      // 新しい価格帯ユーティリティを使用
+      const secondaryBudgetBandId: BandId = (() => {
+        if (budgetBandId === "20kplus" || budgetBandId === "30k+") return "20kplus";
+        if (budgetBandId === "10k-20k") return "10-20k";
+        if (budgetBandId === "6k-10k") return "5-10k";
+        if (budgetBandId === "3k-6k" || budgetBandId === "lt3000") return "5-10k";
+        return "20kplus"; // デフォルト
+      })();
       
       secondaryA = await searchWithFallback({ budgetBandId: secondaryBudgetBandId, anyOfKeywords: ["横向き 枕","高反発 枕"], limit: 3 });
       secondaryB = await searchWithFallback({ budgetBandId: secondaryBudgetBandId, anyOfKeywords: ["低反発 枕","仰向け 枕"], limit: 3 });
@@ -801,12 +952,108 @@ export async function buildGroupsFromAPI(
     secondaryB = Array.isArray(secondaryB) ? secondaryB.slice(0, 3) : [];
     secondaryC = Array.isArray(secondaryC) ? secondaryC.slice(0, 3) : [];
 
+    // === 第二候補の埋めロジックを適用 ===
+    // 全候補を収集（NG除外・重複削除後の母集団）
+    const allCandidates = [
+      ...primary,
+      ...secondaryA,
+      ...secondaryB,
+      ...secondaryC
+    ].filter(item => item && item.price != null && item.price > 0);
+
+    // 予算情報を取得
+    const budgetMin = budgetBandId ? getBandById(budgetBandId)?.min : undefined;
+    const suggestedPrice = budgetMin ?? 20000; // デフォルト値
+
+    // 第二候補グループを埋める
+    const filled = fillSecondaryGroups(
+      primary,
+      secondaryA,
+      secondaryB,
+      secondaryC,
+      allCandidates,
+      { budgetMin, suggestedPrice }
+    );
+
+    secondaryA = filled.secondaryA;
+    secondaryB = filled.secondaryB;
+    secondaryC = filled.secondaryC;
+
+    // === 新しい穴埋めロジックを適用 ===
+    // 各グループが最低2件になるように穴埋め
+    if (secondaryA.length < MIN_PER_GROUP || secondaryB.length < MIN_PER_GROUP || secondaryC.length < MIN_PER_GROUP) {
+      const allItems = [
+        ...primary,
+        ...secondaryA,
+        ...secondaryB,
+        ...secondaryC
+      ].filter(item => item && item.price != null && item.price > 0);
+
+      // 新しい価格帯ユーティリティを使用して穴埋め
+      const budgetBandIdForFill: BandId = (() => {
+        if (budgetBandId === "20kplus" || budgetBandId === "30k+") return "20kplus";
+        if (budgetBandId === "10k-20k") return "10-20k";
+        if (budgetBandId === "6k-10k") return "5-10k";
+        if (budgetBandId === "3k-6k" || budgetBandId === "lt3000") return "5-10k";
+        return "20kplus"; // デフォルト
+      })();
+
+      const filledEnhanced = await buildSecondaryGroups({
+        query: "枕",
+        budgetBandId: budgetBandIdForFill,
+        category: "寝具",
+        existingItems: allItems
+      });
+
+      // 既存のアイテムを保持しつつ、不足分を補充
+      secondaryA = [...secondaryA, ...filledEnhanced.secondaryA.slice(0, Math.max(0, MIN_PER_GROUP - secondaryA.length))];
+      secondaryB = [...secondaryB, ...filledEnhanced.secondaryB.slice(0, Math.max(0, MIN_PER_GROUP - secondaryB.length))];
+      secondaryC = [...secondaryC, ...filledEnhanced.secondaryC.slice(0, Math.max(0, MIN_PER_GROUP - secondaryC.length))];
+
+      console.debug('[rec] after enhanced fill', {
+        A: secondaryA.length,
+        B: secondaryB.length,
+        C: secondaryC.length,
+        budgetBandId: budgetBandIdForFill,
+      });
+    }
+
+    // === 第2候補の絞り込みフィルタを適用 ===
+    // 予算バンドIDを新しい形式に変換
+    const budgetBandIdForFilter: BudgetBandId = (() => {
+      if (budgetBandId === "20kplus" || budgetBandId === "30k+") return "20kplus";
+      if (budgetBandId === "10k-20k") return "10-20k";
+      if (budgetBandId === "6k-10k") return "5-10k";
+      if (budgetBandId === "3k-6k" || budgetBandId === "lt3000") return "u5k";
+      return "20kplus"; // デフォルト
+    })();
+
+    // 各第2候補グループに厳格フィルタを適用
+    secondaryA = filterForSecondary(secondaryA, budgetBandIdForFilter);
+    secondaryB = filterForSecondary(secondaryB, budgetBandIdForFilter);
+    secondaryC = filterForSecondary(secondaryC, budgetBandIdForFilter);
+
+    console.debug('[rec] after strict filter', {
+      A: secondaryA.length,
+      B: secondaryB.length,
+      C: secondaryC.length,
+      budgetBandId: budgetBandIdForFilter,
+    });
+
     // 重複除去を適用
     const dedupedGroups = dedupeProductGroups({
       primary,
       secondaryA,
       secondaryB,
       secondaryC
+    });
+
+    // 結果ページ描画直前のログ
+    console.debug('[rec] final counts', {
+      primary: dedupedGroups.primary.length,
+      secondaryA: dedupedGroups.secondaryA.length,
+      secondaryB: dedupedGroups.secondaryB.length,
+      secondaryC: dedupedGroups.secondaryC.length,
     });
 
     const emptyAll = dedupedGroups.primary.length + dedupedGroups.secondaryA.length + dedupedGroups.secondaryB.length + dedupedGroups.secondaryC.length === 0;
