@@ -701,14 +701,22 @@ export default function ResultPage() {
                     <div className="grid gap-4 sm:grid-cols-3">
                       {(secondaryOpen === "a" ? groups.secondaryA : 
                         secondaryOpen === "b" ? groups.secondaryB : 
-                        groups.secondaryC)?.map((item: any, index: number) => (
-                        <ProductCardWithBudget 
-                          key={item.id} 
-                          item={item} 
-                          userBudget={userBudget}
-                          onCardClick={(productId) => onCardClick(productId, index + 3)} 
-                        />
-                      ))}
+                        groups.secondaryC)?.length > 0 ? (
+                        (secondaryOpen === "a" ? groups.secondaryA : 
+                          secondaryOpen === "b" ? groups.secondaryB : 
+                          groups.secondaryC)?.map((item: any, index: number) => (
+                          <ProductCardWithBudget 
+                            key={item.id} 
+                            item={item} 
+                            userBudget={userBudget}
+                            onCardClick={(productId) => onCardClick(productId, index + 3)} 
+                          />
+                        ))
+                      ) : (
+                        <div className="col-span-3 text-center py-8 text-gray-400">
+                          申し訳ございません。ご提案可能な商品はございません。他のグループをご確認ください。
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
