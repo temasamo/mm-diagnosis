@@ -14,7 +14,7 @@ function toSafeImageUrl(u?: string): string | undefined {
 
 const YAHOO_ENDPOINT = 'https://shopping.yahooapis.jp/ShoppingWebService/V3/itemSearch';
 
-export async function searchYahoo(query: string, limit: number): Promise<SearchItem[]> {
+export async function searchYahoo(query: string, limit: number, budgetBand?: { min: number; max: number } | null): Promise<SearchItem[]> {
   const appid = process.env.YAHOO_APP_ID;
   if (!appid) return [];
 
@@ -23,6 +23,16 @@ export async function searchYahoo(query: string, limit: number): Promise<SearchI
   url.searchParams.set('query', query);
   url.searchParams.set('results', String(Math.min(Math.max(limit, 1), 30)));
   url.searchParams.set('in_stock', '1');
+  
+  // 予算制限を追加
+  if (budgetBand) {
+    if (budgetBand.min > 0) {
+      url.searchParams.set('min_price', String(budgetBand.min));
+    }
+    if (budgetBand.max !== Infinity) {
+      url.searchParams.set('max_price', String(budgetBand.max));
+    }
+  }
 
   type R = {
     totalResultsAvailable?: number;

@@ -22,7 +22,7 @@ function pickImage(urls?: { imageUrl: string }[] | null): string | null {
   return toSafeImageUrl(u) || null;
 }
 
-export async function searchRakuten(query: string, limit: number): Promise<SearchItem[]> {
+export async function searchRakuten(query: string, limit: number, budgetBand?: { min: number; max: number } | null): Promise<SearchItem[]> {
   const appId = process.env.RAKUTEN_APP_ID;
   if (!appId) {
     console.log('[Rakuten] No APP_ID found');
@@ -35,6 +35,16 @@ export async function searchRakuten(query: string, limit: number): Promise<Searc
   url.searchParams.set('hits', String(Math.min(Math.max(limit, 1), 30)));
   url.searchParams.set('imageFlag', '1');
   url.searchParams.set('availability', '1'); // 在庫あり
+  
+  // 予算制限を追加
+  if (budgetBand) {
+    if (budgetBand.min > 0) {
+      url.searchParams.set('minPrice', String(budgetBand.min));
+    }
+    if (budgetBand.max !== Infinity) {
+      url.searchParams.set('maxPrice', String(budgetBand.max));
+    }
+  }
 
   console.log('[Rakuten] Searching with URL:', url.toString());
 

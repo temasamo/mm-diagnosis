@@ -13,7 +13,7 @@ function getExtendedBudgetBandId(budgetBandId?: string | null): string | null {
     "3k-6k": "3k-10k",      // 3k-6k → 3k-10k（6k-10kまで含める）
     "6k-10k": "6k-20k",     // 6k-10k → 6k-20k（10k-20kまで含める）
     "10k-20k": "10k-20k",   // 10k-20k → 変更なし（上限なし）
-    "20k+": "20k+",         // 20k+ → 変更なし（変更なし）
+    "20k+": "10k-20k",      // 20k+ → 10k-20k（1万円以上に拡張）
   };
   
   return budgetMapping[budgetBandId] || budgetBandId;
@@ -562,10 +562,51 @@ async function fallbackSearch(budgetBandId?: string, topN = 6): Promise<GroupedR
   return result;
 }
 
+// 重複除去のヘルパー関数
+function uniqById<T extends {id?: string}>(xs: T[]) {
+  const seen = new Set<string>();
+  return xs.filter(x => {
+    const k = x.id ?? "";
+    if (!k || seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
+}
+
 async function searchWithFallback(opts: SearchOpts) {
-  // ここは既存の searchCross / searchRakuten / searchYahoo に合わせて実装
-  // 例）searchCross({ anyOfKeywords, allOfKeywords, budgetBandId, allowNoImage, limit })
-  return await searchAllMalls(opts.anyOfKeywords?.[0] || "枕", opts.limit || 3, opts.budgetBandId || undefined);
+  const debug = process.env.NEXT_PUBLIC_DEBUG === "1";
+  const d = (...args: any[]) => { if (debug) console.log("[searchWithFallback]", ...args); };
+  
+  d("searchWithFallback called with:", opts);
+  
+  // 多段フォールバック検索
+  const buckets = await Promise.all([
+    // 1. 厳密検索: 予算制限 + 厳しめキーワード
+    searchAllMalls(opts.anyOfKeywords?.[0] || "枕", opts.limit || 3, opts.budgetBandId || undefined),
+    // 2. 緩和検索: 予算制限 + 緩和キーワード  
+    searchAllMalls(opts.anyOfKeywords?.[1] || "枕", opts.limit || 3, opts.budgetBandId || undefined),
+    // 3. 広域検索: 予算制限のみ（キーワード緩め）
+    searchAllMalls("枕", opts.limit || 3, opts.budgetBandId || undefined),
+  ]);
+  
+  d("buckets results:", buckets.map(b => b.length));
+  
+  // フラット化して不正値を除去
+  const flat = buckets.flat().filter(v =>
+    v && v.price != null && v.price > 0 && v.image
+  );
+  
+  d("flat filtered:", flat.length);
+  
+  // 重複除去
+  const uniq = uniqById(flat);
+  d("unique items:", uniq.length);
+  
+  // 上限で切り取り
+  const result = uniq.slice(0, opts.limit || 30);
+  d("final result:", result.length);
+  
+  return result;
 }
 
 function deriveLooseKeywords(scoresOrCats: string[]): string[] {
@@ -708,10 +749,15 @@ export async function buildGroupsFromAPI(
       // 予算のワンランク上を計算
       const extendedBudgetBandId = getExtendedBudgetBandId(budgetBandId);
       
+      // 予算「20k+」の場合は、第2候補でも最低価格を1万円以上に制限
+      const secondaryBudgetBandId = (budgetBandId === "20k+" || budgetBandId === "30k+") 
+        ? null  // 一時的に予算制限を外してデバッグ
+        : extendedBudgetBandId;
+      
       // 第2候補A
       if (keywords[0] && keywords[0].length > 0) {
         secondaryA = await searchWithFallback({ 
-          budgetBandId: extendedBudgetBandId, 
+          budgetBandId: secondaryBudgetBandId, 
           anyOfKeywords: keywords[0], 
           limit: 3 
         });
@@ -720,7 +766,7 @@ export async function buildGroupsFromAPI(
       // 第2候補B
       if (keywords[1] && keywords[1].length > 0) {
         secondaryB = await searchWithFallback({ 
-          budgetBandId: extendedBudgetBandId, 
+          budgetBandId: secondaryBudgetBandId, 
           anyOfKeywords: keywords[1], 
           limit: 3 
         });
@@ -729,7 +775,7 @@ export async function buildGroupsFromAPI(
       // 第2候補C
       if (keywords[2] && keywords[2].length > 0) {
         secondaryC = await searchWithFallback({ 
-          budgetBandId: extendedBudgetBandId, 
+          budgetBandId: secondaryBudgetBandId, 
           anyOfKeywords: keywords[2], 
           limit: 3 
         });
@@ -737,9 +783,15 @@ export async function buildGroupsFromAPI(
     } else {
       // フォールバック: 従来の固定カテゴリ検索（予算制限あり）
       const extendedBudgetBandId = getExtendedBudgetBandId(budgetBandId);
-      secondaryA = await searchWithFallback({ budgetBandId: extendedBudgetBandId, anyOfKeywords: ["横向き 枕","高反発 枕"], limit: 3 });
-      secondaryB = await searchWithFallback({ budgetBandId: extendedBudgetBandId, anyOfKeywords: ["低反発 枕","仰向け 枕"], limit: 3 });
-      secondaryC = await searchWithFallback({ budgetBandId: extendedBudgetBandId, anyOfKeywords: ["首 肩こり 枕","高さ 調整 枕"], limit: 3 });
+      
+      // 予算「20k+」の場合は、第2候補でも最低価格を1万円以上に制限
+      const secondaryBudgetBandId = (budgetBandId === "20k+" || budgetBandId === "30k+") 
+        ? null  // 一時的に予算制限を外してデバッグ
+        : extendedBudgetBandId;
+      
+      secondaryA = await searchWithFallback({ budgetBandId: secondaryBudgetBandId, anyOfKeywords: ["横向き 枕","高反発 枕"], limit: 3 });
+      secondaryB = await searchWithFallback({ budgetBandId: secondaryBudgetBandId, anyOfKeywords: ["低反発 枕","仰向け 枕"], limit: 3 });
+      secondaryC = await searchWithFallback({ budgetBandId: secondaryBudgetBandId, anyOfKeywords: ["首 肩こり 枕","高さ 調整 枕"], limit: 3 });
       secondaryLabels = ["横向き × 高反発", "低反発 × 仰向け", "首肩サポート"];
     }
 

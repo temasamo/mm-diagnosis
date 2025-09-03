@@ -5,6 +5,7 @@ import { cacheGet, cacheSet } from '../../../../lib/cache';
 import { dedupeAndPickCheapest } from '../../../../lib/dedupe';
 import { getBandById, inBand } from '../../../../lib/budget';
 import { priceDistanceToBand } from '../../../../lib/price';
+import { excludeNG } from '../../../lib/search/filters';
 import type { SearchItem } from '../../../../lib/malls/types';
 
 export const runtime = 'nodejs';
@@ -12,6 +13,8 @@ export const dynamic = 'force-dynamic';
 
 const TTL_MS = 15 * 60 * 1000;
 
+// 追加: 共通のNGワード
+const NG_WORDS = ["ふるさと", "ふるさと納税", "返礼", "返礼品", "寄附", "寄付", "納税"];
 
 
 export async function GET(req: NextRequest) {
@@ -22,6 +25,7 @@ export async function GET(req: NextRequest) {
   const key = `cross:${q}:${limit}:${bandId || 'none'}`;
 
   const debug = !!(process.env.MALLS_DEBUG || process.env.NEXT_PUBLIC_DEBUG_MALLS);
+  const d = (...args: any[]) => { if (debug) console.log("[search-cross]", ...args); };
 
   if (!q) return NextResponse.json([], { status: 200 });
 
@@ -30,10 +34,18 @@ export async function GET(req: NextRequest) {
 
   if (debug) console.time('[search-cross total]');
 
+  d("request", {keyword: q, band: bandId, limit});
+
   // 1) 取得
+  // NGワードを除外したクエリを作成
+  const cleanQuery = q.replace(new RegExp(NG_WORDS.join('|'), 'gi'), '').trim();
+  const excludeQuery = `${cleanQuery} -${NG_WORDS.join(' -')}`;
+  
+  d("queries", {original: q, clean: cleanQuery, exclude: excludeQuery});
+  
   const [rkt, yho] = await Promise.allSettled([
-    searchRakuten(q, limit * 2), // 余裕めに取る
-    searchYahoo(q, limit * 2),
+    searchRakuten(cleanQuery, limit * 2, band), // 余裕めに取る、予算制限も追加
+    searchYahoo(excludeQuery, limit * 2, band), // Yahooは除外ワード付き
   ]);
 
   // 正規化済み: { id, mall, title, url, price:number|null, image, shop }
@@ -42,8 +54,16 @@ export async function GET(req: NextRequest) {
     ...(yho.status === 'fulfilled' ? yho.value : []),
   ];
 
+  d("rakuten:count", rkt.status === 'fulfilled' ? rkt.value.length : `ERR:${(rkt as any).reason}`);
+  d("yahoo:count", yho.status === 'fulfilled' ? yho.value.length : `ERR:${(yho as any).reason}`);
+  d("merged:count", all.length);
+
+  // NGフィルタを適用
+  const filtered = excludeNG(all);
+  d("afterNg:count", filtered.length);
+
   // 2) 予算で厳密フィルタ
-  let inBudgetItems = band ? all.filter(i => i.price != null && inBand(i.price!, band)) : all;
+  let inBudgetItems = band ? filtered.filter(i => i.price != null && inBand(i.price!, band)) : filtered;
   // 価格が近い順に並べておく（同額帯の中での並び安定）
   if (band) {
     const center = (band.min + band.max) / 2;
@@ -57,7 +77,7 @@ export async function GET(req: NextRequest) {
   const inBudgetHits = inBudgetItems.length;
 
   if (picked.length < limit && band) {
-    const out = all
+    const out = filtered
       .filter(i => i.price == null || !inBand(i.price!, band))
       .map(i => {
         const distance = priceDistanceToBand(i.price, band);
