@@ -17,5 +17,9 @@ export async function GET(req: Request) {
     mall,
     shop: null,
   }));
-  return NextResponse.json(mock);
-} 
+  
+  return new NextResponse(JSON.stringify(mock), {
+    status: 200,
+    headers: { 'x-source': 'mock-mall-products', 'cache-control': 'no-store' },
+  });
+}

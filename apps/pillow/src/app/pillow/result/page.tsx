@@ -17,6 +17,9 @@ import { extractPriceInfo } from "@/lib/recommend/extractPrice";
 import { buildBudgetMeta, BANDS, bandIndexOf, type BudgetBandKey } from "@/lib/recommend/budget";
 import { GROUP_LABEL } from "@/lib/ui/labels";
 import ProductCard, { ProductItem } from '@/components/ProductCard';
+import { isCover, isFurusato } from '@/app/api/search-cross/filters';
+
+const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK === '1';
 
 // セグメントキー： sweaty × posture(3)
 function segmentOf({ sweaty, posture }: { sweaty?: boolean; posture?: string }) {
@@ -96,11 +99,21 @@ function filterSecondaryByAdjacency(buckets: any[][], userBand: BudgetBandKey) {
   );
 }
 
+// 重複除去と最安値選択のヘルパー関数
+function dedupeAndPickCheapest(items: any[]): any[] {
+  const seen = new Map<string, any>();
+  
+  for (const item of items) {
+    const key = item.title?.toLowerCase() || item.id;
+    if (!seen.has(key) || (item.price && item.price < (seen.get(key).price || Infinity))) {
+      seen.set(key, item);
+    }
+  }
+  
+  return Array.from(seen.values());
+}
+
 type Item = import('../../../../lib/malls/types').SearchItem;
-
-
-
-
 
 export default function ResultPage() {
   const store = useDiagStore();
@@ -268,7 +281,7 @@ export default function ResultPage() {
     } catch {}
   }, [answers, store]);
 
-  // 商品候補の取得（正規化した rawProv を利用）
+  // 商品候補の取得（直接API呼び出しに変更）
   useEffect(() => {
     if (!rawProv.length) { setGroups({ primary: [], secondaryBuckets: [[], [], []] }); return; }
     setLoading(true);
@@ -276,33 +289,45 @@ export default function ResultPage() {
       try {
         let mounted = true;
         
-        // 既存の取得（例）
         const budgetBandId = answers?.budget;
-        const g1 = await buildGroupsFromAPI(rawProv, 12, budgetBandId, true, answers);
+        const limit = 12;
+        const baseUrl = typeof window !== 'undefined' ? '' : (process.env.NEXT_PUBLIC_BASE_URL ?? '');
+        
+        // 実データとモックデータを並行取得
+        const [real, mock] = await Promise.all([
+          fetch(`${baseUrl}/api/search-cross?q=枕&limit=${limit}&band=${budgetBandId || ''}`, { cache: 'no-store' }).then(r => r.json()),
+          USE_MOCK
+            ? fetch(`${baseUrl}/api/mall-products?limit=${limit}`, { cache: 'no-store' }).then(r => r.json())
+            : Promise.resolve([]),
+        ]);
+
         if (!mounted) return;
 
-        if (!isEmptyGroups(g1)) {
-          // ユーザーの予算帯キー（answers / payload から取得している既存値を流用）
+        // 重複除去と最安値選択
+        let items = dedupeAndPickCheapest([...real, ...mock]);
+
+        // 念のためクライアント側でもフィルタ（保険）
+        items = items.filter(i => !isCover(i) && !isFurusato(i));
+
+        if (items.length > 0) {
+          // ユーザーの予算帯キー
           const userBand: BudgetBandKey = (answers?.budget ?? "3k-6k") as BudgetBandKey;
 
-          // 1) まず全配列にメタ付与
-          const primaryDecorated = decorateItemsWithPriceAndBudget(g1.primary ?? [], userBand);
-          const secondaryBucketsDecorated = (g1.secondaryBuckets ?? []).map((arr: any[]) =>
-            decorateItemsWithPriceAndBudget(arr ?? [], userBand)
-          );
+          // メタ付与
+          const decoratedItems = decorateItemsWithPriceAndBudget(items, userBand);
 
-          // 2) 第二候補は ±1 レンジのみ残す
-          const secondaryBucketsFiltered = filterSecondaryByAdjacency(secondaryBucketsDecorated, userBand);
+          // グループ化（簡易版）
+          const primary = decoratedItems.slice(0, 3);
+          const secondaryA = decoratedItems.slice(3, 6);
+          const secondaryB = decoratedItems.slice(6, 9);
+          const secondaryC = decoratedItems.slice(9, 12);
 
-          // 3) state へ「付与済みの配列」をそのまま採用（コピーで失わない）
           const filteredGroups = {
-            ...g1,
-            primary: primaryDecorated,
-            secondaryBuckets: secondaryBucketsFiltered,
-            // 二段構造を個別に持っているUIなら、ここで同期
-            secondaryA: secondaryBucketsFiltered[0] ?? [],
-            secondaryB: secondaryBucketsFiltered[1] ?? [],
-            secondaryC: secondaryBucketsFiltered[2] ?? [],
+            primary,
+            secondaryBuckets: [secondaryA, secondaryB, secondaryC],
+            secondaryA,
+            secondaryB,
+            secondaryC,
           };
 
           setGroups(filteredGroups);
@@ -321,20 +346,32 @@ export default function ResultPage() {
           return;
         }
 
-        // 0件 → 未試行なら緩和リトライ（1回だけ）
+        // 0件 → フォールバック（予算無視）
         if (!triedFallback) {
           setTriedFallback(true);
-          const g2 = await buildGroupsFromAPI(rawProv, 12, undefined, false, answers); // 予算無視・ゆる語・画像なし許容など
+          const fallbackItems = await fetch(`${baseUrl}/api/search-cross?q=枕&limit=${limit}`, { cache: 'no-store' }).then(r => r.json());
           if (!mounted) return;
-          setGroups(g2);
-          console.log("[recommend] fallback groups.raw", g2);
+          
+          let fallbackFiltered = fallbackItems.filter(i => !isCover(i) && !isFurusato(i));
+          const userBand: BudgetBandKey = (answers?.budget ?? "3k-6k") as BudgetBandKey;
+          const decoratedItems = decorateItemsWithPriceAndBudget(fallbackFiltered, userBand);
+          
+          const fallbackGroups = {
+            primary: decoratedItems.slice(0, 3),
+            secondaryBuckets: [decoratedItems.slice(3, 6), decoratedItems.slice(6, 9), decoratedItems.slice(9, 12)],
+            secondaryA: decoratedItems.slice(3, 6),
+            secondaryB: decoratedItems.slice(6, 9),
+            secondaryC: decoratedItems.slice(9, 12),
+          };
+          
+          setGroups(fallbackGroups);
+          console.log("[recommend] fallback groups.raw", fallbackGroups);
           return;
         }
 
         // フォールバック済みでも0件
-        setGroups(g1);
-        console.log("[recommend] groups.raw", g1);
-        console.log("[recommend] primary", g1?.primary?.length, "secondaryA", g1?.secondaryA?.length);
+        setGroups({ primary: [], secondaryBuckets: [[], [], []] });
+        console.log("[recommend] no items found");
       } finally {
         setLoading(false);
       }

@@ -1,7 +1,15 @@
 export const runtime = 'nodejs';
 import { NextResponse } from 'next/server';
 export async function GET() {
-  const hasUrl = !!process.env.SUPABASE_URL && process.env.SUPABASE_URL!.startsWith('http');
-  const hasKey = !!process.env.SUPABASE_SERVICE_ROLE_KEY && process.env.SUPABASE_SERVICE_ROLE_KEY!.length > 20;
-  return NextResponse.json({ ok: hasUrl && hasKey, hasUrl, hasKey });
-} 
+  // 楽天・YahooのAPI設定をチェック
+  const hasRakutenAppId = !!process.env.RAKUTEN_APP_ID && process.env.RAKUTEN_APP_ID!.length > 10;
+  const hasYahooAppId = !!process.env.YAHOO_APP_ID && process.env.YAHOO_APP_ID!.length > 10;
+  
+  return NextResponse.json({ 
+    ok: hasRakutenAppId || hasYahooAppId, 
+    hasUrl: hasRakutenAppId || hasYahooAppId, 
+    hasKey: hasRakutenAppId || hasYahooAppId,
+    rakuten: hasRakutenAppId,
+    yahoo: hasYahooAppId
+  });
+}
