@@ -16,6 +16,7 @@ import { type PriceBandId } from "@/lib/recommend/priceBand";
 import { extractPriceInfo } from "@/lib/recommend/extractPrice";
 import { buildBudgetMeta, BANDS, bandIndexOf, type BudgetBandKey } from "@/lib/recommend/budget";
 import { GROUP_LABEL } from "@/lib/ui/labels";
+import ProductCard, { ProductItem } from '@/components/ProductCard';
 
 // セグメントキー： sweaty × posture(3)
 function segmentOf({ sweaty, posture }: { sweaty?: boolean; posture?: string }) {
@@ -97,105 +98,9 @@ function filterSecondaryByAdjacency(buckets: any[][], userBand: BudgetBandKey) {
 
 type Item = import('../../../../lib/malls/types').SearchItem;
 
-/** 商品カード（モール名は画像の下・中央） */
-function ProductCard({ item, onCardClick }: { item: Item; onCardClick?: (productId: string, position: number) => void }) {
-  const mallGuess =
-    item.mall ??
-    (item.url?.includes('rakuten') ? 'rakuten'
-      : item.url?.includes('yahoo') ? 'yahoo'
-      : '');
-
-  const href =
-    item.url
-      ? `/api/out?mall=${encodeURIComponent(mallGuess)}&url=${encodeURIComponent(item.url)}`
-      : undefined; // ★ url なければ anchor をやめる
-
-  const Wrapper: any = href ? 'a' : 'div';
-  const wrapperProps = href
-    ? { href, target: '_blank', rel: 'nofollow noopener noreferrer sponsored' }
-    : {};
-
-  return (
-    <article className="group rounded-2xl border border-white/10 hover:border-white/30 transition">
-      <Wrapper {...wrapperProps} className="block">
-        <div className="aspect-[4/3] overflow-hidden bg-white/5 flex items-center justify-center">
-          {item.image ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={item.image} alt={item.title} loading="lazy" className="h-full w-full object-cover" />
-          ) : (
-            <span className="text-xs opacity-60">No image</span>
-          )}
-        </div>
-        <div className="p-3">
-          <h3 className="text-sm line-clamp-2">{item.title}</h3>
-          <div className="mt-2 flex items-center justify-between text-xs opacity-80">
-            <span>{item.shop ?? (typeof item.mall === 'string' ? item.mall : '')}</span>
-            <span>{typeof item.price === 'number' ? `¥${item.price.toLocaleString()}` : ''}</span>
-          </div>
-        </div>
-      </Wrapper>
-    </article>
-  );
-}
 
 
 
-/** 予算外バッジ付き商品カード */
-function ProductCardWithBudget({ item, userBudget, onCardClick }: { 
-  item: Item; 
-  userBudget?: PriceBandId;
-  onCardClick?: (productId: string, position: number) => void;
-}) {
-  const mallGuess =
-    item.mall ??
-    (item.url?.includes('rakuten') ? 'rakuten'
-      : item.url?.includes('yahoo') ? 'yahoo'
-      : '');
-
-  const priceText =
-    (typeof item?.price === "number" ? "¥" + item.price.toLocaleString() : undefined);
-
-  const isOut = false; // _budgetプロパティはSearchItemに存在しないため、デフォルトでfalse
-
-  const href =
-    item.url
-      ? `/api/out?mall=${encodeURIComponent(mallGuess)}&url=${encodeURIComponent(item.url)}`
-      : undefined; // ★ url なければ anchor をやめる
-
-  const Wrapper: any = href ? 'a' : 'div';
-  const wrapperProps = href
-    ? { href, target: '_blank', rel: 'nofollow noopener noreferrer sponsored' }
-    : {};
-
-  return (
-    <article className="group rounded-2xl border border-white/10 hover:border-white/30 transition">
-      <Wrapper {...wrapperProps} className="block">
-        <div className="mb-2 flex items-center gap-2">
-          {isOut && <span className="inline-block rounded-full border border-red-400/50 bg-red-400/10 px-2 py-0.5 text-xs text-red-300">予算外</span>}
-        </div>
-        <div className="aspect-[4/3] overflow-hidden bg-white/5 flex items-center justify-center">
-          {item.image ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={item.image} alt={item.title} loading="lazy" className="h-full w-full object-cover" />
-          ) : (
-            <span className="text-xs opacity-60">No image</span>
-          )}
-        </div>
-        <div className="p-3">
-          <h3 className="text-sm line-clamp-2">{item.title}</h3>
-          <div className="mt-2 flex items-center justify-between text-xs opacity-80">
-            <span>{item.shop ?? (typeof item.mall === 'string' ? item.mall : '')}</span>
-            <span>{typeof item.price === 'number' ? `¥${item.price.toLocaleString()}` : ''}</span>
-          </div>
-          {/* 価格表示 */}
-          <div className="mt-2 text-lg font-medium">
-            {priceText ? priceText : <span className="text-gray-400">価格情報なし</span>}
-          </div>
-        </div>
-      </Wrapper>
-    </article>
-  );
-}
 
 export default function ResultPage() {
   const store = useDiagStore();
@@ -619,19 +524,29 @@ export default function ResultPage() {
                         {variant && <span className="text-sm font-normal ml-2">(variant: {variant})</span>}
                       </h3>
                       <div className="grid gap-4 sm:grid-cols-3 mb-6">
-                        {groups.primary.slice(0, 3).map((item: any, index: number) => (
-                          <ProductCard 
-                            key={item.id} 
-                            item={item} 
-                            onCardClick={(productId) => {
-                              onCardClick(productId, index);
+                        {groups.primary.slice(0, 3).map((item: any, index: number) => {
+                          const cardItem: ProductItem = {
+                            id: item.id,
+                            mall: item.mall,
+                            title: item.title,
+                            url: item.url,
+                            image: item.image ?? null,
+                            price: item.price ?? null,
+                            shop: item.shop ?? null,
+                            outOfBudget: false,
+                          };
+                          return (
+                            <div key={item.id} onClick={() => {
+                              onCardClick(item.id, index);
                               // バンディットクリック（1位のみ）
                               if (index === 0) {
-                                onTop1Click(productId);
+                                onTop1Click(item.id);
                               }
-                            }} 
-                          />
-                        ))}
+                            }}>
+                              <ProductCard item={cardItem} />
+                            </div>
+                          );
+                        })}
                       </div>
                     </>
                   )}
@@ -670,14 +585,23 @@ export default function ResultPage() {
                     <div className="grid gap-4 sm:grid-cols-3">
                       {(secondaryOpen === "a" ? groups.secondaryA : 
                         secondaryOpen === "b" ? groups.secondaryB : 
-                        groups.secondaryC)?.map((item: any, index: number) => (
-                        <ProductCardWithBudget 
-                          key={item.id} 
-                          item={item} 
-                          userBudget={userBudget}
-                          onCardClick={(productId) => onCardClick(productId, index + 3)} 
-                        />
-                      ))}
+                        groups.secondaryC)?.map((item: any, index: number) => {
+                          const cardItem: ProductItem = {
+                            id: item.id,
+                            mall: item.mall,
+                            title: item.title,
+                            url: item.url,
+                            image: item.image ?? null,
+                            price: item.price ?? null,
+                            shop: item.shop ?? null,
+                            outOfBudget: (item as any).outOfBudget === true,
+                          };
+                          return (
+                            <div key={item.id} onClick={() => onCardClick(item.id, index + 3)}>
+                              <ProductCard item={cardItem} />
+                            </div>
+                          );
+                        })}
                     </div>
                   </div>
                 </div>
