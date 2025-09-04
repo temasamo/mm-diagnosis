@@ -16,6 +16,7 @@ import { type PriceBandId } from "@/lib/recommend/priceBand";
 import { extractPriceInfo } from "@/lib/recommend/extractPrice";
 import { buildBudgetMeta, BANDS, bandIndexOf, type BudgetBandKey } from "@/lib/recommend/budget";
 import { GROUP_LABEL } from "@/lib/ui/labels";
+import ProductCard, { ProductItem } from '@/components/ProductCard';
 
 // セグメントキー： sweaty × posture(3)
 function segmentOf({ sweaty, posture }: { sweaty?: boolean; posture?: string }) {
@@ -95,139 +96,11 @@ function filterSecondaryByAdjacency(buckets: any[][], userBand: BudgetBandKey) {
   );
 }
 
-/** 商品カード（モール名は画像の下・中央） */
-function ProductCard({ item, onCardClick }: { item: any; onCardClick?: (productId: string, position: number) => void }) {
-  const mallLabel =
-    item.mall === "rakuten"
-      ? "RAKUTEN"
-      : item.mall === "yahoo"
-      ? "YAHOO"
-      : (item.mall ?? "").toUpperCase();
-
-  return (
-    <a
-      href={item.url}
-      target="_blank"
-      rel="noreferrer"
-      onClick={() => {
-        // 既存のtrack呼び出し
-        fetch("/api/track", {
-          method: "POST",
-          body: JSON.stringify({
-            type: "click",
-            group: "primary",
-            url: item.url,
-            mall: item.mall,
-            ts: Date.now(),
-          }),
-        });
-        // 新しいtrack呼び出し
-        onCardClick?.(item.id || item.url, 0);
-      }}
-      className="rounded-xl border p-3 hover:shadow-sm relative"
-    >
-      <div className="font-medium line-clamp-2">{item.title}</div>
-      <img
-        src={item.image ?? "/images/mall-placeholder.svg"}
-        alt={item.title ?? ""}
-        loading="lazy"
-        onError={(e) => {
-            (e.currentTarget as HTMLImageElement).src =
-              "/images/mall-placeholder.svg";
-        }}
-        className="w-full h-28 object-cover rounded-lg mt-2"
-      />
-      {/* 画像下・中央にモール名 */}
-      <div className="mt-2 text-center text-[10px] uppercase tracking-[0.08em]">
-        {mallLabel}
-      </div>
-      {/* 適合度（マッチ%） */}
-      {typeof item.match === "number" && (
-        <div className="mt-1 text-center text-[11px]">
-          適合度 <span className="font-semibold">{item.match}%</span>
-        </div>
-      )}
-      {item.price != null && (
-        <div className="text-sm mt-1">¥{Number(item.price).toLocaleString()}</div>
-      )}
-    </a>
-  );
-}
+type Item = import('../../../../lib/malls/types').SearchItem;
 
 
 
-/** 予算外バッジ付き商品カード */
-function ProductCardWithBudget({ item, userBudget, onCardClick }: { 
-  item: any; 
-  userBudget?: PriceBandId;
-  onCardClick?: (productId: string, position: number) => void;
-}) {
-  const mallLabel =
-    item.mall === "rakuten"
-      ? "RAKUTEN"
-      : item.mall === "yahoo"
-      ? "YAHOO"
-      : (item.mall ?? "").toUpperCase();
 
-  const priceText =
-    item?._price?.display ??
-    (typeof item?.price === "number" ? "¥" + item.price.toLocaleString() : undefined);
-
-  const isOut = item?._budget?.outOfBudget === true;
-
-  return (
-    <a
-      href={item.url}
-      target="_blank"
-      rel="noreferrer"
-      onClick={() => {
-        // 既存のtrack呼び出し
-        fetch("/api/track", {
-          method: "POST",
-          body: JSON.stringify({
-            type: "click",
-            group: "secondary",
-            url: item.url,
-            mall: item.mall,
-            ts: Date.now(),
-          }),
-        });
-        // 新しいtrack呼び出し
-        onCardClick?.(item.id || item.url, 0);
-      }}
-      className="rounded-xl border p-3 hover:shadow-sm relative"
-    >
-      <div className="mb-2 flex items-center gap-2">
-        {isOut && <span className="inline-block rounded-full border border-red-400/50 bg-red-400/10 px-2 py-0.5 text-xs text-red-300">予算外</span>}
-      </div>
-      <div className="font-medium line-clamp-2">{item.title}</div>
-      <img
-        src={item.image ?? "/images/mall-placeholder.svg"}
-        alt={item.title ?? ""}
-        loading="lazy"
-        onError={(e) => {
-            (e.currentTarget as HTMLImageElement).src =
-              "/images/mall-placeholder.svg";
-        }}
-        className="w-full h-28 object-cover rounded-lg mt-2"
-      />
-      {/* 画像下・中央にモール名 */}
-      <div className="mt-2 text-center text-[10px] uppercase tracking-[0.08em]">
-        {mallLabel}
-      </div>
-      {/* 適合度（マッチ%） */}
-      {typeof item.match === "number" && (
-        <div className="mt-1 text-center text-[11px]">
-          適合度 <span className="font-semibold">{item.match}%</span>
-        </div>
-      )}
-      {/* 価格表示 */}
-      <div className="mt-2 text-lg font-medium">
-        {priceText ? priceText : <span className="text-gray-400">価格情報なし</span>}
-      </div>
-    </a>
-  );
-}
 
 export default function ResultPage() {
   const store = useDiagStore();
@@ -651,19 +524,29 @@ export default function ResultPage() {
                         {variant && <span className="text-sm font-normal ml-2">(variant: {variant})</span>}
                       </h3>
                       <div className="grid gap-4 sm:grid-cols-3 mb-6">
-                        {groups.primary.slice(0, 3).map((item: any, index: number) => (
-                          <ProductCard 
-                            key={item.id} 
-                            item={item} 
-                            onCardClick={(productId) => {
-                              onCardClick(productId, index);
+                        {groups.primary.slice(0, 3).map((item: any, index: number) => {
+                          const cardItem: ProductItem = {
+                            id: item.id,
+                            mall: item.mall,
+                            title: item.title,
+                            url: item.url,
+                            image: item.image ?? null,
+                            price: item.price ?? null,
+                            shop: item.shop ?? null,
+                            outOfBudget: false,
+                          };
+                          return (
+                            <div key={item.id} onClick={() => {
+                              onCardClick(item.id, index);
                               // バンディットクリック（1位のみ）
                               if (index === 0) {
-                                onTop1Click(productId);
+                                onTop1Click(item.id);
                               }
-                            }} 
-                          />
-                        ))}
+                            }}>
+                              <ProductCard item={cardItem} />
+                            </div>
+                          );
+                        })}
                       </div>
                     </>
                   )}
@@ -702,14 +585,23 @@ export default function ResultPage() {
                     <div className="grid gap-4 sm:grid-cols-3">
                       {(secondaryOpen === "a" ? groups.secondaryA : 
                         secondaryOpen === "b" ? groups.secondaryB : 
-                        groups.secondaryC)?.map((item: any, index: number) => (
-                        <ProductCardWithBudget 
-                          key={item.id} 
-                          item={item} 
-                          userBudget={userBudget}
-                          onCardClick={(productId) => onCardClick(productId, index + 3)} 
-                        />
-                      ))}
+                        groups.secondaryC)?.map((item: any, index: number) => {
+                          const cardItem: ProductItem = {
+                            id: item.id,
+                            mall: item.mall,
+                            title: item.title,
+                            url: item.url,
+                            image: item.image ?? null,
+                            price: item.price ?? null,
+                            shop: item.shop ?? null,
+                            outOfBudget: (item as any).outOfBudget === true,
+                          };
+                          return (
+                            <div key={item.id} onClick={() => onCardClick(item.id, index + 3)}>
+                              <ProductCard item={cardItem} />
+                            </div>
+                          );
+                        })}
                     </div>
                   </div>
                 </div>
