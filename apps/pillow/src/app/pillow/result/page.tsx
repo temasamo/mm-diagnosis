@@ -95,62 +95,46 @@ function filterSecondaryByAdjacency(buckets: any[][], userBand: BudgetBandKey) {
   );
 }
 
+type Item = import('../../../../lib/malls/types').SearchItem;
+
 /** 商品カード（モール名は画像の下・中央） */
-function ProductCard({ item, onCardClick }: { item: any; onCardClick?: (productId: string, position: number) => void }) {
-  const mallLabel =
-    item.mall === "rakuten"
-      ? "RAKUTEN"
-      : item.mall === "yahoo"
-      ? "YAHOO"
-      : (item.mall ?? "").toUpperCase();
+function ProductCard({ item, onCardClick }: { item: Item; onCardClick?: (productId: string, position: number) => void }) {
+  const mallGuess =
+    item.mall ??
+    (item.url?.includes('rakuten') ? 'rakuten'
+      : item.url?.includes('yahoo') ? 'yahoo'
+      : '');
+
+  const href =
+    item.url
+      ? `/api/out?mall=${encodeURIComponent(mallGuess)}&url=${encodeURIComponent(item.url)}`
+      : undefined; // ★ url なければ anchor をやめる
+
+  const Wrapper: any = href ? 'a' : 'div';
+  const wrapperProps = href
+    ? { href, target: '_blank', rel: 'nofollow noopener noreferrer sponsored' }
+    : {};
 
   return (
-    <a
-      href={item.url}
-      target="_blank"
-      rel="noreferrer"
-      onClick={() => {
-        // 既存のtrack呼び出し
-        fetch("/api/track", {
-          method: "POST",
-          body: JSON.stringify({
-            type: "click",
-            group: "primary",
-            url: item.url,
-            mall: item.mall,
-            ts: Date.now(),
-          }),
-        });
-        // 新しいtrack呼び出し
-        onCardClick?.(item.id || item.url, 0);
-      }}
-      className="rounded-xl border p-3 hover:shadow-sm relative"
-    >
-      <div className="font-medium line-clamp-2">{item.title}</div>
-      <img
-        src={item.image ?? "/images/mall-placeholder.svg"}
-        alt={item.title ?? ""}
-        loading="lazy"
-        onError={(e) => {
-            (e.currentTarget as HTMLImageElement).src =
-              "/images/mall-placeholder.svg";
-        }}
-        className="w-full h-28 object-cover rounded-lg mt-2"
-      />
-      {/* 画像下・中央にモール名 */}
-      <div className="mt-2 text-center text-[10px] uppercase tracking-[0.08em]">
-        {mallLabel}
-      </div>
-      {/* 適合度（マッチ%） */}
-      {typeof item.match === "number" && (
-        <div className="mt-1 text-center text-[11px]">
-          適合度 <span className="font-semibold">{item.match}%</span>
+    <article className="group rounded-2xl border border-white/10 hover:border-white/30 transition">
+      <Wrapper {...wrapperProps} className="block">
+        <div className="aspect-[4/3] overflow-hidden bg-white/5 flex items-center justify-center">
+          {item.image ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={item.image} alt={item.title} loading="lazy" className="h-full w-full object-cover" />
+          ) : (
+            <span className="text-xs opacity-60">No image</span>
+          )}
         </div>
-      )}
-      {item.price != null && (
-        <div className="text-sm mt-1">¥{Number(item.price).toLocaleString()}</div>
-      )}
-    </a>
+        <div className="p-3">
+          <h3 className="text-sm line-clamp-2">{item.title}</h3>
+          <div className="mt-2 flex items-center justify-between text-xs opacity-80">
+            <span>{item.shop ?? (typeof item.mall === 'string' ? item.mall : '')}</span>
+            <span>{typeof item.price === 'number' ? `¥${item.price.toLocaleString()}` : ''}</span>
+          </div>
+        </div>
+      </Wrapper>
+    </article>
   );
 }
 
@@ -158,74 +142,58 @@ function ProductCard({ item, onCardClick }: { item: any; onCardClick?: (productI
 
 /** 予算外バッジ付き商品カード */
 function ProductCardWithBudget({ item, userBudget, onCardClick }: { 
-  item: any; 
+  item: Item; 
   userBudget?: PriceBandId;
   onCardClick?: (productId: string, position: number) => void;
 }) {
-  const mallLabel =
-    item.mall === "rakuten"
-      ? "RAKUTEN"
-      : item.mall === "yahoo"
-      ? "YAHOO"
-      : (item.mall ?? "").toUpperCase();
+  const mallGuess =
+    item.mall ??
+    (item.url?.includes('rakuten') ? 'rakuten'
+      : item.url?.includes('yahoo') ? 'yahoo'
+      : '');
 
   const priceText =
-    item?._price?.display ??
     (typeof item?.price === "number" ? "¥" + item.price.toLocaleString() : undefined);
 
-  const isOut = item?._budget?.outOfBudget === true;
+  const isOut = false; // _budgetプロパティはSearchItemに存在しないため、デフォルトでfalse
+
+  const href =
+    item.url
+      ? `/api/out?mall=${encodeURIComponent(mallGuess)}&url=${encodeURIComponent(item.url)}`
+      : undefined; // ★ url なければ anchor をやめる
+
+  const Wrapper: any = href ? 'a' : 'div';
+  const wrapperProps = href
+    ? { href, target: '_blank', rel: 'nofollow noopener noreferrer sponsored' }
+    : {};
 
   return (
-    <a
-      href={item.url}
-      target="_blank"
-      rel="noreferrer"
-      onClick={() => {
-        // 既存のtrack呼び出し
-        fetch("/api/track", {
-          method: "POST",
-          body: JSON.stringify({
-            type: "click",
-            group: "secondary",
-            url: item.url,
-            mall: item.mall,
-            ts: Date.now(),
-          }),
-        });
-        // 新しいtrack呼び出し
-        onCardClick?.(item.id || item.url, 0);
-      }}
-      className="rounded-xl border p-3 hover:shadow-sm relative"
-    >
-      <div className="mb-2 flex items-center gap-2">
-        {isOut && <span className="inline-block rounded-full border border-red-400/50 bg-red-400/10 px-2 py-0.5 text-xs text-red-300">予算外</span>}
-      </div>
-      <div className="font-medium line-clamp-2">{item.title}</div>
-      <img
-        src={item.image ?? "/images/mall-placeholder.svg"}
-        alt={item.title ?? ""}
-        loading="lazy"
-        onError={(e) => {
-            (e.currentTarget as HTMLImageElement).src =
-              "/images/mall-placeholder.svg";
-        }}
-        className="w-full h-28 object-cover rounded-lg mt-2"
-      />
-      {/* 画像下・中央にモール名 */}
-      <div className="mt-2 text-center text-[10px] uppercase tracking-[0.08em]">
-        {mallLabel}
-      </div>
-      {/* 適合度（マッチ%） */}
-      {typeof item.match === "number" && (
-        <div className="mt-1 text-center text-[11px]">
-          適合度 <span className="font-semibold">{item.match}%</span>
+    <article className="group rounded-2xl border border-white/10 hover:border-white/30 transition">
+      <Wrapper {...wrapperProps} className="block">
+        <div className="mb-2 flex items-center gap-2">
+          {isOut && <span className="inline-block rounded-full border border-red-400/50 bg-red-400/10 px-2 py-0.5 text-xs text-red-300">予算外</span>}
         </div>
-      )}
-      {/* 価格表示 */}
-      <div className="mt-2 text-lg font-medium">
-        {priceText ? priceText : <span className="text-gray-400">価格情報なし</span>}
-      </div>
-    </a>
+        <div className="aspect-[4/3] overflow-hidden bg-white/5 flex items-center justify-center">
+          {item.image ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={item.image} alt={item.title} loading="lazy" className="h-full w-full object-cover" />
+          ) : (
+            <span className="text-xs opacity-60">No image</span>
+          )}
+        </div>
+        <div className="p-3">
+          <h3 className="text-sm line-clamp-2">{item.title}</h3>
+          <div className="mt-2 flex items-center justify-between text-xs opacity-80">
+            <span>{item.shop ?? (typeof item.mall === 'string' ? item.mall : '')}</span>
+            <span>{typeof item.price === 'number' ? `¥${item.price.toLocaleString()}` : ''}</span>
+          </div>
+          {/* 価格表示 */}
+          <div className="mt-2 text-lg font-medium">
+            {priceText ? priceText : <span className="text-gray-400">価格情報なし</span>}
+          </div>
+        </div>
+      </Wrapper>
+    </article>
   );
 }
 
