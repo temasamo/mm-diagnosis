@@ -6,13 +6,12 @@ import { dedupeAndPickCheapest } from '../../../../lib/dedupe';
 import { getBandById, inBand } from '../../../../lib/budget';
 import { priceDistanceToBand } from '../../../../lib/price';
 import type { SearchItem } from '../../../../lib/malls/types';
+import { applyFilters } from './filters';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 const TTL_MS = 15 * 60 * 1000;
-
-
 
 export async function GET(req: NextRequest) {
   const q = req.nextUrl.searchParams.get('q') || '';
@@ -42,8 +41,11 @@ export async function GET(req: NextRequest) {
     ...(yho.status === 'fulfilled' ? yho.value : []),
   ];
 
+  // ビジネスルール適用（枕カバー・ふるさと納税を除外）
+  const filtered = applyFilters(all);
+
   // 2) 予算で厳密フィルタ
-  let inBudgetItems = band ? all.filter(i => i.price != null && inBand(i.price!, band)) : all;
+  let inBudgetItems = band ? filtered.filter(i => i.price != null && inBand(i.price!, band)) : filtered;
   // 価格が近い順に並べておく（同額帯の中での並び安定）
   if (band) {
     const center = (band.min + band.max) / 2;
@@ -57,7 +59,7 @@ export async function GET(req: NextRequest) {
   const inBudgetHits = inBudgetItems.length;
 
   if (picked.length < limit && band) {
-    const out = all
+    const out = filtered
       .filter(i => i.price == null || !inBand(i.price!, band))
       .map(i => {
         const distance = priceDistanceToBand(i.price, band);
@@ -98,5 +100,3 @@ export async function GET(req: NextRequest) {
     headers,
   });
 }
-
- 

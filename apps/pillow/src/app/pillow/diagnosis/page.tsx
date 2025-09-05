@@ -57,32 +57,47 @@ export default function Page() {
         <div className="space-y-6">
           {/* 主な寝姿勢 */}
           <div>
-            <div className="text-lg font-semibold">主な寝姿勢</div>
-            {[
-              { key: 'supine', label: '仰向け' },
-              { key: 'prone', label: 'うつ伏せ' },
-              { key: 'side', label: '横向き' },
-            ].map(o => (
-              <label key={o.key} className="flex items-center gap-3 py-2">
-                <input
-                  type="checkbox"
-                  name="postures"
-                  value={o.key}
-                  checked={Array.isArray(answers?.postures) && answers.postures.includes(o.key)}
-                  onChange={(e) => {
-                    const currentValues = Array.isArray(answers?.postures) ? answers.postures : [];
-                    const newValues = e.target.checked
-                      ? [...currentValues, o.key]
-                      : currentValues.filter((item: string) => item !== o.key);
-                    setAnswers({ postures: newValues });
-                  }}
-                  className="h-5 w-5"
-                />
-                <span className="text-sm md:text-base">{o.label}</span>
-              </label>
-            ))}
-          </div>
+            <div id="posture-label" className="text-lg font-semibold mb-2">
+              主な寝姿勢 <span className="text-neutral-400 text-sm font-normal">※複数選択できます</span>
+            </div>
+            <div className="space-y-2" role="group" aria-labelledby="posture-label">
+              {[
+                { key: "supine", label: "仰向け", id: "pos-supine" },
+                { key: "prone", label: "うつ伏せ", id: "pos-prone" },
+                { key: "side", label: "横向き", id: "pos-side" },
+              ].map(o => (
+                <label key={o.key} htmlFor={o.id} className="flex items-center gap-3 py-2 cursor-pointer hover:bg-zinc-800/50 rounded-lg px-2 transition-colors">
+                  <input
+                    id={o.id}
+                    type="checkbox"
+                    role="checkbox"
+                    aria-checked={Array.isArray(answers?.postures) && answers.postures.includes(o.key)}
+                    className="h-5 w-5 rounded border-zinc-500 text-blue-600 focus:ring-2 focus:ring-blue-500"
+                    checked={Array.isArray(answers?.postures) && answers.postures.includes(o.key)}
+                    onChange={(e) => {
+                      const currentValues = Array.isArray(answers?.postures) ? answers.postures : [];
+                      const newValues = e.target.checked
+                        ? [...currentValues, o.key]
+                        : currentValues.filter((item: string) => item !== o.key);
+                      setAnswers({ postures: newValues });
+                    }}
+                  />
+                  <span className="text-sm md:text-base">{o.label}</span>
+                </label>
+              ))}
+            </div>
 
+            {/* 選択済みバッジ */}
+            {Array.isArray(answers?.postures) && answers.postures.length > 0 && (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {answers.postures.map((p: string) => (
+                  <span key={p} className="px-2 py-1 text-xs rounded-full bg-zinc-800 border border-zinc-700 text-zinc-200">
+                    {p === "supine" ? "仰向け" : p === "side" ? "横向き" : "うつ伏せ"}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
           {/* 寝返り頻度 */}
           <div>
             <label className="text-sm md:text-base font-semibold text-zinc-200 mb-3 block">寝返り頻度</label>
