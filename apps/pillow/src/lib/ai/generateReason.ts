@@ -154,31 +154,61 @@ function buildPoints(a: Answers) {
 
 // -------- 1文目と禁止語を決定 --------
 function resolveOpening(a: Answers) {
-  const raw = [...(a.postures ?? []), a.posture].filter(Boolean) as Array<"side"|"supine"|"prone">;
-  const uniq = Array.from(new Set(raw));
-
-  // 複数姿勢 → 混在扱い
-  if (uniq.length >= 2) {
-    return { opening: "寝姿勢が変わる方は、", forbidden: [] as string[] };
+  if (a.posture === "side" || a.posture === "supine" || a.posture === "prone") {
+    const label = jpPosture(a.posture);
+    return {
+      opening: `${label}で眠る方は、`,
+      forbidden: ["横向き", "仰向け", "うつ伏せ"].filter((w) => w !== label),
+    };
   }
-
-  // 単一姿勢
-  if (uniq.length === 1) {
-    const p = uniq[0]; // ここで side/prone/supine のいずれか
-    const label = jpPosture(p);
-    return { opening: `${label}で眠る方は、`, forbidden: ["横向き", "仰向け", "うつ伏せ"].filter(w => w !== label) };
-  }
-
-  // 未指定
+  // mixed / 未定義 は統一
   return { opening: "寝姿勢が変わる方は、", forbidden: [] as string[] };
-}// -------- OpenAI 呼び出し本文 --------
+}
+
+// ▼▼ 新規: 姿勢の決定を postures[] から上書きするヘルパー ▼▼
+type PrimaryPosture = "side" | "supine" | "prone" | "mixed";
+function getPrimaryPosture(a: Answers): PrimaryPosture {
+  // 明示的に配列がある場合は優先
+  if (Array.isArray(a.postures)) {
+    const s = a.postures.filter(Boolean) as PrimaryPosture[];
+    if (s.length === 0) return a.posture ?? "mixed";
+    if (s.length === 1) return s[0];
+    return "mixed";
+  }
+  // 従来の単一フィールド
+  return (a.posture as PrimaryPosture) ?? "mixed";
+}
+
+// ▼▼ 句読点と文数・長さの後処理 ▼▼
+function fixPunctuation(t: string): string {
+  return t
+    .replace(/[。]{2,}/g, "。")
+    .replace(/[、]{2,}/g, "、")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function enforceLength(t: string, maxChars = 200, maxSentences = 3): string {
+  let sents = t.split("。").filter(Boolean);
+  sents = sents.slice(0, maxSentences);
+  let out = sents.join("。");
+  if (!out.endsWith("。")) out += "。";
+  if (out.length > maxChars) {
+    out = out.slice(0, maxChars);
+    out = out.replace(/[^。]*$/, ""); // 文末で切る
+    if (!out.endsWith("。")) out += "。";
+  }
+  return out;
+}
+// -------- OpenAI 呼び出し本文 --------
 export async function generateReason(a: Answers): Promise<string> {
   // Step 1-2: 生成入口でのログ（正規化後の値も確認）
   console.log("[gen] input(raw)", a);
   
   // 暑がり・汗かきの値を正規化
   const normalizedSweaty = normalizeSweaty(a.sweaty);
-  const normalizedAnswers = { ...a, sweaty: normalizedSweaty };
+  const primary = getPrimaryPosture(a);
+  const normalizedAnswers = { ...a, sweaty: normalizedSweaty, posture: primary };
   
   const { pts, avoid, facts } = buildPoints(normalizedAnswers);
   const { opening, forbidden } = resolveOpening(normalizedAnswers);
@@ -197,10 +227,12 @@ export async function generateReason(a: Answers): Promise<string> {
 
   const system = [
     "あなたは寝具（枕）の専門アドバイザーです。対象は枕。マットレスの推奨はしない。",
-    "日本語・丁寧体・2〜3文。箇条書き/記号列挙/商品名は禁止。素材名は特性で述べる。",
+    "日本語・丁寧体。2〜3文、合計およそ180文字（±20）。箇条書き/記号列挙/商品名は禁止。素材名は特性で述べる。",
     `次の語を含めない: ${Array.from(forbidExtra).join("、") || "（なし）"}`,
     `必ず触れる観点: ${must.join("、")}`,
     "文章の先頭は必ず指定の書き出しで開始する。",
+    "句読点の連続（。。、、、）を出力しない。出力は自然な文章に整える。",
+    "可能であれば、利用者の具体的な状態（例: 暑がり、現在の枕素材、寝返り頻度など）を1箇所だけ自然に織り込む。",
   ].join("\n");
 
   const user = [
@@ -248,6 +280,9 @@ export async function generateReason(a: Answers): Promise<string> {
       if (a.concerns?.some(c => c === 'stneck' || c === 'morning_pain' || c === 'stiff_shoulder' || c === 'straight_neck') && !hasAny(result, NECK)) {
         result = result.replace(/。?$/, "。") + " 首のカーブを面で支えやすい、少ししっかりめの『枕』だと負担を分散しやすくなります。";
       }
+      // 句読点の正規化と長さ・文数ガード
+      result = fixPunctuation(result);
+      result = enforceLength(result, 200, 3);
       return result;
     }
   } catch (e) {
