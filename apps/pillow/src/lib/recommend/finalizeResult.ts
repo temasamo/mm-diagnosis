@@ -47,3 +47,23 @@ export function finalizeResult(answers: any): FinalResult {
       : undefined,
   };
 } 
+// --- 追加：商品用の「理由文（最大4行）」を合成するユーティリティ ---
+export type ProductReasonInput = {
+  matched: { posture?: boolean; concern?: boolean; material?: boolean; washable?: boolean };
+  notes?: string[];  // rank.ts からの why など
+  priceBand?: string; // 表示用(任意)
+};
+
+export function buildProductReasons(input: ProductReasonInput): string[] {
+  const out: string[] = [];
+  if (input.matched.posture)  out.push("寝姿勢に合わせた高さ・形状で、負担をかけにくい構造です。");
+  if (input.matched.concern)  out.push("お悩みに対応しやすいサポート（頸椎/面で支える 等）を備えています。");
+  if (input.matched.material) out.push("好みに近い素材特性（反発/復元性/当たり）を選べます。");
+  if (input.matched.washable) out.push("洗える仕様で清潔を保ちやすく、日々の手入れが簡単です。");
+  for (const n of input.notes || []) {
+    if (out.length >= 4) break;
+    if (!out.includes(n)) out.push(n);
+  }
+  // 上限4行
+  return out.slice(0, 4);
+}
