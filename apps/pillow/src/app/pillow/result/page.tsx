@@ -497,10 +497,10 @@ export default function ResultPage() {
               <section className="rounded-2xl border p-5">
                 <h3 className="text-lg mb-2">ご提案する枕の適合性</h3>
                 <div className="text-5xl font-bold font-mono">
-                  {score} <span className="text-2xl">%</span>
+                  {Math.min(85, score)} <span className="text-2xl">%</span>
                 </div>
                 <p className="text-sm mt-3">
-                  ※ 無料版のわかりやすいスコアです。詳細コンサル診断ではより精密に判定します。
+                  ※数字はあくまでもイメージです。
                 </p>
               </section>
             )}
