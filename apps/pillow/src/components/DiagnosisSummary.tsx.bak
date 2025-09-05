@@ -1,4 +1,3 @@
-import { getAiComment } from "@/lib/ai/commentService";
 "use client";
 import { useEffect, useState } from "react";
 import type { Profile } from "../../lib/diag/profile";
@@ -42,27 +41,27 @@ export default function DiagnosisSummary({ profile, answers }: { profile: Profil
   const lead = parts.length ? `あなたにおすすめの枕は${parts.join("「」が重なる場合は削る")}タイプです。` : "";
 
   const pos = s ? `主な寝姿勢は「${s}」として最適化しています。` : "";
+
   // AIひとこと
   const [brief, setBrief] = useState<string>("");
   useEffect(() => {
     const run = async () => {
       try {
-        // 統一AIコメントサービスを使用
-        const criteria = {
-          postures: profile.posture ? [profile.posture] : [],
-          concerns: (profile.complaints || []) as any,
-          sweaty: false, // 簡易版では未対応
-        };
-        const reasons = profile.complaints || [];
-        const aiComment = await getAiComment({ criteria, reasons });
-        setBrief(aiComment);
-      } catch (error) {
-        console.warn("AIコメント生成エラー:", error);
-      }
+        const r = await fetch("/api/diag/brief", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ profile }),
+          cache: "no-store",
+        });
+        const j = await r.json();
+        if (j?.comment) setBrief(j.comment);
+      } catch {}
     };
     run();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // 診断理由（あなたのお悩み）
   const complaints: string[] = Array.isArray(profile.complaints) ? profile.complaints : [];
   const purchase = profile.purchaseReason ? [`購入理由：${profile.purchaseReason}`] : [];
 
