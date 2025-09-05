@@ -6,14 +6,12 @@ import { dedupeAndPickCheapest } from '../../../../lib/dedupe';
 import { getBandById, inBand } from '../../../../lib/budget';
 import { priceDistanceToBand } from '../../../../lib/price';
 import type { SearchItem } from '../../../../lib/malls/types';
-import { isCover, isFurusato } from './filters';
+import { applyFilters } from './filters';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 const TTL_MS = 15 * 60 * 1000;
-
-
 
 export async function GET(req: NextRequest) {
   const q = req.nextUrl.searchParams.get('q') || '';
@@ -43,8 +41,8 @@ export async function GET(req: NextRequest) {
     ...(yho.status === 'fulfilled' ? yho.value : []),
   ];
 
-  // フィルタ適用: 枕カバー系とふるさと納税を除外
-  const filtered = all.filter(item => !isCover(item) && !isFurusato(item));
+  // ビジネスルール適用（枕カバー・ふるさと納税を除外）
+  const filtered = applyFilters(all);
 
   // 2) 予算で厳密フィルタ
   let inBudgetItems = band ? filtered.filter(i => i.price != null && inBand(i.price!, band)) : filtered;
@@ -102,4 +100,3 @@ export async function GET(req: NextRequest) {
     headers,
   });
 }
-
