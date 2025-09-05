@@ -154,18 +154,24 @@ function buildPoints(a: Answers) {
 
 // -------- 1文目と禁止語を決定 --------
 function resolveOpening(a: Answers) {
-  if (a.posture === "side" || a.posture === "supine" || a.posture === "prone") {
-    const label = jpPosture(a.posture);
-    return {
-      opening: `${label}で眠る方は、`,
-      forbidden: ["横向き", "仰向け", "うつ伏せ"].filter((w) => w !== label),
-    };
-  }
-  // mixed / 未定義 は統一
-  return { opening: "寝姿勢が変わる方は、", forbidden: [] as string[] };
-}
+  const raw = [...(a.postures ?? []), a.posture].filter(Boolean) as Array<"side"|"supine"|"prone">;
+  const uniq = Array.from(new Set(raw));
 
-// -------- OpenAI 呼び出し本文 --------
+  // 複数姿勢 → 混在扱い
+  if (uniq.length >= 2) {
+    return { opening: "寝姿勢が変わる方は、", forbidden: [] as string[] };
+  }
+
+  // 単一姿勢
+  if (uniq.length === 1) {
+    const p = uniq[0]; // ここで side/prone/supine のいずれか
+    const label = jpPosture(p);
+    return { opening: `${label}で眠る方は、`, forbidden: ["横向き", "仰向け", "うつ伏せ"].filter(w => w !== label) };
+  }
+
+  // 未指定
+  return { opening: "寝姿勢が変わる方は、", forbidden: [] as string[] };
+}// -------- OpenAI 呼び出し本文 --------
 export async function generateReason(a: Answers): Promise<string> {
   // Step 1-2: 生成入口でのログ（正規化後の値も確認）
   console.log("[gen] input(raw)", a);
