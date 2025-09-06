@@ -75,6 +75,13 @@ export function normalizeAnswers(input: any): AnswersLite {
   return { postures, concerns, materialPref };
 }
 
+// wiring で API から受け取る "軽量回答" の型を公開
+export type AnswersLite = {
+  postures?: string[];
+  concerns?: string[];
+  pillowMaterial?: string[];
+};
+
 export function makeSignals(input: {
   postures: string[];
   concerns: string[];

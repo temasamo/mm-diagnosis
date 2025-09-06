@@ -1,10 +1,13 @@
 export const runtime = "nodejs";
 import { NextRequest, NextResponse } from "next/server";
 import { ENABLED_MALLS, type RecommendRequest, type MallProduct } from "../../../../lib/types";
+import type { AnswersLite } from "../../../lib/recommend/signals";
 import { finalizeResult, makeSignals, rankCandidates } from "../../../lib/recommend";
 
 export async function POST(req: Request) {
-  const body = (await req.json()) as RecommendRequest;
+  // RECO_WIRING=1 のときに参照する追加フィールドを許容
+  type RecommendBody = RecommendRequest & Partial<AnswersLite>;
+  const body = (await req.json()) as RecommendBody;
 
   // Amazon申請中のため、生成時にフィルタ
   const isEnabledMall = (m: MallProduct["mall"]) => ENABLED_MALLS.includes(m);
