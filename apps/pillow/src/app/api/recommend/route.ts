@@ -1,12 +1,16 @@
 export const runtime = "nodejs";
 import { NextRequest, NextResponse } from "next/server";
-import { ENABLED_MALLS, type RecommendRequest, type MallProduct } from "../../../../lib/types";
-import type { AnswersLite } from "../../../lib/recommend/signals";
+import { ENABLED_MALLS, type MallProduct } from "../../../../lib/types";
 import { finalizeResult, makeSignals, rankCandidates } from "../../../lib/recommend";
 
+// このAPI専用の受け取り型（影響範囲を局所化）
+type RecommendBody = {
+  postures?: string[];
+  concerns?: string[];
+  pillowMaterial?: string[];
+};
+
 export async function POST(req: Request) {
-  // RECO_WIRING=1 のときに参照する追加フィールドを許容
-  type RecommendBody = RecommendRequest & Partial<AnswersLite>;
   const body = (await req.json()) as RecommendBody;
 
   // Amazon申請中のため、生成時にフィルタ
@@ -15,7 +19,7 @@ export async function POST(req: Request) {
   const picks: MallProduct[] = [
     {
       id: "stub-1",
-      title: `[Stub] ${body.primaryGroup ?? "スタンダード"} / 高反発系`,
+      title: `[Stub] スタンダード / 高反発系`,
       image: "/placeholder.png",
       url: "#",
       price: 32980,
