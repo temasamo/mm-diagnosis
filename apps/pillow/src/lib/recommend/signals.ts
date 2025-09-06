@@ -6,6 +6,10 @@ export type AnswersLite = {
   currentPillowMaterial?: string[];
 };
 import type { SearchItem } from "../../../lib/malls/types";
+import { buildReasonTags } from "./finalizeResult";
+
+// 推薦グループのキー（最小セット）
+export type GroupKey = "standard" | "comfort";
 
 export type ItemSignals = {
   postures: { side: boolean; supine: boolean; prone: boolean };
@@ -89,4 +93,63 @@ export function makeSignals(input: {
     concerns: input.concerns,
     currentPillowMaterial: input.pillowMaterial,
   });
+}
+
+// 既存の AnswersLite / makeSignals がある前提。なければ既存の normalize 関数を利用。
+// ここでは「重み」は掛けず、入力からグループ寄与の"有無"を抽出する。
+export function deriveSignals(input: {
+  postures?: string[];
+  concerns?: string[];
+  pillowMaterial?: string[];
+}) {
+  const postures = Array.isArray(input?.postures) ? input!.postures! : [];
+  const concerns = Array.isArray(input?.concerns) ? input!.concerns! : [];
+  const materials = Array.isArray(input?.pillowMaterial) ? input!.pillowMaterial! : [];
+
+  // グループ寄与の有無（ここでは論理値のみ）
+  const hasPosture = postures.length > 0;
+  const hasConcern = concerns.length > 0;
+  const hasMaterial = materials.length > 0;
+
+  // 「どのグループに寄与するか」の素点（重み未適用）
+  // - 姿勢: standard に寄与
+  // - 悩み: comfort に寄与
+  // - 素材: standard に"わずかに"寄与（重みは rank.ts で適用）
+  const base = {
+    standard: (hasPosture ? 1 : 0) + (hasMaterial ? 1 : 0),
+    comfort: hasConcern ? 1 : 0,
+  } as Record<GroupKey, number>;
+
+  return {
+    postures,
+    concerns,
+    materials,
+    base,                // 重み未適用スコア
+    flags: {
+      hasPosture,
+      hasConcern,
+      hasMaterial,
+    },
+  };
+}
+
+// UIでそのまま使える短い理由タグ（最大3つ）
+export function buildReasons(input: { postures?: string[]; concerns?: string[] }) {
+  const tags = buildReasonTags({ postures: input.postures ?? [] }) ?? [];
+
+  // 悩み→comfort寄与のラベルを最小追加（足りない分のみ）
+  const c = new Set((input.concerns ?? []).map(String));
+  if (c.has("stiff_shoulder") && !tags.some(t => /肩|肩こり/.test(t))) {
+    tags.push("肩の負担を減らす形状");
+  }
+  if (c.has("headache") && !tags.some(t => /頭|圧/.test(t))) {
+    tags.push("圧が分散しやすい構造");
+  }
+  if (c.has("straight_neck") && !tags.some(t => /頸椎|首/.test(t))) {
+    tags.push("頸椎カーブを支えやすい");
+  }
+
+  // 重複除去して最大3件
+  const uniq = Array.from(new Set(tags)).slice(0, 3);
+  return uniq;
 }

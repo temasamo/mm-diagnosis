@@ -1,5 +1,7 @@
 import type { SearchItem } from "../../../lib/malls/types";
 import { extractSignals, normalizeAnswers, AnswersLite, ItemSignals } from "./signals";
+import type { GroupKey } from "./signals";
+import { deriveSignals, buildReasons } from "./signals";
 
 export type RankedPick = {
   item: SearchItem;
@@ -74,11 +76,82 @@ export function pickPrimaryAndSecondary(all: SearchItem[], rawAnswers: any) {
   return { primary, secondary };
 }
 
-export function rankCandidates(signals: AnswersLite): { primary: string[], secondary: string[] } {
-  // 仮実装：実際の候補リストがないため、ダミーデータを返す
-  // 将来的には実際の商品データを使用してランク付けを行う
+// --- 重み（確定値） ---
+export const WEIGHTS = {
+  posture: 5,   // 最重要: 姿勢
+  concern: 3,   // 次点: 悩み
+  material: 1,  // 参照: 素材
+} as const;
+
+// --- 閾値・差分（確定値） ---
+export const THRESHOLDS = {
+  primaryMin: 5,   // primary に採用する最低スコア
+  secondaryMin: 4, // secondary 採用の最低スコア
+  tieGap: 2,       // primary と secondary のスコア差がこの値以下なら僅差
+} as const;
+
+export type FinalPick = {
+  primaryGroup: string[];
+  secondaryGroup: string[];
+  reasons: string[];
+};
+
+export function rankCandidates(input: {
+  postures?: string[];
+  concerns?: string[];
+  pillowMaterial?: string[];
+}): FinalPick {
+  // まずは論理シグナルを抽出（重みはまだ掛けない）
+  const sig = deriveSignals({
+    postures: input.postures ?? [],
+    concerns: input.concerns ?? [],
+    pillowMaterial: input.pillowMaterial ?? [],
+  });
+
+  // 重み適用
+  const weighted: Record<GroupKey, number> = {
+    standard:
+      (sig.flags.hasPosture ? WEIGHTS.posture : 0) +
+      (sig.flags.hasMaterial ? WEIGHTS.material : 0),
+    comfort: sig.flags.hasConcern ? WEIGHTS.concern : 0,
+  };
+
+  // スコア上位2つ（今回は standard/comfort の二択想定）
+  const entries = (Object.entries(weighted) as [GroupKey, number][])
+    .sort((a, b) => b[1] - a[1]);
+
+  const [topKey, topScore] = entries[0] ?? ["standard", 0];
+  const [secondKey, secondScore] = entries[1] ?? ["comfort", 0];
+
+  // primary 判定
+  let primary: GroupKey | null = null;
+  if (topScore >= THRESHOLDS.primaryMin) {
+    primary = topKey;
+  } else {
+    // 弱い場合は standard にフォールバック
+    primary = "standard";
+  }
+
+  // secondary 判定（条件付きで1件だけ採用）
+  let secondary: GroupKey | null = null;
+  const scoreGap = topScore - secondScore;
+  if (
+    secondKey !== primary &&
+    secondScore >= THRESHOLDS.secondaryMin &&
+    scoreGap <= THRESHOLDS.tieGap
+  ) {
+    secondary = secondKey;
+  }
+
+  // 理由（最大3件）
+  const reasons = buildReasons({
+    postures: input.postures ?? [],
+    concerns: input.concerns ?? [],
+  });
+
   return {
-    primary: ["stub-1", "stub-2"],
-    secondary: ["stub-3", "stub-4"]
+    primaryGroup: [primary],
+    secondaryGroup: secondary ? [secondary] : [],
+    reasons,
   };
 }
