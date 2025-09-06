@@ -74,3 +74,15 @@ export function normalizeAnswers(input: any): AnswersLite {
 
   return { postures, concerns, materialPref };
 }
+
+export function makeSignals(input: {
+  postures: string[];
+  concerns: string[];
+  pillowMaterial: string[];
+}): AnswersLite {
+  return normalizeAnswers({
+    postures: input.postures,
+    concerns: input.concerns,
+    currentPillowMaterial: input.pillowMaterial[0],
+  });
+}

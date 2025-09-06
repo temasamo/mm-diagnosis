@@ -12,7 +12,7 @@ ok()     { echo -e "${GREEN}✓${NC} $*"; }
 jqget()  { jq -r "$1" <<<"$2"; }
 contains_reason() {
   local resp="$1" needle="$2"
-  echo "$resp" | jq -e --arg k "$needle" '.meta.final.reasons[] | tostring | contains($k)' >/dev/null
+  echo "$resp" | jq -e --arg k "$needle" '.meta.final.reasons[] | tostring | contains($k) | select(.)' >/dev/null
 }
 
 # dev 起動（RECO_WIRING=1 で final を返すモード）
