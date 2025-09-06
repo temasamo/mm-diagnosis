@@ -12,7 +12,8 @@
   "scripts": {
     "build": "pnpm -r build",
     "dev:pillow": "pnpm --filter @apps/pillow dev",
-    "dev:mattress": "pnpm --filter @apps/mattress dev"
+    "dev:mattress": "pnpm --filter @apps/mattress dev",
+    "reco:test": "bash ./scripts/reco-cases.sh"
   },
   "overrides": {
     "tailwindcss": "3.4.10",
