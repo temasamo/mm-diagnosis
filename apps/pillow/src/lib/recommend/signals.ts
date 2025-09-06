@@ -1,3 +1,10 @@
+// ===== 型はこの1箇所だけで定義する =====
+export type AnswersLite = {
+  postures: ("side" | "supine" | "prone")[];
+  concerns?: ("neck" | "shoulder" | "headache" | "snore")[];
+  materialPref?: "lowRebound" | "highRebound" | "latex" | "pipe" | null;
+  currentPillowMaterial?: string[];
+};
 import type { SearchItem } from "../../../lib/malls/types";
 
 export type ItemSignals = {
@@ -41,11 +48,6 @@ export function extractSignals(item: SearchItem): ItemSignals {
   return { postures, concerns, materials, washable };
 }
 
-export type AnswersLite = {
-  postures: ("side"|"supine"|"prone")[];
-  concerns?: ("neck"|"shoulder"|"headache"|"snore")[];
-  materialPref?: "lowRebound"|"highRebound"|"latex"|"pipe"|null;
-};
 
 export function normalizeAnswers(input: any): AnswersLite {
   let postures = Array.isArray(input?.postures) ? input.postures : [];
@@ -56,7 +58,7 @@ export function normalizeAnswers(input: any): AnswersLite {
   if (postures.length === 0) postures = ["side"];
 
   const materialPref = ((): AnswersLite["materialPref"] => {
-    const m = (input?.currentPillowMaterial || input?.materialPref || "").toLowerCase();
+    const m = (Array.isArray(input?.currentPillowMaterial) ? (input.currentPillowMaterial[0] || "") : (input?.currentPillowMaterial || input?.materialPref || "")).toLowerCase();
     if (/低反発|memory|lr/.test(m)) return "lowRebound";
     if (/高反発|hr/.test(m))       return "highRebound";
     if (/latex|ラテックス/.test(m))return "latex";
@@ -75,13 +77,8 @@ export function normalizeAnswers(input: any): AnswersLite {
   return { postures, concerns, materialPref };
 }
 
-// wiring で API から受け取る "軽量回答" の型を公開
-export type AnswersLite = {
-  postures?: string[];
-  concerns?: string[];
-  pillowMaterial?: string[];
-};
 
+// 正規化は既存の normalizeAnswers を利用して一本化
 export function makeSignals(input: {
   postures: string[];
   concerns: string[];
@@ -90,6 +87,6 @@ export function makeSignals(input: {
   return normalizeAnswers({
     postures: input.postures,
     concerns: input.concerns,
-    currentPillowMaterial: input.pillowMaterial[0],
+    currentPillowMaterial: input.pillowMaterial,
   });
 }

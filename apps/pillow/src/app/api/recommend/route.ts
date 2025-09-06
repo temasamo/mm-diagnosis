@@ -11,7 +11,9 @@ type RecommendBody = {
 };
 
 export async function POST(req: Request) {
-  const body = (await req.json()) as RecommendBody;
+  // 追加された postures/concerns/pillowMaterial を許容するため、一旦ゆるい型で受ける
+  // （将来は RecommendRequest 側に正式反映する）
+  const body: any = await req.json();
 
   // Amazon申請中のため、生成時にフィルタ
   const isEnabledMall = (m: MallProduct["mall"]) => ENABLED_MALLS.includes(m);
@@ -41,16 +43,16 @@ export async function POST(req: Request) {
     if (process.env.RECO_WIRING === "1") {
       // 1) 入力→信号へ
       const signals = makeSignals({
-        postures: body.postures ?? [],
-        concerns: body.concerns ?? [],
-        pillowMaterial: body.pillowMaterial ?? [],
+        postures: Array.isArray(body?.postures) ? body.postures : [],
+        concerns: Array.isArray(body?.concerns) ? body.concerns : [],
+        pillowMaterial: Array.isArray(body?.pillowMaterial) ? body.pillowMaterial : [],
       });
       // 2) 信号→候補ランク（将来、items 実データへ拡張予定。今は"流れ"の配線のみ）
       const ranked = rankCandidates(signals); // { primary: string[], secondary: string[] } を想定
       // 3) 既存 finalize を併用して形式を統一
       const final = finalizeResult({
         ...body,
-        postures: body.postures ?? [],
+        postures: Array.isArray(body?.postures) ? body.postures : [],
         sleepingPosition: body.postures?.[0] // 既存後方互換
       });
 
