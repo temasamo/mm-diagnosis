@@ -73,3 +73,12 @@ export function pickPrimaryAndSecondary(all: SearchItem[], rawAnswers: any) {
 
   return { primary, secondary };
 }
+
+export function rankCandidates(signals: AnswersLite): { primary: string[], secondary: string[] } {
+  // 仮実装：実際の候補リストがないため、ダミーデータを返す
+  // 将来的には実際の商品データを使用してランク付けを行う
+  return {
+    primary: ["stub-1", "stub-2"],
+    secondary: ["stub-3", "stub-4"]
+  };
+}
