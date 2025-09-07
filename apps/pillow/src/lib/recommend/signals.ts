@@ -1,10 +1,22 @@
 // ===== 型はこの1箇所だけで定義する =====
+export type MaterialKey = "lowRebound" | "highRebound" | "latex" | "pipe" | (string & {});
+export type StructureKey = "contour" | "flat" | "water" | "gel" | (string & {});
+export type BrandKey = string;
+
+export type AvoidList = {
+  materials?: MaterialKey[];
+  structures?: StructureKey[];
+  brands?: BrandKey[];
+};
+
 export type AnswersLite = {
   postures: ("side" | "supine" | "prone")[];
   concerns?: ("neck" | "shoulder" | "headache" | "snore")[];
   materialPref?: "lowRebound" | "highRebound" | "latex" | "pipe" | null;
   currentPillowMaterial?: string[];
+  avoid?: AvoidList;
 };
+
 import type { SearchItem } from "../../../lib/malls/types";
 import { buildReasonTags } from "./finalizeResult";
 
@@ -78,7 +90,7 @@ export function normalizeAnswers(input: any): AnswersLite {
     return null;
   }).filter(Boolean) as AnswersLite["concerns"];
 
-  return { postures, concerns, materialPref };
+  return { postures, concerns, materialPref, avoid: input?.avoid };
 }
 
 
@@ -87,11 +99,13 @@ export function makeSignals(input: {
   postures: string[];
   concerns: string[];
   pillowMaterial: string[];
+  avoid?: AvoidList;
 }): AnswersLite {
   return normalizeAnswers({
     postures: input.postures,
     concerns: input.concerns,
     currentPillowMaterial: input.pillowMaterial,
+    avoid: input.avoid,
   });
 }
 
@@ -101,6 +115,7 @@ export function deriveSignals(input: {
   postures?: string[];
   concerns?: string[];
   pillowMaterial?: string[];
+  avoid?: AvoidList;
 }) {
   const postures = Array.isArray(input?.postures) ? input!.postures! : [];
   const concerns = Array.isArray(input?.concerns) ? input!.concerns! : [];
@@ -130,11 +145,12 @@ export function deriveSignals(input: {
       hasConcern,
       hasMaterial,
     },
+    avoid: input.avoid,
   };
 }
 
 // UIでそのまま使える短い理由タグ（最大3つ）
-export function buildReasons(input: { postures?: string[]; concerns?: string[] }) {
+export function buildReasons(input: { postures?: string[]; concerns?: string[]; avoid?: AvoidList }) {
   const tags = buildReasonTags({ postures: input.postures ?? [] }) ?? [];
 
   // 悩み→comfort寄与のラベルを最小追加（足りない分のみ）
@@ -147,6 +163,23 @@ export function buildReasons(input: { postures?: string[]; concerns?: string[] }
   }
   if (c.has("straight_neck") && !tags.some(t => /頸椎|首/.test(t))) {
     tags.push("頸椎カーブを支えやすい");
+  }
+
+  // 避ける理由を追加（最大3つの上限内で）
+  if (input.avoid?.materials?.includes("latex")) {
+    tags.push("ラテックス素材を避けています");
+  }
+  if (input.avoid?.materials?.includes("feather")) {
+    tags.push("羽毛素材を避けています");
+  }
+  if (input.avoid?.materials?.includes("pipe")) {
+    tags.push("パイプ素材を避けています");
+  }
+  if (input.avoid?.structures?.includes("contour")) {
+    tags.push("凹凸形状を避けています");
+  }
+  if (input.avoid?.brands && input.avoid.brands.length > 0) {
+    tags.push(`${input.avoid.brands[0]}ブランドを避けています`);
   }
 
   // 重複除去して最大3件

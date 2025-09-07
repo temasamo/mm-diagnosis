@@ -1,6 +1,6 @@
 import type { SearchItem } from "../../../lib/malls/types";
 import { extractSignals, normalizeAnswers, AnswersLite, ItemSignals } from "./signals";
-import type { GroupKey } from "./signals";
+import type { GroupKey, AvoidList } from "./signals";
 import { deriveSignals, buildReasons } from "./signals";
 
 export type RankedPick = {
@@ -100,12 +100,15 @@ export function rankCandidates(input: {
   postures?: string[];
   concerns?: string[];
   pillowMaterial?: string[];
+avoid?: AvoidList;
 }): FinalPick {
   // まずは論理シグナルを抽出（重みはまだ掛けない）
   const sig = deriveSignals({
     postures: input.postures ?? [],
     concerns: input.concerns ?? [],
+    avoid: input.avoid,
     pillowMaterial: input.pillowMaterial ?? [],
+    avoid: input.avoid,
   });
 
   // 重み適用
@@ -147,6 +150,7 @@ export function rankCandidates(input: {
   const reasons = buildReasons({
     postures: input.postures ?? [],
     concerns: input.concerns ?? [],
+    avoid: input.avoid,
   });
 
   return {
