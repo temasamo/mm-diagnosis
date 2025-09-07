@@ -108,7 +108,6 @@ avoid?: AvoidList;
     concerns: input.concerns ?? [],
     avoid: input.avoid,
     pillowMaterial: input.pillowMaterial ?? [],
-    avoid: input.avoid,
   });
 
   // 重み適用
