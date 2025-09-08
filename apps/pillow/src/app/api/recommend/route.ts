@@ -1,0 +1,128 @@
+export const runtime = "nodejs";
+import { NextRequest, NextResponse } from "next/server";
+import { ENABLED_MALLS, type MallProduct } from "../../../../lib/types";
+import { rankCandidates } from "../../../lib/recommend";
+import { applyBanFilter, toMallProducts } from "../../../lib/recommend/filter";
+import { mallSearchAll } from "../../../server/mall/service";
+import type { Item } from "../../../types/product";
+
+// このAPI専用の受け取り型（影響範囲を局所化）
+type RecommendBody = {
+  postures?: string[];
+  concerns?: string[];
+  pillowMaterial?: string[];
+  avoid?: {
+    materials?: string[];
+    structures?: string[];
+    brands?: string[];
+  };
+};
+
+// キーワード構築関数（例）
+function buildKeyword(signals: any): string {
+  return "枕"; // 簡易実装
+}
+
+export async function POST(req: Request) {
+  // 追加フィールド（postures/concerns/pillowMaterial/avoid）を許容（非破壊のため any 受け）
+  const body: any = await req.json();
+
+  // stubデータに仮想フィールドを追加（テスト用）
+  const stubItems: Item[] = [
+    {
+      id: "stub-1",
+      title: `[Stub] スタンダード / 高反発系`,
+      image: "/placeholder.png",
+      url: "#",
+      price: 32980,
+      mall: "rakuten" as const,
+      material: "highRebound",
+      structure: "flat",
+      brand: "StandardBrand"
+    },
+    {
+      id: "stub-2",
+      title: "[Stub] 通気重視モデル",
+      image: "/placeholder.png",
+      url: "#",
+      price: 29800,
+      mall: "yahoo" as const,
+      material: "latex",
+      structure: "contour",
+      brand: "ComfortBrand"
+    }
+  ];
+
+  // モール検索を実行
+  const signals = { postures: body?.postures, concerns: body?.concerns };
+  const q = { 
+    q: buildKeyword(signals), 
+    budgetMin: 3000, 
+    budgetMax: 10000, 
+    limit: 30 
+  };
+  const { items: mallItems, offline } = await mallSearchAll(q);
+
+  // モール検索結果をItem型に変換
+  const mallItemsAsItems: Item[] = mallItems.map(item => ({
+    id: item.id,
+    title: item.title,
+    url: item.url,
+    price: item.price,
+    image: item.image,
+    mall: item.mall
+  }));
+
+  // stubデータとモール検索結果をマージ
+  const allItems = [...stubItems, ...mallItemsAsItems];
+
+  // banフィルタを適用
+  const filteredItems = applyBanFilter(allItems, body?.avoid);
+
+  // MallProduct型に変換（既存互換性のため）
+  const picks = toMallProducts(filteredItems);
+
+  // ---- RECO_WIRING=1 の時のみ、meta.final を付与（既存 items は変更しない） ----
+  if (process.env.RECO_WIRING === "1") {
+    try {
+      const final = rankCandidates({
+        postures: Array.isArray(body?.postures) ? body.postures : [],
+        concerns: Array.isArray(body?.concerns) ? body.concerns : [],
+        pillowMaterial: Array.isArray(body?.pillowMaterial) ? body.pillowMaterial : [],
+        avoid: body?.avoid,
+      });
+      
+      const responseBody = { 
+        items: picks, 
+        meta: { 
+          final,
+          flags: { offline }
+        } 
+      };
+
+      // メトリクス送信（非同期 fire-and-forget）
+      try { 
+        fetch(`${process.env.NEXT_PUBLIC_BASE_URL ?? ''}/api/track`, {
+          method:'POST', 
+          headers:{'content-type':'application/json'},
+          body: JSON.stringify({
+            event:'search_latency', 
+            mall:'all', 
+            offline, 
+            ts:Date.now()
+          })
+        }).catch(()=>{});
+      } catch {}
+
+      return NextResponse.json(responseBody, { 
+        headers: { 'Cache-Control': 'no-store' }
+      });
+    } catch (e) {
+      console.warn("[recommend] meta.final wiring skipped:", e);
+      return NextResponse.json({ items: picks });
+    }
+  }
+  
+  // 既存どおり
+  return NextResponse.json({ items: picks });
+}
