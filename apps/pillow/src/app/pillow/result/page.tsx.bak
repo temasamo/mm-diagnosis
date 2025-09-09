@@ -17,6 +17,7 @@ import { extractPriceInfo } from "@/lib/recommend/extractPrice";
 import { buildBudgetMeta, BANDS, bandIndexOf, type BudgetBandKey } from "@/lib/recommend/budget";
 import { GROUP_LABEL } from "@/lib/ui/labels";
 import ProductCard, { ProductItem } from '@/components/ProductCard';
+import type { SearchItem } from "../../../../lib/malls/types";
 import { isCover, isFurusato } from '@/app/api/search-cross/filters';
 
 const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK === '1';
@@ -116,6 +117,8 @@ function dedupeAndPickCheapest(items: any[]): any[] {
 type Item = import('../../../../lib/malls/types').SearchItem;
 
 export default function ResultPage() {
+  const FEATURE = process.env.NEXT_PUBLIC_FEATURE_PRIMARY_EXPLAIN === '1';
+  const [data, setData] = useState<any>(null);
   const store = useDiagStore();
   
   // デバッグモードの確認
@@ -307,7 +310,7 @@ export default function ResultPage() {
         let items = dedupeAndPickCheapest([...real, ...mock]);
 
         // 念のためクライアント側でもフィルタ（保険）
-        items = items.filter(i => !isCover(i) && !isFurusato(i));
+        items = items.filter((i: SearchItem) => !isCover(i) && !isFurusato(i));
 
         if (items.length > 0) {
           // ユーザーの予算帯キー
@@ -352,7 +355,7 @@ export default function ResultPage() {
           const fallbackItems = await fetch(`${baseUrl}/api/search-cross?q=枕&limit=${limit}`, { cache: 'no-store' }).then(r => r.json());
           if (!mounted) return;
           
-          let fallbackFiltered = fallbackItems.filter(i => !isCover(i) && !isFurusato(i));
+          let fallbackFiltered = fallbackItems.filter((i: SearchItem) => !isCover(i) && !isFurusato(i));
           const userBand: BudgetBandKey = (answers?.budget ?? "3k-6k") as BudgetBandKey;
           const decoratedItems = decorateItemsWithPriceAndBudget(fallbackFiltered, userBand);
           
@@ -497,10 +500,10 @@ export default function ResultPage() {
               <section className="rounded-2xl border p-5">
                 <h3 className="text-lg mb-2">ご提案する枕の適合性</h3>
                 <div className="text-5xl font-bold font-mono">
-                  {score} <span className="text-2xl">%</span>
+                  {Math.min(85, score)} <span className="text-2xl">%</span>
                 </div>
                 <p className="text-sm mt-3">
-                  ※ 無料版のわかりやすいスコアです。詳細コンサル診断ではより精密に判定します。
+                  ※数字はあくまでもイメージです。
                 </p>
               </section>
             )}
@@ -550,6 +553,36 @@ export default function ResultPage() {
                   </div>
                 );
               }
+
+                  {/* --- 第一候補（理由つき・3件） --- */}
+                  {FEATURE && data?.primaryExplain?.items?.length ? (
+                    <section className="mt-6">
+                      <h2 className="text-lg font-semibold">第一候補（理由つき・3件）</h2>
+                      <div className="mt-3 grid gap-4 sm:grid-cols-3">
+                        {data.primaryExplain.items.map((it: any) => (
+                          <ProductCard
+                            key={`${it.mall}:${it.id}`}
+                            item={{
+                              id: it.id,
+                              mall: it.mall,
+                              title: it.title,
+                              url: it.url,
+                              image: it.image,
+                              price: it.price,
+                              shop: it.shop,
+                              outOfBudget: it.explain?.budgetIn === false
+                            }}
+                            explain={{
+                              summarySentence: it.explain?.summarySentence,
+                              chips: it.explain?.chips,
+                              allReasons: it.explain?.allReasons,
+                              budgetIn: it.explain?.budgetIn,
+                            }}
+                          />
+                        ))}
+                      </div>
+                    </section>
+                  ) : null}
 
               return (
                 <div>

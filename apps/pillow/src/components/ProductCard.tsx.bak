@@ -15,16 +15,6 @@ export type ProductItem = {
   outOfBudget?: boolean; // 予算外フラグ（あればバッジ表示）
 };
 
-type ProductCardProps = {
-  item: ProductItem;
-  explain?: {
-    summarySentence?: string;
-    chips?: string[];
-    allReasons?: { label: string; weight: number; evidence?: { userAnswer?: string; productFact?: string } }[];
-    budgetIn?: boolean;
-  };
-};
-
 const mallLabel: Record<string, string> = {
   rakuten: 'RAKUTEN',
   yahoo: 'YAHOO',
@@ -36,7 +26,7 @@ function formatJPY(v?: number | null) {
   return `¥${v.toLocaleString('ja-JP')}`;
 }
 
-export default function ProductCard({ item, explain }: ProductCardProps) {
+export default function ProductCard({ item }: { item: ProductItem }) {
   const href = `/api/out?mall=${encodeURIComponent(item.mall)}&url=${encodeURIComponent(
     item.url
   )}`;
@@ -73,7 +63,7 @@ export default function ProductCard({ item, explain }: ProductCardProps) {
         </div>
 
         {/* 予算外バッジ（任意） */}
-        {(item.outOfBudget || explain?.budgetIn === false) && (
+        {item.outOfBudget && (
           <div className="absolute right-2 top-2 z-10">
             <span className="rounded-full bg-rose-700/80 text-white text-xs px-2 py-1">
               予算外
@@ -103,38 +93,6 @@ export default function ProductCard({ item, explain }: ProductCardProps) {
           {item.title}
         </div>
 
-        {/* 理由つき表示の追加部分 */}
-        {explain?.summarySentence && (
-          <p className="mt-2 text-sm text-gray-300">{explain.summarySentence}</p>
-        )}
-
-        {!!explain?.chips?.length && (
-          <div className="mt-2 flex flex-wrap gap-1">
-            {explain.chips!.slice(0,3).map((c, i) => (
-              <span key={i} className="px-2 py-0.5 text-xs rounded-full border border-white/20 text-white/80">
-                {c}
-              </span>
-            ))}
-          </div>
-        )}
-
-        {!!explain?.allReasons?.length && (
-          <details className="mt-2">
-            <summary className="cursor-pointer text-sm underline text-white/70 hover:text-white/90">
-              詳しく
-            </summary>
-            <div className="mt-2 text-xs space-y-1">
-              {explain.allReasons!.map((r, i) => (
-                <div key={i} className="flex gap-2 border-b border-white/10 pb-1">
-                  <div className="min-w-28 text-white/80">{r.label}</div>
-                  <div className="min-w-10 text-white/60">{r.weight > 0 ? `+${r.weight}` : r.weight}</div>
-                  <div className="flex-1 opacity-80 text-white/60">{r.evidence?.userAnswer} / {r.evidence?.productFact}</div>
-                </div>
-              ))}
-            </div>
-          </details>
-        )}
-
         <div className="flex items-center justify-between">
           <div className="text-white text-lg font-semibold">
             {formatJPY(item.price)}
@@ -148,4 +106,4 @@ export default function ProductCard({ item, explain }: ProductCardProps) {
       </div>
     </a>
   );
-}
+} 

@@ -5,8 +5,6 @@ import { rankCandidates } from "../../../lib/recommend";
 import { applyBanFilter, toMallProducts } from "../../../lib/recommend/filter";
 import { mallSearchAll } from "../../../server/mall/service";
 import type { Item } from "../../../types/product";
-import { buildMatchDetails } from '@/lib/explain/match';
-import { composeExplain } from '@/lib/explain/compose';
 
 // このAPI専用の受け取り型（影響範囲を局所化）
 type RecommendBody = {
@@ -116,69 +114,7 @@ export async function POST(req: Request) {
         }).catch(()=>{});
       } catch {}
 
-      // 新機能：primaryExplain を追加
-      const FEATURE = process.env.NEXT_PUBLIC_FEATURE_PRIMARY_EXPLAIN === '1';
-      let primaryExplain: null | {
-        layout: 'primary-explain-v1';
-        items: Array<any>;
-      } = null;
-
-      try {
-        if (FEATURE) {
-          // 既存の第一候補集合から、上位3件を採用（picks 先頭から）
-          const primaryList = picks.slice(0, 3);
-
-          // プロフィール情報を構築
-          const profile = {
-            posture: body?.postures?.[0] === 'side' ? '横向き' as const :
-                     body?.postures?.[0] === 'supine' ? '仰向け' as const :
-                     body?.postures?.[0] === 'prone' ? 'うつ伏せ' as const : undefined,
-            issues: body?.concerns?.map((c: string) => {
-              if (c === 'neck') return '首痛' as const;
-              if (c === 'shoulder') return '肩こり' as const;
-              if (c === 'headache') return '頭痛' as const;
-              if (c === 'snore') return 'いびき' as const;
-              if (c === 'heat_sweat') return '蒸れ' as const;
-              return c as any;
-            }),
-            preferences: {
-              material: body?.pillowMaterial?.[0]
-            },
-            budget: {
-              max: 10000 // デフォルト値
-            }
-          };
-
-          const explained = primaryList.map((prod: any) => {
-            const md = buildMatchDetails(prod, profile);
-            const exp = composeExplain(prod, profile, md);
-            return {
-              ...prod,
-              explain: {
-                summarySentence: exp.summarySentence,
-                chips: exp.chips,
-                allReasons: exp.table.map(r => ({
-                  label: r.label, 
-                  weight: r.delta, 
-                  evidence: { userAnswer: r.user, productFact: r.fact }
-                })),
-                budgetIn: exp.budgetIn,
-              }
-            };
-          });
-
-          primaryExplain = explained.length ? { layout: 'primary-explain-v1', items: explained } : null;
-        }
-      } catch (e) {
-        console.error('[primaryExplain] compose failed', e);
-        primaryExplain = null;
-      }
-
-      // 既存の return に追加フィールドをマージ
-      return NextResponse.json({
-        ...responseBody,
-        ...(FEATURE ? { primaryExplain } : {}), // flag OFFならキー自体返さない
-      }, { 
+      return NextResponse.json(responseBody, { 
         headers: { 'Cache-Control': 'no-store' }
       });
     } catch (e) {
