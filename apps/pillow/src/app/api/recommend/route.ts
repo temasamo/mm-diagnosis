@@ -150,19 +150,20 @@ export async function POST(req: Request) {
           };
 
           const explained = primaryList.map((prod: any) => {
-            const md = buildMatchDetails(prod, profile);
-            const exp = composeExplain(prod, profile, md);
+            const md   = buildMatchDetails(prod, profile);
+            const exp  = composeExplain(
+              { title: prod.title, price: typeof prod.price === "number" ? prod.price : null },
+              profile,
+              md
+            );
             return {
               ...prod,
               explain: {
                 summarySentence: exp.summarySentence,
                 chips: exp.chips,
-                allReasons: exp.table.map(r => ({
-                  label: r.label, 
-                  weight: r.delta, 
-                  evidence: { userAnswer: r.user, productFact: r.fact }
-                })),
+                table: exp.table,
                 budgetIn: exp.budgetIn,
+                budget: exp.budget
               }
             };
           });

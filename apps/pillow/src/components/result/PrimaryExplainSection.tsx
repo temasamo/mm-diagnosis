@@ -14,7 +14,7 @@ export default function PrimaryExplainSection({ items }: { items: any[] }) {
             item={{
               id: it.id,
               title: it.title,
-              imageUrl: it.image,
+              image: it.image,
               price: it.price,
               mall: it.mall,
               url: it.url,
@@ -22,7 +22,7 @@ export default function PrimaryExplainSection({ items }: { items: any[] }) {
             explain={{
               summarySentence: it.explain?.summarySentence,
               chips: it.explain?.chips,
-              allReasons: it.explain?.allReasons,
+              table: it.explain?.table,
               budgetIn: it.explain?.budgetIn,
             }}
           />

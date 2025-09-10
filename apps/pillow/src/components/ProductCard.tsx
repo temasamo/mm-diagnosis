@@ -20,8 +20,9 @@ type ProductCardProps = {
   explain?: {
     summarySentence?: string;
     chips?: string[];
-    allReasons?: { label: string; weight: number; evidence?: { userAnswer?: string; productFact?: string } }[];
+    table?: { label: string; badge: '◎'|'▲'; userAnswer: string; productFact: string }[];
     budgetIn?: boolean;
+    budget?: { price?: number | null; max?: number | undefined };
   };
 };
 
@@ -110,25 +111,26 @@ export default function ProductCard({ item, explain }: ProductCardProps) {
 
         {!!explain?.chips?.length && (
           <div className="mt-2 flex flex-wrap gap-1">
-            {explain.chips!.slice(0,3).map((c, i) => (
-              <span key={i} className="px-2 py-0.5 text-xs rounded-full border border-white/20 text-white/80">
+            {explain.chips.slice(0,3).map((c, i) => (
+              <span key={i} className="px-2 py-0.5 text-xs rounded-full border border-white/20">
                 {c}
               </span>
             ))}
           </div>
         )}
 
-        {!!explain?.allReasons?.length && (
-          <details className="mt-2">
-            <summary className="cursor-pointer text-sm underline text-white/70 hover:text-white/90">
-              詳しく
-            </summary>
-            <div className="mt-2 text-xs space-y-1">
-              {explain.allReasons!.map((r, i) => (
-                <div key={i} className="flex gap-2 border-b border-white/10 pb-1">
-                  <div className="min-w-28 text-white/80">{r.label}</div>
-                  <div className="min-w-10 text-white/60">{r.weight > 0 ? `+${r.weight}` : r.weight}</div>
-                  <div className="flex-1 opacity-80 text-white/60">{r.evidence?.userAnswer} / {r.evidence?.productFact}</div>
+        {!!explain?.table?.length && (
+          <details className="mt-3">
+            <summary className="cursor-pointer text-sm underline">詳しく</summary>
+            <div className="mt-2 text-xs divide-y divide-white/10">
+              {explain.table.map((r, i) => (
+                <div key={i} className="py-2 grid grid-cols-[8rem,2rem,1fr] gap-2">
+                  <div className="opacity-80">{r.label}</div>
+                  <div className={r.badge === '◎' ? 'text-green-400' : 'text-amber-300'}>{r.badge}</div>
+                  <div className="space-y-0.5">
+                    <div className="opacity-80">{r.userAnswer}</div>
+                    <div className="opacity-60">{r.productFact}</div>
+                  </div>
                 </div>
               ))}
             </div>
