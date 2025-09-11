@@ -1,9 +1,13 @@
 import dynamic from 'next/dynamic';
 
-const PrimaryExplainClient = dynamic(() => import('./PrimaryExplainClient'), { ssr: false });
+const PrimaryExplainClient = dynamic(
+  () => import('./PrimaryExplainClient'),
+  { ssr: false, loading: () => null } // クライアント専用・ちらつき防止
+);
 
-export default function PrimaryExplainGate() {
-  return process.env.NEXT_PUBLIC_FEATURE_PRIMARY_EXPLAIN === '1'
-    ? <PrimaryExplainClient />
-    : null;
+type Props = { profile: any };
+
+export default function PrimaryExplainGate({ profile }: Props) {
+  if (process.env.NEXT_PUBLIC_FEATURE_PRIMARY_EXPLAIN !== '1') return null;
+  return <PrimaryExplainClient profile={profile} />;
 }

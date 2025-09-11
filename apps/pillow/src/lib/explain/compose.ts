@@ -1,120 +1,69 @@
-import type { MatchDetails, Posture, Concern } from './match';
+// apps/pillow/src/lib/explain/compose.ts
+export function composeExplain(input: {
+  title: string; price: number|null;
+  profile: any; md: any; prod: any;
+}) {
+  const { profile, prod } = input;
 
-type ProductLike = { title: string; price?: number | null };
-type ProfileLike = {
-  posture?: Posture | '複合';
-  issues?: Concern[];
-  preferences?: { material?: string };
-  budget?: { max?: number };
-};
+  const postureLine = (() => {
+    if (profile?.posture === '横向き') return '横向き推奨の診断。';
+    if (profile?.posture === '仰向け') return '仰向け中心の診断。';
+    if (profile?.posture === 'うつ伏せ') return 'うつ伏せは低め推奨の診断。';
+    return '診断結果に基づく提案。';
+  })();
 
-export type ExplainPayload = {
-  summarySentence: string;
-  chips: string[];
-  table: Array<{
-    label: string;
-    badge: '◎' | '▲';
-    userAnswer: string;
-    productFact: string;
-  }>;
-  budgetIn?: boolean;
-  budget?: { price?: number | null; max?: number | undefined };
-};
+  const structurePhrase = (() => {
+    const s = prod?.structure;
+    if (s === 'contour') return '波型で首のカーブを支えます。';
+    if (s === 'center_dip') return '中央くぼみで頭が安定し、横向き移行もしやすい形状です。';
+    if (s === 'flat') return 'フラット形状で寝返りがしやすい設計です。';
+    return '扱いやすい汎用形状です。';
+  })();
 
-const posturePhrase = (p?: ProfileLike['posture']) =>
-  p === '横向き' ? '横向きで肩幅を支える高さ'
-: p === '仰向け' ? '仰向けで頚椎カーブを保つ高さ'
-: p === 'うつ伏せ' ? 'うつ伏せでも呼吸を妨げない低め'
-: 'あなたの寝姿勢に合う高さ';
+  const issuePhrase = (() => {
+    const issues: string[] = profile?.issues ?? [];
+    if (issues.includes('首痛')) return '頸椎サポートに配慮した作りです。';
+    if (issues.includes('肩こり')) return '肩幅を支えやすい高さ設計です。';
+    if (issues.includes('いびき')) return '横向き移行がしやすく気道確保に配慮。';
+    if (issues.includes('蒸れ')) return '通気性素材で熱こもりを抑えます。';
+    return '';
+  })();
 
-const topConcernPhrase = (c?: Concern) =>
-  c === '首痛'   ? '頚椎サポート'
-: c === 'いびき' ? '呼吸しやすい形状'
-: c === '肩こり' ? '肩圧分散'
-: c === '蒸れ'   ? '通気性'
-: undefined;
+  const materialPhrase = (() => {
+    const m = prod?.material;
+    if (m === 'highRebound') return '高反発で支えがしっかり。';
+    if (m === 'lowRebound') return '低反発で包み込む寝心地。';
+    if (m === 'latex') return 'ラテックスで反発が早く通気性も良好。';
+    return '';
+  })();
 
-export function composeExplain(
-  p: ProductLike,
-  profile: ProfileLike,
-  md: MatchDetails
-): ExplainPayload {
+  const adjustPhrase = prod?.adjustable ? '高さ調整つきで体格差にも対応。' : '';
 
-  const topConcern = md.concernMatches[0];
-  const second = topConcernPhrase(topConcern)
-              || (md.materialMatch && profile.preferences?.material
-                  ? `${profile.preferences.material}の好み`
-                  : undefined);
+  const price = typeof prod?.price === 'number' ? prod.price : null;
+  const max = profile?.budget?.max;
+  const budgetIn = (price != null && typeof max === 'number') ? price <= max : false;
+  const budgetPhrase = (max ? (budgetIn ? '価格は上限内。' : '上限を少し超えます。') : '');
 
-  const summarySentence = second
-    ? `「${posturePhrase(profile.posture)}」と「${second}」を重視して選定しました。`
-    : `「${posturePhrase(profile.posture)}」を重視して選定しました。`;
+  const sentence = [
+    postureLine,
+    [structurePhrase, issuePhrase || materialPhrase, adjustPhrase].filter(Boolean).join(' '),
+    budgetPhrase
+  ].filter(Boolean).join(' ');
 
-  // ---- chips（最大3）----
   const chips: string[] = [];
-  if (profile.posture === '横向き') chips.push('横向き対応');
-  if (profile.posture === '仰向け') chips.push('仰向け向き');
-  if (profile.posture === 'うつ伏せ') chips.push('低め（うつ伏せ）');
-
-  if (topConcern === '首痛') chips.push('頚椎サポート');
-  else if (topConcern === 'いびき') chips.push('呼吸しやすい形状');
-  else if (topConcern === '蒸れ') chips.push('通気性');
-  else if (topConcern === '肩こり') chips.push('肩圧分散');
-
-  if (md.materialMatch && profile.preferences?.material)
-    chips.push(`${profile.preferences.material}が好みに一致`);
-
-  const budgetIn = typeof md.budgetIn === 'boolean' ? md.budgetIn : undefined;
-  if (typeof budgetIn === 'boolean') chips.push(budgetIn ? '予算内' : '予算外');
-
-  // ---- table（あなたの回答 / 商品の根拠）----
-  const table: ExplainPayload['table'] = [];
-
-  table.push({
-    label: '姿勢に合致',
-    badge: '◎',
-    userAnswer: `あなたの回答：${profile.posture ?? '未回答'}`,
-    productFact: `商品の根拠：${md.postureEvidence.join('・') || '記載あり'}`
-  });
-
-  if (md.concernMatches.length) {
-    table.push({
-      label: 'お悩みに合致',
-      badge: '◎',
-      userAnswer: `あなたの回答：${(profile.issues ?? []).join('・')}`,
-      productFact: `商品の根拠：${md.concernEvidence.join('・')}`
-    });
-  }
-
-  if (md.materialMatch && profile.preferences?.material) {
-    table.push({
-      label: '素材の好みに合致',
-      badge: '◎',
-      userAnswer: `あなたの回答：${profile.preferences.material}`,
-      productFact: `商品の根拠：${md.materialEvidence ?? '記載あり'}`
-    });
-  }
-
-  if (typeof budgetIn === 'boolean') {
-    table.push({
-      label: budgetIn ? '予算内' : '予算外',
-      badge: budgetIn ? '◎' : '▲',
-      userAnswer: `上限：${formatJPY(profile.budget?.max)}`,
-      productFact: `価格：${formatJPY(p.price)}`
-    });
-  }
+  chips.push('姿勢◎');
+  const issues: string[] = profile?.issues ?? [];
+  if (issues.includes('首痛')) chips.push('首痛対策');
+  else if (issues.includes('肩こり')) chips.push('肩こり対策');
+  else if (issues.includes('いびき')) chips.push('いびき配慮');
+  else if (issues.includes('蒸れ')) chips.push('通気性');
+  if (max) chips.push(budgetIn ? '予算内' : '予算外');
 
   return {
-    summarySentence,
+    summarySentence: sentence, // ← ここをUIに表示
     chips: chips.slice(0, 3),
-    table,
+    table: input.md?.rows ?? [],
     budgetIn,
-    budget: { price: p.price, max: profile.budget?.max }
+    budget: { max, price }
   };
-}
-
-// シンプルな円表記
-function formatJPY(n?: number | null) {
-  if (typeof n !== 'number') return '-';
-  return `¥${n.toLocaleString('ja-JP')}`;
 }

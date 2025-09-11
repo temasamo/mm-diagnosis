@@ -22,6 +22,12 @@ type Answers = Record<string, any> & {
 };
 type Provisional = any;
 type Groups = any;
+type Item = any; // MallProduct(Item) に explain を含んだ配列
+
+type PrimaryExplain = {
+  layout: 'primary-explain-v1';
+  items: Item[]; // MallProduct(Item) に explain を含んだ配列
+};
 
 export type DiagState = {
   // 購入理由
@@ -37,6 +43,10 @@ export type DiagState = {
   setProvisional: (p: Provisional | null) => void;
   setGroups: (g: Groups | null) => void;
   reset: () => void;
+  
+  // primaryExplain 状態
+  primaryExplain: PrimaryExplain | null;
+  setPrimaryExplain: (v: PrimaryExplain | null) => void;
   
   // 診断結果用スナップショット取得
   getSnapshot: () => DiagSnapshot;
@@ -115,8 +125,13 @@ export const useDiagStore = create<DiagState>()(
         }, 
         provisional: null, 
         groups: null,
-        hasHydrated: false
+        hasHydrated: false,
+        primaryExplain: null,
       }),
+      
+      // primaryExplain 状態
+      primaryExplain: null,
+      setPrimaryExplain: (v) => set({ primaryExplain: v }),
       
       // 診断結果用スナップショット取得
       getSnapshot: () => {
@@ -197,4 +212,4 @@ export const useDiagStore = create<DiagState>()(
       },
     }
   )
-); 
+);
