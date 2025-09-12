@@ -22,7 +22,6 @@ import { isCover, isFurusato } from '@/app/api/search-cross/filters';
 import PrimaryExplainSection from '@/components/result/PrimaryExplainSection';
 import PrimaryExplainGate from '../components/result/PrimaryExplainGate';
 import ClientOnly from '@/components/ClientOnly';
-import { fetchRecommend } from './service';
 
 
 const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK === '1';
@@ -214,7 +213,6 @@ export default function ResultPage() {
         const profile = buildProfileFromAnswers(answers);
         const baseUrl = typeof window !== 'undefined' ? '' : (process.env.NEXT_PUBLIC_BASE_URL ?? '');
         
-        const json = await fetchRecommend(body);
         
         if (res.ok) {
           const apiData = await res.json();

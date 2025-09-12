@@ -9,5 +9,5 @@ type Props = { profile: any };
 
 export default function PrimaryExplainGate({ profile }: Props) {
   if (process.env.NEXT_PUBLIC_FEATURE_PRIMARY_EXPLAIN !== '1') return null;
-  return <PrimaryExplainClient profile={profile} />;
+  return <PrimaryExplainClient profile={profile　?? {}} />;
 }

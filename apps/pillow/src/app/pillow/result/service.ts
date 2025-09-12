@@ -1,11 +1,11 @@
-import { useDiagStore } from '../../../../lib/state/diagStore';
+'use client';
 
-function ensureItems(pe: any) {
-  // 今はそのまま返す。将来 items=0 のときランキング1件を補うならここで加工。
-  return pe;
-}
+import { useDiagStore } from '@lib/state/diagStore';
 
-export async function fetchRecommendAndStore(body: any) {
+type RecommendBody = any;
+type RecommendJson = { primaryExplain?: any; items?: any[]; [k: string]: any };
+
+export async function fetchRecommendAndStore(body: RecommendBody) {
   try {
     const res = await fetch('/api/recommend', {
       method: 'POST',
@@ -13,9 +13,9 @@ export async function fetchRecommendAndStore(body: any) {
       body: JSON.stringify(body ?? {}),
     });
 
-    let json: any = null;
+    let json: RecommendJson | null = null;
     try {
-      json = await res.json();            // 500でもJSONが返れば読む
+      json = await res.json(); // 500 でも JSON を返すよう API を実装済み
     } catch (e) {
       console.error('recommend parse failed', e);
     }
@@ -24,7 +24,7 @@ export async function fetchRecommendAndStore(body: any) {
       console.error('recommend fetch failed', res.status);
     }
 
-    // primaryExplain が無ければ null で埋める（UIは非表示になる）
+    // store へ反映（なければ null を入れて UI 非表示に）
     useDiagStore.getState().setPrimaryExplain(json?.primaryExplain ?? null);
     return json;
   } catch (e) {
