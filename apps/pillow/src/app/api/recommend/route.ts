@@ -20,6 +20,36 @@ type RecommendBody = {
   };
 };
 
+type Profile = {
+  postures?: string[];
+  concerns?: string[];
+  pillowMaterial?: string[];
+  budget?: { max?: number };
+};
+
+const jp = {
+  posture: (s: string) => ({ supine: '仰向け', side: '横向き', prone: 'うつ伏せ', free: '寝返り多め' }[s] ?? s),
+  concern: (s: string) => ({ neck: '首', shoulder: '肩', snore: 'いびき', heat: '蒸れ' }[s] ?? s),
+};
+
+const formatBudget = (b?: { max?: number }) =>
+  b?.max ? `（ご予算上限 ${Number(b.max).toLocaleString()}円）` : '';
+
+function generatePrimaryComment(profile: Profile, p: any) {
+  const poses = (profile.postures ?? []).map(jp.posture).join('／');
+  const concerns = (profile.concerns ?? []).map(jp.concern).join('・');
+  const materials = (profile.pillowMaterial ?? []).join('・');
+
+  const lines: string[] = [];
+  lines.push(`${poses || '幅広い体勢'}向けにバランスよく合いやすい${p.title ?? '枕'}です。`);
+  if (concerns) lines.push(`${concerns}に配慮した設計です。`);
+  if (materials) lines.push(`${materials}系の質感がお好みの方に。`);
+  if (p.height || p.firmness) lines.push(`高さ${p.height ?? '中'}／硬さ${p.firmness ?? '中'}の設定。`);
+  const budget = formatBudget(profile.budget);
+  if (budget) lines.push(budget);
+  return lines.join(' ');
+}
+
 // キーワード構築関数（例）
 function buildKeyword(signals: any): string {
   return "枕"; // 簡易実装
@@ -157,6 +187,12 @@ export async function POST(req: Request) {
               md
             );
             return {
+              id: prod.id,
+              title: prod.title,
+              comment: exp.summarySentence,  // ← 新規追加：コメント
+              imageUrl: prod.image,          // ← 新規追加：画像URL
+              tags: exp.chips,               // ← 新規追加：タグ
+              // 既存フィールドも保持（互換性のため）
               ...prod,
               explain: {
                 summarySentence: exp.summarySentence,
