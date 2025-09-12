@@ -93,7 +93,7 @@ export default function PrimaryExplainSection({ data }: Props) {
               <div className="mt-3">
                 <h4 className="text-base font-semibold">{title}</h4>
                 <p className="mt-2 text-sm opacity-80 leading-relaxed">
-                  {comment}
+                  {comment?.trim() || "あなたの回答（姿勢・悩み）に合わせて、高さを微調整できる高反発系の枕を第一候補に選定しました。"}
                 </p>
 
                 {!!chips.length && (

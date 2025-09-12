@@ -21,34 +21,151 @@ type RecommendBody = {
 };
 
 type Profile = {
-  postures?: string[];
-  concerns?: string[];
-  pillowMaterial?: string[];
+  postures?: string[];         // ['supine','side','prone']
+  roll?: 'low'|'normal'|'high' | string; // 寝返り頻度(内部で正規化)
+  snore?: 'none'|'sometimes'|'often' | string;
+  concerns?: string[];         // ['neck','shoulder','migraine','straight-neck', ...]
+  mattressFirmness?: 'soft'|'medium'|'firm'|string;
   budget?: { max?: number };
+  prefers?: {
+    adjustable?: boolean;
+    material?: string[];       // ['latex','high-rebound','low-rebound', ...]
+    size?: 'std'|'large'|'small'|string;
+  };
 };
 
-const jp = {
-  posture: (s: string) => ({ supine: '仰向け', side: '横向き', prone: 'うつ伏せ', free: '寝返り多め' }[s] ?? s),
-  concern: (s: string) => ({ neck: '首', shoulder: '肩', snore: 'いびき', heat: '蒸れ' }[s] ?? s),
+type ItemMeta = {
+  id?: string;
+  title?: string;
+  imageUrl?: string|null;
+  heightCm?: number | { head?: number; neck?: number };
+  firmness?: 'soft'|'medium'|'firm'|string;
+  material?: string;           // 'latex'|'high-rebound'|'low-rebound'|'pipe'|'feather'...
+  shape?: 'center-dent'|'wave'|'flat'|string;
+  breathable?: boolean;
+  washable?: boolean;
+  tags?: string[];
+  comment?: string;
 };
 
-const formatBudget = (b?: { max?: number }) =>
-  b?.max ? `（ご予算上限 ${Number(b.max).toLocaleString()}円）` : '';
-
-function generatePrimaryComment(profile: Profile, p: any) {
-  const poses = (profile.postures ?? []).map(jp.posture).join('／');
-  const concerns = (profile.concerns ?? []).map(jp.concern).join('・');
-  const materials = (profile.pillowMaterial ?? []).join('・');
-
-  const lines: string[] = [];
-  lines.push(`${poses || '幅広い体勢'}向けにバランスよく合いやすい${p.title ?? '枕'}です。`);
-  if (concerns) lines.push(`${concerns}に配慮した設計です。`);
-  if (materials) lines.push(`${materials}系の質感がお好みの方に。`);
-  if (p.height || p.firmness) lines.push(`高さ${p.height ?? '中'}／硬さ${p.firmness ?? '中'}の設定。`);
-  const budget = formatBudget(profile.budget);
-  if (budget) lines.push(budget);
-  return lines.join(' ');
+function normalize(v?: string) {
+  return (v || '').toLowerCase();
 }
+
+function has<T>(arr: T[]|undefined, v: T) {
+  return Array.isArray(arr) && arr.includes(v);
+}
+
+function isSupine(profile: Profile) {
+  return has(profile.postures, 'supine') || has(profile.postures, '仰向け');
+}
+function isSide(profile: Profile) {
+  return has(profile.postures, 'side') || has(profile.postures, '横向き');
+}
+function lowRoll(profile: Profile) {
+  const r = normalize(profile.roll || '');
+  return r.includes('low') || r.includes('ほとんどしない');
+}
+function snoresSometimes(profile: Profile) {
+  const s = normalize(profile.snore || '');
+  return s.includes('sometimes') || s.includes('時々');
+}
+function prefersHighRebound(profile: Profile) {
+  const m = profile.prefers?.material?.map(normalize) || [];
+  return m.includes('high-rebound') || m.includes('高反発') || m.includes('latex') || m.includes('ラテックス');
+}
+
+function yen(n?: number) {
+  if (!n) return '';
+  return `ご予算は上限${n.toLocaleString()}円`;
+}
+
+/** 1〜3文で返す。商品メタが薄くても成立するように設計 */
+export function generatePrimaryComment(profile: Profile, p: ItemMeta): string {
+  // 収集したヒント
+  const supine = isSupine(profile);
+  const side = isSide(profile);
+  const lowroll = lowRoll(profile);
+  const snoreSome = snoresSometimes(profile);
+  const highReb = prefersHighRebound(profile);
+  const conc = (profile.concerns || []).map(normalize);
+
+  const mat = normalize(p.material || '');
+  const firm = normalize(p.firmness || '');
+  const shape = normalize(p.shape || '');
+  const heightHead = typeof p.heightCm === 'number' ? p.heightCm : (p.heightCm as any)?.head;
+  const heightNeck = typeof p.heightCm === 'number' ? undefined : (p.heightCm as any)?.neck;
+
+  // 文1: 体勢 × 形状 × 反発 （核心）
+  const s1Parts: string[] = [];
+  if (supine && shape.includes('center')) {
+    s1Parts.push('仰向け中心でも後頭部が安定しやすい「中央くぼみ」構造');
+  } else if (side && shape.includes('wave')) {
+    s1Parts.push('横向き時に肩幅の隙間を埋めるサイド高めの波型');
+  } else if (shape) {
+    s1Parts.push(`体勢に馴染みやすい${shape}形状`);
+  }
+
+  if (highReb || mat.includes('latex') || mat.includes('高反発')) {
+    s1Parts.push('高反発コアで沈み込み過ぎを抑え、頸椎のラインをキープ');
+  } else if (mat.includes('低反発')) {
+    s1Parts.push('低反発フォームで頭部を包み込み、圧を分散');
+  }
+
+  if (s1Parts.length === 0) {
+    s1Parts.push('反発と形状のバランスで首をまっすぐ保ちやすい設計');
+  }
+  const s1 = ' ' + s1Parts.join('・') + '。';
+
+  // 文2: 高さ/硬さ × 悩み × いびき/寝返り
+  const s2Parts: string[] = [];
+  if (heightHead) {
+    s2Parts.push(`後頭部の目安高さは約${Math.round(heightHead)}cm`);
+  }
+  if (heightNeck) {
+    s2Parts.push(`首元は＋${Math.round(heightNeck)}cmで頸椎カーブをサポート`);
+  }
+  if (firm) {
+    const jp = firm.includes('firm') ? 'やや硬め' : firm.includes('soft') ? 'やわらかめ' : '標準の硬さ';
+    s2Parts.push(jp);
+  }
+  if (lowroll) s2Parts.push('寝返りが少なくても頭が落ちにくい復元性');
+  if (snoreSome) s2Parts.push('横向き移行時にも気道を確保しやすい厚み');
+
+  if (conc.includes('neck') || conc.includes('首')) {
+    s2Parts.push('起床時の首の張りを軽減する支え方');
+  }
+  const s2 = s2Parts.length ? ' ' + s2Parts.join('・') + '。' : '';
+
+  // 文3: 使い勝手（調整/通気/洗える/予算）
+  const s3Parts: string[] = [];
+  if (p.breathable) s3Parts.push('通気孔でムレを抑制');
+  if (p.washable) s3Parts.push('カバーは洗えて清潔を保ちやすい');
+  if (profile.prefers?.adjustable) s3Parts.push('付属のシートで高さ微調整が可能');
+  if (profile.budget?.max) s3Parts.push(yen(profile.budget.max));
+  const s3 = s3Parts.length ? ' ' + s3Parts.filter(Boolean).join('。') + '。' : '';
+
+  // 仕上げ（1〜3文に収める）
+  const out = (s1 + s2 + s3).trim();
+  // 最低限のフォールバック
+  return out || '仰向け中心のプロファイルに合わせて首の自然なカーブを支え、高反発の復元性で沈み込みを抑える設計です。高さは付属シートで微調整できます。';
+}
+
+export function buildDiagnosisComment(profile: Profile): string {
+  const base: string[] = [];
+  if (isSupine(profile) && lowRoll(profile)) {
+    base.push('仰向け中心で寝返りが少ないため、中央くぼみ＋首元やや高めの設計が安心です');
+  }
+  if (snoresSometimes(profile)) {
+    base.push('横向きに移っても呼吸が楽な厚みを確保できる形状が向きます');
+  }
+  if (prefersHighRebound(profile)) {
+    base.push('高反発の復元性は沈み込み過ぎを抑え、頸椎のラインを保持しやすくします');
+  }
+  base.push('高さ調整シートで微調整できるモデルを選ぶと適合度が上がります');
+  return base.join('。') + '。';
+}
+
 
 // キーワード構築関数（例）
 function buildKeyword(signals: any): string {
@@ -158,63 +275,53 @@ export async function POST(req: Request) {
           // 既存の第一候補集合から、上位3件を採用（picks 先頭から）
           const primaryList = picks.slice(0, 3);
 
-          // プロフィール情報を構築
-          const profile = {
-            posture: body?.postures?.[0] === 'side' ? '横向き' as const :
-                     body?.postures?.[0] === 'supine' ? '仰向け' as const :
-                     body?.postures?.[0] === 'prone' ? 'うつ伏せ' as const : undefined,
-            issues: body?.concerns?.map((c: string) => {
-              if (c === 'neck') return '首痛' as const;
-              if (c === 'shoulder') return '肩こり' as const;
-              if (c === 'headache') return '頭痛' as const;
-              if (c === 'snore') return 'いびき' as const;
-              if (c === 'heat_sweat') return '蒸れ' as const;
-              return c as any;
-            }),
-            preferences: {
-              material: body?.pillowMaterial?.[0]
-            },
-            budget: {
-              max: 10000 // デフォルト値
+          // プロフィール情報を新しいProfile型に合わせて構築
+          const profile: Profile = {
+            postures: body?.postures || [],
+            roll: body?.roll || 'normal',
+            snore: body?.snore || 'none',
+            concerns: body?.concerns || [],
+            mattressFirmness: body?.mattressFirmness || 'medium',
+            budget: { max: body?.budget?.max || 10000 },
+            prefers: {
+              adjustable: body?.prefers?.adjustable || false,
+              material: body?.prefers?.material || body?.pillowMaterial || [],
+              size: body?.prefers?.size || 'std'
             }
           };
 
-          const explained = primaryList.map((prod: any) => {
-            const md   = buildMatchDetails(prod, profile);
-            const exp  = composeExplain(
-              { title: prod.title, price: typeof prod.price === "number" ? prod.price : null },
-              profile,
-              md
-            );
-            return {
-              id: prod.id,
-              title: prod.title,
-              comment: exp.summarySentence,  // ← 新規追加：コメント
-              imageUrl: prod.image,          // ← 新規追加：画像URL
-              tags: exp.chips,               // ← 新規追加：タグ
-              // 既存フィールドも保持（互換性のため）
-              ...prod,
-              explain: {
-                summarySentence: exp.summarySentence,
-                chips: exp.chips,
-                table: exp.table,
-                budgetIn: exp.budgetIn,
-                budget: exp.budget
-              }
+          const items: ItemMeta[] = primaryList.map((p: any, i: number) => {
+            const item: ItemMeta = {
+              id: p.id ?? p.sku ?? `item-${i}`,
+              title: p.title ?? p.name ?? p.label ?? `候補 ${i + 1}`,
+              imageUrl: p.imageUrl ?? p.image?.url ?? p.cover ?? p.thumbnail ?? null,
+              heightCm: p.heightCm ?? p.height ?? undefined,
+              firmness: p.firmness ?? p.hardness ?? undefined,
+              material: p.material ?? p.core ?? undefined,
+              shape: p.shape ?? p.form ?? undefined,
+              breathable: Boolean(p.breathable ?? p.vent ?? p.airHole),
+              washable: Boolean(p.washable ?? p.wash ?? p.coverWashable),
+              tags: p.tags ?? [],
+              comment: p.comment, // いったん入れてから…
             };
+            if (!item.comment) {
+              item.comment = generatePrimaryComment(profile, item);
+            }
+            return item;
           });
 
-          primaryExplain = explained.length ? { layout: 'primary-explain-v1', items: explained } : null;
+          primaryExplain = items.length ? { layout: 'primary-explain-v1', items } : null;
         }
       } catch (e) {
         console.error('[primaryExplain] compose failed', e);
         primaryExplain = null;
       }
 
-      // 既存の return に追加フィールドをマージ
+      // 確実にprimaryExplainを返す
       return NextResponse.json({
-        ...responseBody,
-        ...(FEATURE ? { primaryExplain } : {}), // flag OFFならキー自体返さない
+        primaryExplain: primaryExplain || { layout: 'primary-explain-v1', items: [] },
+        groups: responseBody?.groups ?? {},   // 既存
+        ...responseBody
       }, { 
         headers: { 'Cache-Control': 'no-store' }
       });
