@@ -1,85 +1,114 @@
 'use client';
 
 import Image from 'next/image';
-import Link from 'next/link';
+import { useMemo, useState } from 'react';
 
-// --- chip order utils: 姿勢 → 悩み → 調整 → 素材 → サイズ → 予算 ---
-const CHIP_ORDER: Array<{ key: string; test: (s: string) => boolean }> = [
-  { key: '姿勢',  test: s => /仰向け|横向き|うつ伏せ|寝返り/.test(s) },
-  { key: '悩み',  test: s => /首|肩|いびき|頭痛|ストレートネック|高さが合わない|へたり/.test(s) },
-  { key: '調整',  test: s => /調整/.test(s) },
-  { key: '素材',  test: s => /低反発|高反発|ラテックス|羽毛|パイプ|ビーズ|ポリエステル/.test(s) },
-  { key: 'サイズ', test: s => /大きめ|標準|小さめ/.test(s) },
-  { key: '予算',  test: s => /予算/.test(s) },
-];
-const chipScore = (s: string) => {
-  const i = CHIP_ORDER.findIndex(x => x.test(s));
-  return i === -1 ? 999 : i;
+// 型はざっくりでOK（実データが増えたら都度拡張）
+type PrimaryExplainItem = {
+  id?: string | number;
+  title?: string;
+  comment?: string;            // ← API にあれば使用。なければ fallback 生成
+  imageUrl?: string;           // ← API にあれば使用
+  tags?: string[];
+  // 互換用の候補フィールド
+  description?: string;
+  reason?: string;
+  cover?: string;
 };
-// 安全な安定ソート（同カテゴリ内は元の順番を維持）
-function sortChips(chips: string[] = []): string[] {
-  return [...chips]
-    .map((c, i) => ({ c, i }))
-    .sort((a, b) => {
-      const sa = chipScore(a.c), sb = chipScore(b.c);
-      if (sa !== sb) return sa - sb;
-      return a.i - b.i;
-    })
-    .map(x => x.c);
+type PrimaryExplain = {
+  items?: PrimaryExplainItem[];
+};
+
+type Props = { data?: PrimaryExplain | null };
+
+function useFallbackComment(it: PrimaryExplainItem) {
+  return useMemo(() => {
+    // 既存の description/reason のどちらかを優先
+    const raw =
+      it.comment?.trim() ||
+      it.description?.trim() ||
+      it.reason?.trim();
+
+    if (raw) return raw;
+
+    // 最低限の既定文
+    return '診断結果に基づく提案。扱いやすい汎用形状です。';
+  }, [it.comment, it.description, it.reason]);
 }
 
-type Item = any;
+function useBestImage(it: PrimaryExplainItem) {
+  // imageUrl / cover の順で利用、無ければ /placeholder.png
+  return it.imageUrl || it.cover || '/placeholder.png';
+}
 
-export default function PrimaryExplainSection({ data }: { data: any }) {
-  const debug = process.env.NEXT_PUBLIC_DEBUG_PRIMARY_EXPLAIN === '1';
-  const items: Item[] = data?.items ?? [];
-
-  if (!Array.isArray(items) || items.length === 0) return null;
+function CardImage({ src, alt }: { src: string; alt: string }) {
+  const [fallback, setFallback] = useState(false);
+  const show = fallback ? '/placeholder.png' : src;
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      {items.map((p: Item) => {
-        const chips = sortChips(p.explain?.chips ?? []);
-        return (
-          <article key={p.id} className="rounded-2xl overflow-hidden bg-white/5 border border-white/10">
-            <div className="relative aspect-[4/3] bg-black/20">
-              {p.image ? (
-                <Image src={p.image} alt={p.title} fill className="object-cover" />
-              ) : (
-                <div className="absolute inset-0 grid place-content-center text-xs text-white/40">No image</div>
-              )}
-            </div>
-
-            <div className="p-4 space-y-2">
-              <h3 className="text-base font-semibold line-clamp-2">{p.title}</h3>
-
-              <p className="text-sm text-white/80 leading-relaxed line-clamp-3">
-                {p.explain?.summarySentence ?? '診断結果に基づき総合的に適合する候補です。'}
-              </p>
-
-              {!!chips.length && (
-                <div className="flex flex-wrap gap-1">
-                  {chips.slice(0, 3).map((c) => (
-                    <span key={c} className="px-2 py-0.5 text-xs rounded-full bg-white/10 border border-white/10">
-                      {c}
-                    </span>
-                  ))}
-                </div>
-              )}
-
-              {debug && (
-                <details className="mt-2 text-xs opacity-70">
-                  <summary className="cursor-pointer">詳しく（DEBUG）</summary>
-                  <pre className="mt-1 max-h-40 overflow-auto text-[11px] opacity-70">
-                    {JSON.stringify(p.explain?.table, null, 2)}
-                  </pre>
-                </details>
-              )}
-            </div>
-          </article>
-        );
-      })}
+    <div className="relative aspect-[4/3] w-full overflow-hidden rounded-xl bg-white/5 ring-1 ring-white/10">
+      {/* Next/Image は onError でフェイルオーバ */}
+      <Image
+        src={show}
+        alt={alt || 'item image'}
+        fill
+        sizes="(max-width: 640px) 100vw, 50vw"
+        style={{ objectFit: 'cover' }}
+        onError={() => setFallback(true)}
+        priority={false}
+      />
     </div>
   );
 }
 
+export default function PrimaryExplainSection({ data }: Props) {
+  const items = data?.items ?? [];
+
+  if (!items.length) return null;
+
+  return (
+    <section className="mt-8">
+      <h3 className="text-xl font-semibold tracking-wide mb-3">
+        第一候補セクション
+      </h3>
+
+      <div className="grid gap-6 sm:grid-cols-2">
+        {items.map((it, idx) => {
+          const title = it.title || `候補 ${idx + 1}`;
+          const comment = useFallbackComment(it);
+          const image = useBestImage(it);
+          const chips = it.tags ?? [];
+
+          return (
+            <article
+              key={it.id ?? idx}
+              className="rounded-2xl border border-white/10 bg-white/5 p-4 shadow-sm"
+            >
+              <CardImage src={image} alt={title} />
+
+              <div className="mt-3">
+                <h4 className="text-base font-semibold">{title}</h4>
+                <p className="mt-2 text-sm opacity-80 leading-relaxed">
+                  {comment}
+                </p>
+
+                {!!chips.length && (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {chips.slice(0, 5).map((c, i) => (
+                      <span
+                        key={`${c}-${i}`}
+                        className="px-2 py-1 text-xs rounded-full bg-white/10 border border-white/10"
+                      >
+                        {c}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </article>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
