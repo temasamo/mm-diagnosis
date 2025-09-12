@@ -14,6 +14,9 @@ const nextConfig = {
       { protocol: 'https', hostname: 'shopping.c.yimg.jp' },
       { protocol: 'https', hostname: 'item-shopping.c.yimg.jp' },
       { protocol: 'https', hostname: '**.yimg.jp' },
+      { protocol: 'https', hostname: '**.shopping.yahoo.co.jp' },
+      // AWS
+      { protocol: 'https', hostname: '**.amazonaws.com' },
     ],
   },
   async redirects() {
@@ -32,4 +35,4 @@ const nextConfig = {
   },
 };
 
-module.exports = nextConfig; 
+module.exports = nextConfig;

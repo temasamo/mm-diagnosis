@@ -3,6 +3,9 @@
 import Image from 'next/image';
 import { useMemo, useState } from 'react';
 
+// [Stub] という接頭辞を見つけたら外す
+const stripStub = (s?: string) => (s ?? '').replace(/^\s*\[Stub\]\s*/i, '');
+
 // 型はざっくりでOK（実データが増えたら都度拡張）
 type PrimaryExplainItem = {
   id?: string | number;
@@ -74,7 +77,8 @@ export default function PrimaryExplainSection({ data }: Props) {
 
       <div className="grid gap-6 sm:grid-cols-2">
         {items.map((it, idx) => {
-          const title = it.title || `候補 ${idx + 1}`;
+          const rawTitle = it.title ?? `候補 ${idx + 1}`;
+          const title = stripStub(rawTitle);
           const comment = useFallbackComment(it);
           const image = useBestImage(it);
           const chips = it.tags ?? [];
