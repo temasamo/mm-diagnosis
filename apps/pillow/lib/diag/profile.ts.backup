@@ -1,5 +1,3 @@
-import { toBudgetRange } from '@/lib/recommend/budget';
-
 export type Profile = {
   height?: "low" | "normal" | "high" | "adjustable";
   firmness?: "soft" | "medium" | "hard";
@@ -8,7 +6,6 @@ export type Profile = {
   complaints: string[]; // 例: ["首・肩が痛い","蒸れる/暑い"]
   purchaseReason?: string; // 使っている枕が合わない / より質の良いものを探したい
   budgetBand?: "low" | "mid" | "high"; // 任意: 価格帯を使うなら
-  budget?: { min?: number; max?: number }; // ★ 追加
 };
 
 // diagStore（既存）の回答からプロファイル作成
@@ -54,9 +51,6 @@ export function buildProfileFromAnswers(a: any): Profile {
 
   p.purchaseReason = a?.purchaseReason;
   p.budgetBand = a?.budgetBand; // 任意
-  
-  // ★ budgetフィールドを追加
-  p.budget = toBudgetRange(a);
 
   return p;
-}
+} 
