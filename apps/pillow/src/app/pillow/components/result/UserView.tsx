@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { buildDiagnosisComment } from '@/app/api/recommend/route';
 import { pickTopChips, problemsToBullets, buildComment } from './presenters';
 
 // ❶ 補助: 文字や真偽を yes/true 判定に寄せる

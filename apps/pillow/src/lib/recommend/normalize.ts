@@ -1,71 +1,70 @@
-import { parsePriceJpy, priceToBandId, type PriceBandId } from './priceBand';
-
-export type Product = {
-  id: string; title: string; price: number; mall: "rakuten"|"yahoo"|"amazon";
-  url: string; thumb?: string;
-  heightClass: "low"|"mid"|"high";
-  firmness: "soft"|"medium"|"firm";
-  materialClass: "HR"|"LR"|"latex"|"pipe"|"feather"|"beads"|"poly"|"gel-grid";
-  shape: ("flat"|"contour"|"grid"|"wave"|"ear-dent"|"adjustable")[];
-  tags: ("vent"|"cooling"|"washable"|"neck-plain"|"anti-snore"|"wide"|"anti-dust")[];
-  review: { stars:number; count:number };
-  priceNum?: number | null;
-  priceBandId?: PriceBandId;
+// --- ItemMeta 定義 ---
+export type ItemMeta = {
+  id: string;
+  title: string;
+  url?: string;
+  imageUrl?: string | null;
+  priceYen?: number;
+  material?: string;            // 'latex'|'high-rebound'|'low-rebound'|'pipe'|'feather'|'polyester'|'beads'|'buckwheat'|'other'
+  firmness?: string;            // 'soft'|'medium'|'firm'
+  heightCm?: number | { head?: number; neck?: number };
+  shape?: string;               // 'center-dent'|'wave'|'flat'
+  breathable?: boolean;
+  washable?: boolean;
+  tags?: string[];
+  comment?: string;
 };
 
-const re = (s:string, ...words:string[]) => words.some(w=>new RegExp(w,"i").test(s));
+// --- テキストから属性推定（タイトル/説明を渡す） ---
+export function enrichFromText(base: ItemMeta, text: string): ItemMeta {
+  const t = (text || '').toLowerCase();
+  const set = (k: keyof ItemMeta, v: any) => (base as any)[k] ??= v;
 
-export function normalize(raw:any, mall: Product["mall"]): Product {
-  const t = String(raw.title || "");
-  const price = Number(raw.price || raw.sellingPrice || 0);
-  const tags: Product["tags"] = [];
-  const shape: Product["shape"] = [];
+  if (/ラテックス|latex/.test(t)) set('material','latex');
+  else if (/高反発/.test(t)) set('material','high-rebound');
+  else if (/低反発/.test(t)) set('material','low-rebound');
+  else if (/パイプ/.test(t)) set('material','pipe');
+  else if (/羽毛|ﾌｪｻﾞ|feather/.test(t)) set('material','feather');
+  else if (/ﾎﾟﾘｴｽﾃﾙ|polyester/.test(t)) set('material','polyester');
+  else if (/ﾋﾞｰｽﾞ|beads/.test(t)) set('material','beads');
+  else if (/そば殻/.test(t)) set('material','buckwheat');
 
-  // 高さ
-  const height:Product["heightClass"] =
-    re(t,"低め","low") ? "low" :
-    re(t,"高め","high") ? "high" : "mid";
+  if (/中央くぼみ|ｾﾝﾀｰくぼみ/.test(t)) set('shape','center-dent');
+  else if (/波型|ｳｪｰﾌﾞ/.test(t)) set('shape','wave');
 
-  // 硬さ
-  const firmness:Product["firmness"] =
-    re(t,"硬め","firm") ? "firm" :
-    re(t,"柔らか","soft") ? "soft" : "medium";
+  if (/通気|ｴｱﾎｰﾙ|ﾒｯｼｭ/.test(t)) set('breathable', true);
+  if (/洗える|丸洗い|ｳｫｯｼｬﾌﾞﾙ/.test(t)) set('washable', true);
 
-  // 素材
-  const material:Product["materialClass"] =
-    re(t,"高反発") ? "HR" :
-    re(t,"低反発") ? "LR" :
-    re(t,"ラテックス") ? "latex" :
-    re(t,"パイプ") ? "pipe" :
-    re(t,"羽毛|フェザー") ? "feather" :
-    re(t,"ビーズ") ? "beads" :
-    re(t,"ジェル|格子|グリッド") ? "gel-grid" :
-    re(t,"ポリエステル|綿|中綿") ? "poly" : "HR";
+  if (/硬め|ﾊｰﾄﾞ/.test(t)) set('firmness','firm');
+  else if (/やわらか|ｿﾌﾄ/.test(t)) set('firmness','soft');
+  else set('firmness', base.firmness ?? 'medium');
 
-  // 形状・特徴
-  if (re(t,"グリッド|格子")) shape.push("grid");
-  if (re(t,"波|ウェーブ|くぼみ")) shape.push("wave");
-  if (re(t,"調整|高さ調整|シート追加")) shape.push("adjustable");
-  if (re(t,"通気|メッシュ|エア|COOL|冷感")) tags.push("vent","cooling");
-  if (re(t,"洗濯|丸洗い|ウォッシャブル")) tags.push("washable");
-  if (re(t,"いびき|スノア")) tags.push("anti-snore");
-  if (re(t,"防ダニ|抗菌")) tags.push("anti-dust");
-  if (re(t,"面で支える|フラット")) tags.push("neck-plain");
+  return base;
+}
 
-  const review = { stars: Number(raw.stars||raw.rating||4), count: Number(raw.reviews||raw.reviewCount||10) };
-
-  // 価格バンド情報を追加
-  const priceNum = parsePriceJpy(price);
-  const priceBandId = priceNum != null ? priceToBandId(priceNum) : undefined;
-
-  return {
-    id: String(raw.id || raw.code || raw.asin || t),
-    title: t, price, mall,
-    url: raw.url || raw.productUrl || "#",
-    thumb: raw.image || raw.thumbnail,
-    heightClass: height, firmness, materialClass: material,
-    shape: [...new Set(shape)], tags: [...new Set(tags)], review,
-    priceNum,
-    priceBandId,
+// --- Rakuten → ItemMeta ---
+export function rakutenToItem(r: any): ItemMeta {
+  const base: ItemMeta = {
+    id: r.itemCode,
+    title: r.itemName,
+    url: r.itemUrl,
+    imageUrl: r.mediumImageUrls?.[0]?.imageUrl ?? r.smallImageUrls?.[0]?.imageUrl ?? null,
+    priceYen: Number(r.itemPrice),
+    tags: r.shopName ? ['shop:' + r.shopName] : [],
   };
-} 
+  return enrichFromText(base, `${r.itemName} ${r.catchcopy ?? ''}`);
+}
+
+// --- Yahoo → ItemMeta ---
+export function yahooToItem(y: any): ItemMeta {
+  const img = y.images?.[0]?.medium ?? y.images?.[0]?.original ?? null;
+  const base: ItemMeta = {
+    id: y.code,
+    title: y.name,
+    url: y.url,
+    imageUrl: img,
+    priceYen: Number(y.price ?? y.prices?.[0]?.price),
+    tags: y.seller?.name ? ['shop:' + y.seller.name] : [],
+  };
+  return enrichFromText(base, `${y.name} ${y.excerpt ?? ''}`);
+}

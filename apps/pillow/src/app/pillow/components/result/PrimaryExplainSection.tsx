@@ -93,7 +93,11 @@ export default function PrimaryExplainSection({ data }: Props) {
               <div className="mt-3">
                 <h4 className="text-base font-semibold">{title}</h4>
                 <p className="mt-2 text-sm opacity-80 leading-relaxed">
-                  {comment?.trim() || "あなたの回答（姿勢・悩み）に合わせて、高さを微調整できる高反発系の枕を第一候補に選定しました。"}
+                {/* タイトルの近くに価格があれば表示（デバッグ用でもOK） */}
+                {it.priceYen ? (
+                  <div className="text-sm opacity-80">¥{it.priceYen.toLocaleString()}</div>
+                ) : null}
+                  {comment?.trim() || "あなたの回答に合わせて、高さを微調整できる高反発系の第一候補を選定しました。"}
                 </p>
 
                 {!!chips.length && (

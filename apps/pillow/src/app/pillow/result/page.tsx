@@ -21,6 +21,7 @@ import type { SearchItem } from "../../../../lib/malls/types";
 import { isCover, isFurusato } from '@/app/api/search-cross/filters';
 import PrimaryExplainSection from '@/components/result/PrimaryExplainSection';
 import PrimaryExplainGate from '../components/result/PrimaryExplainGate';
+import PrimaryExplainClient from '../components/result/PrimaryExplainClient';
 import ClientOnly from '@/components/ClientOnly';
 
 
@@ -576,7 +577,7 @@ export default function ResultPage() {
           )}
 
 　　　　　　{/* --- 理由つき第一候補セクション(新機能: Client版) --- */}
-　　　　　　<PrimaryExplainGate />
+　　　　　　<PrimaryExplainGate><PrimaryExplainClient profile={buildProfileFromAnswers(answers)} /></PrimaryExplainGate>
 
           {/* --- 既存のグループ表示 --- */}
           {!disableProposals && !loading && groups && !isEmptyGroups(groups) && (
