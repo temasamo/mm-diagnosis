@@ -12,6 +12,7 @@ type PrimaryExplainItem = {
   title?: string;
   comment?: string;            // ← API にあれば使用。なければ fallback 生成
   imageUrl?: string;           // ← API にあれば使用
+  priceYen?: number;           // ← 価格情報
   tags?: string[];
   // 互換用の候補フィールド
   description?: string;
@@ -92,12 +93,12 @@ export default function PrimaryExplainSection({ data }: Props) {
 
               <div className="mt-3">
                 <h4 className="text-base font-semibold">{title}</h4>
-                <p className="mt-2 text-sm opacity-80 leading-relaxed">
-                {/* タイトルの近くに価格があれば表示（デバッグ用でもOK） */}
+                {/* タイトル下あたり */}
                 {it.priceYen ? (
                   <div className="text-sm opacity-80">¥{it.priceYen.toLocaleString()}</div>
                 ) : null}
-                  {comment?.trim() || "あなたの回答に合わせて、高さを微調整できる高反発系の第一候補を選定しました。"}
+                <p className="text-sm leading-6 opacity-90">
+                  {comment?.trim() || 'あなたの回答に合わせた第一候補です。'}
                 </p>
 
                 {!!chips.length && (

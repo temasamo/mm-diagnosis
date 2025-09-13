@@ -1,229 +1,64 @@
-export const runtime = "nodejs";
-import { NextRequest, NextResponse } from "next/server";
-import { ENABLED_MALLS, type MallProduct } from "../../../../lib/types";
-import { rankCandidates } from "../../../lib/recommend";
-import { applyBanFilter, toMallProducts } from "../../../lib/recommend/filter";
-import { mallSearchAll } from "../../../server/mall/service";
-import type { Item } from "../../../types/product";
-import { buildMatchDetails } from '@/lib/explain/match';
-import { composeExplain } from '@/lib/explain/compose';
+import { NextResponse } from 'next/server';
+import type { ItemMeta } from '@/lib/recommend/normalize';
 
-// このAPI専用の受け取り型（影響範囲を局所化）
-type RecommendBody = {
-  postures?: string[];
-  concerns?: string[];
-  pillowMaterial?: string[];
-  avoid?: {
-    materials?: string[];
-    structures?: string[];
-    brands?: string[];
-  };
-};
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
+type Budget = { min?: number; max?: number };
 type Profile = {
-  postures?: string[];
-  concerns?: string[];
-  pillowMaterial?: string[];
-  budget?: { max?: number };
+  postures?: string[]; roll?: string; snore?: string;
+  concerns?: string[]; mattressFirmness?: string;
+  budget?: Budget; prefers?: { adjustable?: boolean; material?: string[]; size?: string };
 };
 
-const jp = {
-  posture: (s: string) => ({ supine: '仰向け', side: '横向き', prone: 'うつ伏せ', free: '寝返り多め' }[s] ?? s),
-  concern: (s: string) => ({ neck: '首', shoulder: '肩', snore: 'いびき', heat: '蒸れ' }[s] ?? s),
-};
-
-const formatBudget = (b?: { max?: number }) =>
-  b?.max ? `（ご予算上限 ${Number(b.max).toLocaleString()}円）` : '';
-
-function generatePrimaryComment(profile: Profile, p: any) {
-  const poses = (profile.postures ?? []).map(jp.posture).join('／');
-  const concerns = (profile.concerns ?? []).map(jp.concern).join('・');
-  const materials = (profile.pillowMaterial ?? []).join('・');
-
-  const lines: string[] = [];
-  lines.push(`${poses || '幅広い体勢'}向けにバランスよく合いやすい${p.title ?? '枕'}です。`);
-  if (concerns) lines.push(`${concerns}に配慮した設計です。`);
-  if (materials) lines.push(`${materials}系の質感がお好みの方に。`);
-  if (p.height || p.firmness) lines.push(`高さ${p.height ?? '中'}／硬さ${p.firmness ?? '中'}の設定。`);
-  const budget = formatBudget(profile.budget);
-  if (budget) lines.push(budget);
-  return lines.join(' ');
+function budgetText(b?: Budget){
+  if(!b) return ''; if(b.min&&b.max) return `ご予算は${b.min.toLocaleString()}〜${b.max.toLocaleString()}円帯`;
+  if(b.max) return `ご予算は上限${b.max.toLocaleString()}円`;
+  if(b.min) return `ご予算は${b.min.toLocaleString()}円以上`; return '';
+}
+function inBudget(item: ItemMeta, b?: Budget){
+  const p = item.priceYen; if(!p||!b) return true;
+  if(b.min && p < b.min) return false; if(b.max && p > b.max) return false; return true;
 }
 
-// キーワード構築関数（例）
-function buildKeyword(signals: any): string {
-  return "枕"; // 簡易実装
+function generatePrimaryComment(profile: Profile, p: ItemMeta){
+  const s1:string[]=[]; const s2:string[]=[]; const s3:string[]=[];
+  const shape = p.shape || '';
+  if ((profile.postures||[]).includes('supine') && /center/.test(shape)) s1.push('仰向け中心でも後頭部が安定しやすい「中央くぼみ」構造');
+  else if ((profile.postures||[]).includes('side') && /wave/.test(shape)) s1.push('横向きでも肩の隙間を埋める波型サイド高め設計');
+  else s1.push('反発と形状のバランスで首をまっすぐ保ちやすい設計');
+
+  if (typeof p.heightCm==='number') s2.push(`目安高さは約${Math.round(p.heightCm)}cm`);
+  if (profile.roll?.match(/low|ほとんどしない/)) s2.push('寝返りが少なくても頭が落ちにくい復元性');
+  if (p.breathable) s3.push('通気孔でムレを抑制');
+  if (p.washable) s3.push('カバーは洗えて清潔を保ちやすい');
+  const btxt = budgetText(profile.budget); if (btxt) s3.push(btxt);
+
+  return [s1.join('・'), s2.join('・'), s3.join('。')].filter(Boolean).map(s=>s+'。').join(' ');
 }
 
-export async function POST(req: Request) {
-  // 追加フィールド（postures/concerns/pillowMaterial/avoid）を許容（非破壊のため any 受け）
-  const body: any = await req.json();
+export async function POST(req: Request){
+  try{
+    const profile = (await req.json().catch(()=>({}))) as Profile;
 
-  // stubデータに仮想フィールドを追加（テスト用）
-  const stubItems: Item[] = [
-    {
-      id: "stub-1",
-      title: `[Stub] スタンダード / 高反発系`,
-      image: "/placeholder.png",
-      url: "#",
-      price: 32980,
-      mall: "rakuten" as const,
-      material: "highRebound",
-      structure: "flat",
-      brand: "StandardBrand"
-    },
-    {
-      id: "stub-2",
-      title: "[Stub] 通気重視モデル",
-      image: "/placeholder.png",
-      url: "#",
-      price: 29800,
-      mall: "yahoo" as const,
-      material: "latex",
-      structure: "contour",
-      brand: "ComfortBrand"
-    }
-  ];
+    // ★ 現状: Mall接続の picks をここに集約（仮ダミーでもOK）
+    const picks: ItemMeta[] = [
+      { id:'stub-1', title:'スタンダード / 高反発系', priceYen: 4980, shape:'center-dent', breathable:true },
+      { id:'stub-2', title:'通気重視モデル',         priceYen: 5580, shape:'wave',        breathable:true, washable:true },
+      { id:'stub-3', title:'調整シート付',           priceYen: 3280, shape:'flat',        washable:true },
+    ];
 
-  // モール検索を実行
-  const signals = { postures: body?.postures, concerns: body?.concerns };
-  const q = { 
-    q: buildKeyword(signals), 
-    budgetMin: 3000, 
-    budgetMax: 10000, 
-    limit: 30 
-  };
-  const { items: mallItems, offline } = await mallSearchAll(q);
+    const poolA = picks.filter(i => inBudget(i, profile.budget));
+    const pool  = poolA.length >= 2 ? poolA : picks;
 
-  // モール検索結果をItem型に変換
-  const mallItemsAsItems: Item[] = mallItems.map(item => ({
-    id: item.id,
-    title: item.title,
-    url: item.url,
-    price: item.price,
-    image: item.image,
-    mall: item.mall
-  }));
+    const items = pool.slice(0,6).map((p, i) => {
+      const item: ItemMeta = { ...p };
+      item.comment = p.comment ?? generatePrimaryComment(profile, item);
+      return item;
+    });
 
-  // stubデータとモール検索結果をマージ
-  const allItems = [...stubItems, ...mallItemsAsItems];
-
-  // banフィルタを適用
-  const filteredItems = applyBanFilter(allItems, body?.avoid);
-
-  // MallProduct型に変換（既存互換性のため）
-  const picks = toMallProducts(filteredItems);
-
-  // ---- RECO_WIRING=1 の時のみ、meta.final を付与（既存 items は変更しない） ----
-  if (process.env.RECO_WIRING === "1") {
-    try {
-      const final = rankCandidates({
-        postures: Array.isArray(body?.postures) ? body.postures : [],
-        concerns: Array.isArray(body?.concerns) ? body.concerns : [],
-        pillowMaterial: Array.isArray(body?.pillowMaterial) ? body.pillowMaterial : [],
-        avoid: body?.avoid,
-      });
-      
-      const responseBody = { 
-        items: picks, 
-        meta: { 
-          final,
-          flags: { offline }
-        } 
-      };
-
-      // メトリクス送信（非同期 fire-and-forget）
-      try { 
-        fetch(`${process.env.NEXT_PUBLIC_BASE_URL ?? ''}/api/track`, {
-          method:'POST', 
-          headers:{'content-type':'application/json'},
-          body: JSON.stringify({
-            event:'search_latency', 
-            mall:'all', 
-            offline, 
-            ts:Date.now()
-          })
-        }).catch(()=>{});
-      } catch {}
-
-      // 新機能：primaryExplain を追加
-      const FEATURE = process.env.NEXT_PUBLIC_FEATURE_PRIMARY_EXPLAIN === '1';
-      let primaryExplain: null | {
-        layout: 'primary-explain-v1';
-        items: Array<any>;
-      } = null;
-
-      try {
-        if (FEATURE) {
-          // 既存の第一候補集合から、上位3件を採用（picks 先頭から）
-          const primaryList = picks.slice(0, 3);
-
-          // プロフィール情報を構築
-          const profile = {
-            posture: body?.postures?.[0] === 'side' ? '横向き' as const :
-                     body?.postures?.[0] === 'supine' ? '仰向け' as const :
-                     body?.postures?.[0] === 'prone' ? 'うつ伏せ' as const : undefined,
-            issues: body?.concerns?.map((c: string) => {
-              if (c === 'neck') return '首痛' as const;
-              if (c === 'shoulder') return '肩こり' as const;
-              if (c === 'headache') return '頭痛' as const;
-              if (c === 'snore') return 'いびき' as const;
-              if (c === 'heat_sweat') return '蒸れ' as const;
-              return c as any;
-            }),
-            preferences: {
-              material: body?.pillowMaterial?.[0]
-            },
-            budget: {
-              max: 10000 // デフォルト値
-            }
-          };
-
-          const explained = primaryList.map((prod: any) => {
-            const md   = buildMatchDetails(prod, profile);
-            const exp  = composeExplain(
-              { title: prod.title, price: typeof prod.price === "number" ? prod.price : null },
-              profile,
-              md
-            );
-            return {
-              id: prod.id,
-              title: prod.title,
-              comment: exp.summarySentence,  // ← 新規追加：コメント
-              imageUrl: prod.image,          // ← 新規追加：画像URL
-              tags: exp.chips,               // ← 新規追加：タグ
-              // 既存フィールドも保持（互換性のため）
-              ...prod,
-              explain: {
-                summarySentence: exp.summarySentence,
-                chips: exp.chips,
-                table: exp.table,
-                budgetIn: exp.budgetIn,
-                budget: exp.budget
-              }
-            };
-          });
-
-          primaryExplain = explained.length ? { layout: 'primary-explain-v1', items: explained } : null;
-        }
-      } catch (e) {
-        console.error('[primaryExplain] compose failed', e);
-        primaryExplain = null;
-      }
-
-      // 既存の return に追加フィールドをマージ
-      return NextResponse.json({
-        ...responseBody,
-        ...(FEATURE ? { primaryExplain } : {}), // flag OFFならキー自体返さない
-      }, { 
-        headers: { 'Cache-Control': 'no-store' }
-      });
-    } catch (e) {
-      console.warn("[recommend] meta.final wiring skipped:", e);
-      return NextResponse.json({ items: picks });
-    }
+    return NextResponse.json({ primaryExplain: { layout:'primary-explain-v1', items: items.slice(0,2) }, groups: {} });
+  }catch(e){
+    return NextResponse.json({ error:'internal_error', primaryExplain:{ layout:'primary-explain-v1', items:[] } }, { status:500 });
   }
-  
-  // 既存どおり
-  return NextResponse.json({ items: picks });
 }
