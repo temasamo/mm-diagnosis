@@ -20,7 +20,10 @@ import ProductCard, { ProductItem } from '@/components/ProductCard';
 import type { SearchItem } from "../../../../lib/malls/types";
 import { isCover, isFurusato } from '@/app/api/search-cross/filters';
 import PrimaryExplainSection from '@/components/result/PrimaryExplainSection';
+import PrimaryExplainGate from '../components/result/PrimaryExplainGate';
+import PrimaryExplainClient from '../components/result/PrimaryExplainClient';
 import ClientOnly from '@/components/ClientOnly';
+
 
 const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK === '1';
 const FEATURE_PRIMARY = process.env.NEXT_PUBLIC_FEATURE_PRIMARY_EXPLAIN === '1';
@@ -211,12 +214,6 @@ export default function ResultPage() {
         const profile = buildProfileFromAnswers(answers);
         const baseUrl = typeof window !== 'undefined' ? '' : (process.env.NEXT_PUBLIC_BASE_URL ?? '');
         
-        const res = await fetch(`${baseUrl}/api/recommend`, {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ profile }),
-          cache: 'no-store',
-        });
         
         if (res.ok) {
           const apiData = await res.json();
@@ -570,120 +567,112 @@ export default function ResultPage() {
             </div>
           )}
           {!disableProposals && loading && <div>商品候補を取得中...</div>}
-          {!disableProposals && !loading && (
-            (() => {
-              const noCandidates = !groups || isEmptyGroups(groups);
+          {/* 候補ゼロのメッセージ */}
+          {!disableProposals && !loading && (!groups || isEmptyGroups(groups)) && (
+            <div className="text-sm text-gray-400">
+              候補を取得できませんでした。<br />
+              ・予算条件を緩める／時間をおいて再実行する<br />
+              ・検索語（カテゴリ）が厳しすぎる可能性があります
+            </div>
+          )}
 
-              if (noCandidates) {
-                return (
-                  <div className="text-sm text-gray-400">
-                    候補を取得できませんでした。<br />
-                    ・予算条件を緩める／時間をおいて再実行する<br />
-                    ・検索語（カテゴリ）が厳しすぎる可能性があります
-                  </div>
-                );
-              }
+　　　　　　{/* --- 理由つき第一候補セクション(新機能: Client版) --- */}
+　　　　　　<PrimaryExplainGate><PrimaryExplainClient profile={buildProfileFromAnswers(answers)} /></PrimaryExplainGate>
 
-              return (
-                <div>
-                  {/* --- 理由つき第一候補セクション（新機能） --- */}
-                  {FEATURE_PRIMARY && data?.primaryExplain?.items?.length ? (
-                    <PrimaryExplainSection items={data.primaryExplain.items} />
-                  ) : null}
-
-                  {/* --- 既存の第一候補グループ（ClientOnlyで包む） --- */}
-                  <ClientOnly>
-                    {Array.isArray(groups.primary) && groups.primary.length > 0 && (
-                      <>
-                        <h3 className="text-lg md:text-xl font-semibold mt-8 mb-3">
-                          第一候補グループ
-                          {variant && <span className="text-sm font-normal ml-2">(variant: {variant})</span>}
-                        </h3>
-                        <div className="grid gap-4 sm:grid-cols-3 mb-6">
-                          {groups.primary.slice(0, 3).map((item: any, index: number) => {
-                            const cardItem: ProductItem = {
-                              id: item.id,
-                              mall: item.mall,
-                              title: item.title,
-                              url: item.url,
-                              image: item.image ?? null,
-                              price: item.price ?? null,
-                              shop: item.shop ?? null,
-                              outOfBudget: false,
-                            };
-                            return (
-                              <div key={item.id} onClick={() => {
-                                onCardClick(item.id, index);
-                                // バンディットクリック（1位のみ）
-                                if (index === 0) {
-                                  onTop1Click(item.id);
-                                }
-                              }}>
-                                <ProductCard item={cardItem} />
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </>
-                    )}
-                    
-                    {/* --- 第二候補グループ --- */}
-                    <h3 className="text-lg md:text-xl font-semibold mt-10 mb-3">第二候補グループ</h3>
-                    {(() => {
-                      const secondaryCount = (groups?.secondaryBuckets ?? []).flat().length;
-                      const showAdjNote = secondaryCount > 0 && secondaryCount < 3;
-                      return showAdjNote && (
-                        <div className="text-sm text-gray-500 mb-3">該当が少ないため、近い価格帯（±1レンジ）も表示しています。</div>
-                      );
-                    })()}
-                    <div className="space-y-4">
-                      <div className="flex gap-2">
-                        <button
-                          className={`px-3 py-1 rounded ${secondaryOpen === "a" ? "bg-white/10" : "bg-white/5"}`}
-                          onClick={() => setSecondaryOpen("a")}
-                        >
-                          {GROUP_LABEL.A}
-                        </button>
-                        <button
-                          className={`px-3 py-1 rounded ${secondaryOpen === "b" ? "bg-white/10" : "bg-white/5"}`}
-                          onClick={() => setSecondaryOpen("b")}
-                        >
-                          {GROUP_LABEL.B}
-                        </button>
-                        <button
-                          className={`px-3 py-1 rounded ${secondaryOpen === "c" ? "bg-white/10" : "bg-white/5"}`}
-                          onClick={() => setSecondaryOpen("c")}
-                        >
-                          {GROUP_LABEL.C}
-                        </button>
-                      </div>
-                      
-                      <div className="grid gap-4 sm:grid-cols-3">
-                        {(secondaryOpen === "a" ? groups.secondaryA : 
-                          secondaryOpen === "b" ? groups.secondaryB : 
-                          groups.secondaryC)?.map((item: any, index: number) => {
-                            const cardItem: ProductItem = {
-                              id: item.id,
-                              mall: item.mall,
-                              title: item.title,
-                              url: item.url,
-                              image: item.image ?? null,
-                              price: item.price ?? null,
-                              shop: item.shop ?? null,
-                              outOfBudget: (item as any).outOfBudget === true,
-                            };
-                            return (
-                              <div key={item.id} onClick={() => onCardClick(item.id, index + 3)}>
-                                <ProductCard item={cardItem} />
-                              </div>
-                            );
-                          })}
-                      </div>
+          {/* --- 既存のグループ表示 --- */}
+          {!disableProposals && !loading && groups && !isEmptyGroups(groups) && (
+            <div>
+              {/* --- 既存の第一候補グループ（ClientOnlyで包む） --- */}
+              <ClientOnly>
+                {Array.isArray(groups.primary) && groups.primary.length > 0 && (
+                  <>
+                    <h3 className="text-lg md:text-xl font-semibold mt-8 mb-3">
+                      第一候補グループ
+                      {variant && <span className="text-sm font-normal ml-2">(variant: {variant})</span>}
+                    </h3>
+                    <div className="grid gap-4 sm:grid-cols-3 mb-6">
+                      {groups.primary.slice(0, 3).map((item: any, index: number) => {
+                        const cardItem: ProductItem = {
+                          id: item.id,
+                          mall: item.mall,
+                          title: item.title,
+                          url: item.url,
+                          image: item.image ?? null,
+                          price: item.price ?? null,
+                          shop: item.shop ?? null,
+                          outOfBudget: false,
+                        };
+                        return (
+                          <div key={item.id} onClick={() => {
+                            onCardClick(item.id, index);
+                            // バンディットクリック（1位のみ）
+                            if (index === 0) {
+                              onTop1Click(item.id);
+                            }
+                          }}>
+                            <ProductCard item={cardItem} />
+                          </div>
+                        );
+                      })}
                     </div>
-                  </ClientOnly>
+                  </>
+                )}
+                
+                {/* --- 第二候補グループ --- */}
+                <h3 className="text-lg md:text-xl font-semibold mt-10 mb-3">第二候補グループ</h3>
+                {(() => {
+                  const secondaryCount = (groups?.secondaryBuckets ?? []).flat().length;
+                  const showAdjNote = secondaryCount > 0 && secondaryCount < 3;
+                  return showAdjNote && (
+                    <div className="text-sm text-gray-500 mb-3">該当が少ないため、近い価格帯（±1レンジ）も表示しています。</div>
+                  );
+                })()}
+                <div className="space-y-4">
+                  <div className="flex gap-2">
+                    <button
+                      className={`px-3 py-1 rounded ${secondaryOpen === "a" ? "bg-white/10" : "bg-white/5"}`}
+                      onClick={() => setSecondaryOpen("a")}
+                    >
+                      {GROUP_LABEL.A}
+                    </button>
+                    <button
+                      className={`px-3 py-1 rounded ${secondaryOpen === "b" ? "bg-white/10" : "bg-white/5"}`}
+                      onClick={() => setSecondaryOpen("b")}
+                    >
+                      {GROUP_LABEL.B}
+                    </button>
+                    <button
+                      className={`px-3 py-1 rounded ${secondaryOpen === "c" ? "bg-white/10" : "bg-white/5"}`}
+                      onClick={() => setSecondaryOpen("c")}
+                    >
+                      {GROUP_LABEL.C}
+                    </button>
+                  </div>
+                  
+                  <div className="grid gap-4 sm:grid-cols-3">
+                    {(secondaryOpen === "a" ? groups.secondaryA : 
+                      secondaryOpen === "b" ? groups.secondaryB : 
+                      groups.secondaryC)?.map((item: any, index: number) => {
+                        const cardItem: ProductItem = {
+                          id: item.id,
+                          mall: item.mall,
+                          title: item.title,
+                          url: item.url,
+                          image: item.image ?? null,
+                          price: item.price ?? null,
+                          shop: item.shop ?? null,
+                          outOfBudget: (item as any).outOfBudget === true,
+                        };
+                        return (
+                          <div key={item.id} onClick={() => onCardClick(item.id, index + 3)}>
+                            <ProductCard item={cardItem} />
+                          </div>
+                        );
+                      })}
+                  </div>
                 </div>
-              );
-            })()
+              </ClientOnly>
+            </div>
           )}
         </section>
       )}

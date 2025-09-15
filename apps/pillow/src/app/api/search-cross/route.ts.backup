@@ -9,17 +9,11 @@ import type { SearchItem } from '../../../../lib/malls/types';
 import { applyFilters } from './filters';
 import { PER_BAND_LIMIT, TOTAL_CAP } from '../../../lib/constants/limits';
 import { warn } from '../../../lib/util/logger';
-import { makeSimpleLru } from '../../../lib/cache/simpleLru';
-import { pickBands } from '../../../lib/recommend/budget.pick';
-import { toBudgetRange } from '../../../lib/recommend/budget';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 const TTL_MS = 15 * 60 * 1000;
-
-// 軽量LRUキャッシュ（帯×キーワード）
-const cache = makeSimpleLru<any[]>(200, 10 * 60 * 1000);
 
 export async function GET(req: NextRequest) {
   const q = req.nextUrl.searchParams.get('q') || '';
@@ -37,70 +31,37 @@ export async function GET(req: NextRequest) {
 
   if (debug) console.time('[search-cross total]');
 
-  // 帯ごとの検索処理
-  const bands = pickBands({ desired: bandId as any });
-  const perBand = PER_BAND_LIMIT;
-  const outByBand: Record<string, SearchItem[]> = {};
-  const errors: string[] = [];
+  // フェーズ4: バンド単位でのPromise.allSettled - 楽天失敗時はYahoo継続
+  const [rkt, yho] = await Promise.allSettled([
+    searchRakuten(q, limit * 2), // 余裕めに取る
+    searchYahoo(q, limit * 2),
+  ]);
 
-  for (const b of bands) {
-    const range = toBudgetRange({ budgetBand: b });
-    const cacheKey = cache.key(["v4", q, b, perBand]);
-
-    const cached = cache.get(["v4", q, b, perBand]);
-    if (cached) { 
-      outByBand[b] = cached; 
-      continue; 
-    }
-
-    try {
-      // モール並列だが各モール内はスロットで直列
-      const [rk, yh] = await Promise.allSettled([
-        searchRakuten(q, range || {}, perBand),
-        searchYahoo(q, range || {}, perBand),
-      ]);
-
-      const rkItems = rk.status === "fulfilled" ? rk.value : [];
-      const yhItems = yh.status === "fulfilled" ? yh.value : [];
-      if (rk.status === "rejected") errors.push(`R:${b}:${rk.reason}`);
-      if (yh.status === "rejected") errors.push(`Y:${b}:${yh.reason}`);
-
-      // URL などで軽く dedupe（既存と同等）
-      const seen = new Set<string>();
-      const merged: SearchItem[] = [];
-      for (const it of [...rkItems, ...yhItems]) {
-        const k = (it.url || it.id || "").trim();
-        if (!k || seen.has(k)) continue;
-        seen.add(k);
-        merged.push({ ...it, band: b } as any);
-        if (merged.length >= perBand) break;
-      }
-
-      outByBand[b] = merged;
-      cache.set(["v4", q, b, perBand], merged);
-
-      // 監視ログ（開発時のみ）
-      if (process.env.MALLS_DEBUG === "1") {
-        console.log(`[band:${b}] merged=${outByBand[b].length} errors=${errors.length}`);
-      }
-    } catch (e: any) {
-      errors.push(String(e?.message ?? e));
-      outByBand[b] = [];
-    }
+  // rejected のものは warn ログにバンド名+理由を出力
+  if (rkt.status === 'rejected') {
+    warn(`[mall][band:${bandId || 'all'}] Rakuten failed:`, rkt.reason);
+  }
+  if (yho.status === 'rejected') {
+    warn(`[mall][band:${bandId || 'all'}] Yahoo failed:`, yho.reason);
   }
 
-  // 既存のレスポンス形に適合させて返却
-  const allItems: SearchItem[] = [];
-  for (const bandItems of Object.values(outByBand)) {
-    allItems.push(...bandItems);
+  // fulfilled のみ採用
+  const rkItems = rkt.status === 'fulfilled' ? rkt.value : [];
+  const yhItems = yho.status === 'fulfilled' ? yho.value : [];
+
+  // MALLS_DEBUG=1 のときだけデバッグログ
+  if (process.env.MALLS_DEBUG === '1') {
+    warn(`[mall][band:${bandId || 'all'}] R:`, rkItems.length, ' Y:', yhItems.length);
   }
+
+  // 正規化済み: { id, mall, title, url, price:number|null, image, shop }
+  const all: SearchItem[] = [...rkItems, ...yhItems];
 
   // ビジネスルール適用（枕カバー・ふるさと納税を除外）
-  const filtered = applyFilters(allItems);
+  const filtered = applyFilters(all);
 
-  // 予算で厳密フィルタ
+  // 2) 予算で厳密フィルタ
   let inBudgetItems = band ? filtered.filter(i => i.price != null && inBand(i.price!, band)) : filtered;
-  
   // 価格が近い順に並べておく（同額帯の中での並び安定）
   if (band) {
     const center = (band.min + band.max) / 2;
@@ -109,7 +70,7 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  // 足りないぶんは予算外から距離の近い順に補充
+  // 3) 足りないぶんは予算外から距離の近い順に補充
   let picked = inBudgetItems.slice(0, limit);
   const inBudgetHits = inBudgetItems.length;
 
@@ -130,7 +91,8 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  // 帯ごとの取得上限と総量セーフガード
+  // 4) フェーズ3: 帯ごとの取得上限と総量セーフガード
+  // 帯ごとの上限適用（重複排除後のこぼれ調整）
   picked = picked.slice(0, PER_BAND_LIMIT);
   
   // 総量セーフガード（予算未指定の場合のみ）
@@ -138,7 +100,7 @@ export async function GET(req: NextRequest) {
     picked = picked.slice(0, TOTAL_CAP);
   }
 
-  // ヘッダで状況通知
+  // 5) ヘッダで状況通知
   const fallbackUsed = band ? picked.every(i => (i as any).outOfBudget === true) : false;
   const headers = new Headers();
   headers.set("x-budget-hits", String(inBudgetHits));
@@ -148,11 +110,11 @@ export async function GET(req: NextRequest) {
   picked = picked.map(({ _distance, ...rest }: any) => rest);
 
   if (debug) {
-    console.log('[search-cross] bands processed:', bands.length);
-    console.log('[search-cross] total items:', picked.length);
+    console.log('[search-cross] rakuten:', rkt.status === 'fulfilled' ? rkt.value.length : `ERR:${(rkt as any).reason}`);
+    console.log('[search-cross] yahoo  :', yho.status === 'fulfilled' ? yho.value.length : `ERR:${(yho as any).reason}`);
+    console.log('[search-cross] merged :', picked.length);
     console.log('[search-cross] budget hits:', inBudgetHits);
     console.log('[search-cross] fallback used:', fallbackUsed);
-    console.log('[search-cross] errors:', errors.length);
     console.timeEnd('[search-cross total]');
   }
 

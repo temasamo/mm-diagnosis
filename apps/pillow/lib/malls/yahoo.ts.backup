@@ -36,16 +36,21 @@ export async function searchYahoo(query: string, limit: number): Promise<SearchI
     }[];
   };
 
-  const data = await fetchJsonWithRetry<R>(url.toString());
-  const items: SearchItem[] = (data.hits || []).map(h => ({
-    id: h.code || h.url,
-    mall: 'yahoo' as const,
-    title: h.name,
-    url: h.url,
-    image: toSafeImageUrl(h.image?.medium || h.image?.small) || null, // 安全化
-    price: normalizePriceToNumber(h.price),
-    shop: h.seller?.name ?? null,
-  })).filter(i => i.price > 0);
+  try {
+    const data = await fetchJsonWithRetry<R>(url.toString());
+    const items: SearchItem[] = (data.hits || []).map(h => ({
+      id: h.code || h.url,
+      mall: 'yahoo' as const,
+      title: h.name,
+      url: h.url,
+      image: toSafeImageUrl(h.image?.medium || h.image?.small) || null, // 安全化
+      price: normalizePriceToNumber(h.price),
+      shop: h.seller?.name ?? null,
+    })).filter(i => i.price > 0);
 
-  return items;
-} 
+    return items;
+  } catch (error) {
+    console.error('[Yahoo Search] API error:', error);
+    return [];
+  }
+}
