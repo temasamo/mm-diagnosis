@@ -7,6 +7,7 @@ import { getBandById, inBand } from '../../../../lib/budget';
 import { priceDistanceToBand } from '../../../../lib/price';
 import type { SearchItem } from '../../../../lib/malls/types';
 import { applyFilters } from './filters';
+import { PER_BAND_LIMIT, TOTAL_CAP } from '../../../../lib/constants/limits';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -75,7 +76,16 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  // 4) ヘッダで状況通知
+  // 4) フェーズ3: 帯ごとの取得上限と総量セーフガード
+  // 帯ごとの上限適用（重複排除後のこぼれ調整）
+  picked = picked.slice(0, PER_BAND_LIMIT);
+  
+  // 総量セーフガード（予算未指定の場合のみ）
+  if (!band) {
+    picked = picked.slice(0, TOTAL_CAP);
+  }
+
+  // 5) ヘッダで状況通知
   const fallbackUsed = band ? picked.every(i => (i as any).outOfBudget === true) : false;
   const headers = new Headers();
   headers.set("x-budget-hits", String(inBudgetHits));

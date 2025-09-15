@@ -18,6 +18,7 @@ import { buildBudgetMeta, BANDS, bandIndexOf, type BudgetBandKey } from "@/lib/r
 import { GROUP_LABEL } from "@/lib/ui/labels";
 import ProductCard, { ProductItem } from '@/components/ProductCard';
 import type { SearchItem } from "../../../../lib/malls/types";
+import { PER_BAND_LIMIT, TOTAL_CAP } from "@/lib/constants/limits";
 import { isCover, isFurusato } from '@/app/api/search-cross/filters';
 import PrimaryExplainSection from '@/components/result/PrimaryExplainSection';
 import PrimaryExplainGate from '../components/result/PrimaryExplainGate';
@@ -334,11 +335,18 @@ export default function ResultPage() {
         if (!mounted) return;
 
         // 重複除去と最安値選択
+        // 重複除去と最安値選択
         let items = dedupeAndPickCheapest([...real, ...mock]);
 
         // 念のためクライアント側でもフィルタ（保険）
         items = items.filter((i: SearchItem) => !isCover(i) && !isFurusato(i));
 
+        // フェーズ3: 帯ごとの取得上限と総量セーフガード
+        items = items.slice(0, PER_BAND_LIMIT);
+        // 総量セーフガード（予算未指定の場合のみ）
+        if (!budgetBandId) {
+          items = items.slice(0, TOTAL_CAP);
+        }
         if (items.length > 0) {
           // ユーザーの予算帯キー
           const userBand: BudgetBandKey = (answers?.budget ?? "3k-6k") as BudgetBandKey;
