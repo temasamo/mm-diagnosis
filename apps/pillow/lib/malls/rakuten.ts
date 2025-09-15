@@ -9,7 +9,7 @@ const RAKUTEN_ENDPOINT =
   'https://app.rakuten.co.jp/services/api/IchibaItem/Search/20220601';
 
 // スロットリング制限（環境フラグで制御）
-const limit = pLimit(process.env.NEXT_PUBLIC_RAKUTEN_THROTTLE ? 2 : 6);
+const pLimitFn = pLimit(process.env.NEXT_PUBLIC_RAKUTEN_THROTTLE ? 2 : 6);
 
 function toSafeImageUrl(u?: string): string | undefined {
   if (!u) return undefined;
@@ -66,7 +66,7 @@ export async function searchRakuten(query: string, limit: number): Promise<Searc
   };
 
   // スロットリング＋429リトライで実行
-  const data = await limit(() => 
+  const data = await pLimitFn(() => 
     fetchWith429(() => fetchJsonWithRetry<R>(url.toString()), { 
       label: 'rakuten' 
     })
