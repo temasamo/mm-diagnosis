@@ -7,7 +7,7 @@ import { getBandById, inBand } from '../../../../lib/budget';
 import { priceDistanceToBand } from '../../../../lib/price';
 import type { SearchItem } from '../../../../lib/malls/types';
 import { applyFilters } from './filters';
-import { PER_BAND_LIMIT, TOTAL_CAP } from '../../../../lib/constants/limits';
+import { PER_BAND_LIMIT, TOTAL_CAP } from '../../../lib/constants/limits';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
