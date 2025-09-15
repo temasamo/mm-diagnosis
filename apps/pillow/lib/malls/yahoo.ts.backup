@@ -1,6 +1,7 @@
 import { fetchJsonWithRetry } from '../http';
 import { normalizePriceToNumber } from '../price';
 import type { SearchItem } from './types';
+import { makeThrottler, retryWithBackoff } from '../../src/lib/net/rate';
 
 function toSafeImageUrl(u?: string): string | undefined {
   if (!u) return undefined;
@@ -14,29 +15,47 @@ function toSafeImageUrl(u?: string): string | undefined {
 
 const YAHOO_ENDPOINT = 'https://shopping.yahooapis.jp/ShoppingWebService/V3/itemSearch';
 
-export async function searchYahoo(query: string, limit: number): Promise<SearchItem[]> {
+// スロットリング制限（環境フラグで制御）
+const minInterval = Number(process.env.YAHOO_MIN_INTERVAL ?? 600);
+const slot = makeThrottler(minInterval);
+
+export async function searchYahoo(
+  q: string, 
+  range: {min?: number; max?: number}, 
+  limit: number
+): Promise<SearchItem[]> {
+  if (process.env.NEXT_PUBLIC_ENABLE_YAHOO === "0") return [];
+
   const appid = process.env.YAHOO_APP_ID;
   if (!appid) return [];
 
-  const url = new URL(YAHOO_ENDPOINT);
-  url.searchParams.set('appid', appid);
-  url.searchParams.set('query', query);
-  url.searchParams.set('hits', String(Math.min(Math.max(limit, 1), 30)));
-  url.searchParams.set('in_stock', '1');
+  const run = async () => {
+    const url = new URL(YAHOO_ENDPOINT);
+    url.searchParams.set('appid', appid);
+    url.searchParams.set('query', q);
+    url.searchParams.set('hits', String(Math.min(Math.max(limit, 1), 30)));
+    url.searchParams.set('in_stock', '1');
 
-  type R = {
-    totalResultsAvailable?: number;
-    hits?: {
-      name: string;
-      url: string;
-      price: number | string;
-      image?: { medium?: string; small?: string; };
-      seller?: { name?: string; id?: string; };
-      code?: string; // ある場合
-    }[];
-  };
+    // 価格帯フィルタ（range指定時）
+    if (range.min !== undefined) {
+      url.searchParams.set('price_from', String(range.min));
+    }
+    if (range.max !== undefined) {
+      url.searchParams.set('price_to', String(range.max));
+    }
 
-  try {
+    type R = {
+      totalResultsAvailable?: number;
+      hits?: {
+        name: string;
+        url: string;
+        price: number | string;
+        image?: { medium?: string; small?: string; };
+        seller?: { name?: string; id?: string; };
+        code?: string; // ある場合
+      }[];
+    };
+
     const data = await fetchJsonWithRetry<R>(url.toString());
     const items: SearchItem[] = (data.hits || []).map(h => ({
       id: h.code || h.url,
@@ -49,8 +68,7 @@ export async function searchYahoo(query: string, limit: number): Promise<SearchI
     })).filter(i => i.price > 0);
 
     return items;
-  } catch (error) {
-    console.error('[Yahoo Search] API error:', error);
-    return [];
-  }
+  };
+
+  return slot(() => retryWithBackoff(run, { retries: 2, baseMs: 350 }));
 }

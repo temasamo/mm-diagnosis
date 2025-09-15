@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { searchRakuten } from '../../../../lib/malls/rakuten';
 import { searchYahoo } from '../../../../lib/malls/yahoo';
 import { dedupeAndPickCheapest } from '../../../../lib/dedupe';
+import { toBudgetRange } from '../../../lib/recommend/budget';
 import type { SearchItem } from '../../../../lib/malls/types';
 
 export const dynamic = 'force-dynamic';
@@ -116,10 +117,14 @@ export async function POST(req: Request){
     
     console.log('[recommend] Searching for real products with profile:', profile);
     
-    // 楽天・Yahoo検索を並行実行
+    // budget → range へ正規化
+    const budgetBandId = getBudgetBandId(profile.budget);
+    const range: Budget | undefined = budgetBandId ? toBudgetRange({ budgetBand: budgetBandId }) : undefined;
+    
+    // 楽天・Yahoo検索を並行実行（rangeを渡す）
     const [rakutenResults, yahooResults] = await Promise.allSettled([
-      searchRakuten(query, limit),
-      searchYahoo(query, limit)
+      searchRakuten(query, range, limit),
+      searchYahoo(query, range, limit)
     ]);
     
     // 検索結果をマージ

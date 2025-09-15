@@ -21,7 +21,7 @@ const slot = makeThrottler(minInterval);
 
 export async function searchYahoo(
   q: string, 
-  range: {min?: number; max?: number}, 
+  range: {min?: number; max?: number} | undefined, 
   limit: number
 ): Promise<SearchItem[]> {
   if (process.env.NEXT_PUBLIC_ENABLE_YAHOO === "0") return [];
