@@ -235,7 +235,7 @@ export default function UserView({ scores = {}, problems = [], heightKey, firmne
         );
 
         // 既存の mapConcerns(...) の後で:
-        let concerns = mapConcerns(a.concerns ?? a.problems);
+        const concerns = mapConcerns(a.concerns ?? a.problems);
         if (snoreFlag && !concerns.includes("snore")) concerns.push("snore");
 
         // 正規化した sweaty を載せる

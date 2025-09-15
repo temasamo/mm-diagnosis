@@ -2,6 +2,8 @@ import { fetchJsonWithRetry } from '../http';
 import { normalizePriceToNumber } from '../price';
 import type { SearchItem } from './types';
 
+export type PriceRange = { min: number; max: number };
+
 function toSafeImageUrl(u?: string): string | undefined {
   if (!u) return undefined;
   try {
@@ -14,15 +16,26 @@ function toSafeImageUrl(u?: string): string | undefined {
 
 const YAHOO_ENDPOINT = 'https://shopping.yahooapis.jp/ShoppingWebService/V3/itemSearch';
 
-export async function searchYahoo(query: string, limit: number): Promise<SearchItem[]> {
+export async function searchYahoo(
+  q: string,
+  range?: PriceRange,
+  limit = 30
+): Promise<SearchItem[]> {
   const appid = process.env.YAHOO_APP_ID;
   if (!appid) return [];
 
   const url = new URL(YAHOO_ENDPOINT);
   url.searchParams.set('appid', appid);
-  url.searchParams.set('query', query);
+  url.searchParams.set('query', q);
   url.searchParams.set('results', String(Math.min(Math.max(limit, 1), 30)));
   url.searchParams.set('in_stock', '1');
+
+  // 価格帯フィルタ（安全に）
+  if (range) {
+    if (range.min !== undefined) url.searchParams.set('price_from', String(range.min));
+    if (range.max !== undefined && Number.isFinite(range.max))
+      url.searchParams.set('price_to', String(range.max));
+  }
 
   type R = {
     totalResultsAvailable?: number;
@@ -48,4 +61,4 @@ export async function searchYahoo(query: string, limit: number): Promise<SearchI
   })).filter(i => i.price > 0);
 
   return items;
-} 
+}

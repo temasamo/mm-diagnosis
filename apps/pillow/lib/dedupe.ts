@@ -67,7 +67,7 @@ function generateProductKey(product: Product): string {
   if (!product.title) return `unknown-${product.id || Math.random()}`;
   
   // タイトルを正規化
-  let normalized = product.title
+  const normalized = product.title
     .toLowerCase()
     .replace(/[【】［］()（）]/g, '') // 括弧を除去
     .replace(/[^\w\s]/g, '') // 特殊文字を除去

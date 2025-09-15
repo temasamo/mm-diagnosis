@@ -1,7 +1,9 @@
-// apps/pillow/src/lib/malls/rakuten.ts
+// apps/pillow/lib/malls/rakuten.ts
 import { fetchJsonWithRetry } from '../http';
 import { normalizePriceToNumber } from '../price';
 import type { SearchItem, Mall } from './types';
+
+export type PriceRange = { min: number; max: number };
 
 const RAKUTEN_ENDPOINT =
   'https://app.rakuten.co.jp/services/api/IchibaItem/Search/20220601';
@@ -30,16 +32,27 @@ function pickImage(
   return safe ?? null;
 }
 
-export async function searchRakuten(query: string, limit: number): Promise<SearchItem[]> {
+export async function searchRakuten(
+  q: string,
+  range?: PriceRange,
+  limit = 30
+): Promise<SearchItem[]> {
   const appId = process.env.RAKUTEN_APP_ID;
   if (!appId) return [];
 
   const url = new URL(RAKUTEN_ENDPOINT);
   url.searchParams.set('applicationId', appId);
-  url.searchParams.set('keyword', query);
+  url.searchParams.set('keyword', q);
   url.searchParams.set('hits', String(Math.min(Math.max(limit, 1), 30)));
   url.searchParams.set('imageFlag', '1');
   url.searchParams.set('availability', '1');
+
+  // 価格帯フィルタ（安全に）
+  if (range) {
+    if (range.min !== undefined) url.searchParams.set('minPrice', String(range.min));
+    if (range.max !== undefined && Number.isFinite(range.max))
+      url.searchParams.set('maxPrice', String(range.max));
+  }
 
   // アフィID（任意）
   const aff = process.env.RAKUTEN_AFFILIATE_ID;

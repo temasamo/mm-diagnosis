@@ -120,7 +120,7 @@ function generateSecondaryKeywords(answers: any): { keywords: string[][], labels
   // 第2候補A: 姿勢ベースの代替案（マットレス硬さを考慮）
   if (posture) {
     let postureKeywords: string[] = [];
-    let postureLabel = "Aタイプ";
+    const postureLabel = "Aタイプ";
     
     if (posture === "side") {
       postureKeywords = ["横向き 枕", "横向き寝 枕"];
@@ -188,8 +188,8 @@ function generateSecondaryKeywords(answers: any): { keywords: string[][], labels
   
   // 第2候補C: 悩みベースの代替案（マットレス硬さを考慮）
   if (concerns.length > 0 || neckIssues.length > 0) {
-    let problemKeywords = [];
-    let problemLabel = "Cタイプ";
+    const problemKeywords = [];
+    const problemLabel = "Cタイプ";
     
     // 気になる点からキーワード生成
     if (concerns.includes("neck_pain")) {
@@ -243,8 +243,8 @@ function generateSecondaryKeywords(answers: any): { keywords: string[][], labels
   }
   
   // 第2候補D: 調整可能・特殊機能ベース
-  let specialKeywords = [];
-  let specialLabel = "調整・機能重視";
+  const specialKeywords = [];
+  const specialLabel = "調整・機能重視";
   
   if (adjustablePref === "yes") {
     specialKeywords.push("調整可能 枕", "高さ調整 枕");
@@ -307,7 +307,7 @@ async function fallbackSearch(budgetBandId?: string, topN = 6): Promise<GroupedR
     "cooling_breathable", "firm_support"
   ];
   
-  let allProducts: MallProduct[] = [];
+  const allProducts: MallProduct[] = [];
   
   // 1. 予算条件を緩和して再検索
   for (const cat of fallbackCategories.slice(0, 3)) {

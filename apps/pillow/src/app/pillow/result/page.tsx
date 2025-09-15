@@ -88,7 +88,7 @@ function deriveProblemsRobust(store: any): string[] {
 function decorateItemsWithPriceAndBudget(items: any[], userBand: BudgetBandKey) {
   return items.map((it) => {
     const _price = extractPriceInfo(it);
-    const _budget = buildBudgetMeta(userBand, _price.value);
+    const _budget = buildBudgetMeta(userBand);
     return { ...it, _price, _budget };
   });
 }
@@ -121,7 +121,7 @@ export default function ResultPage() {
   
   // デバッグモードの確認
   const isDebug = typeof window !== 'undefined' && window.location.search.includes('debug=1');
-  let { provisional, answers } = store;
+  const { provisional, answers } = store;
   // 既定タブ: diagnosis → recommend
   const [activeTab, setActiveTab] = useState<"diagnosis" | "recommend">("diagnosis");
   // 第二候補: 既定で a を展開
@@ -288,7 +288,7 @@ export default function ResultPage() {
     setLoading(true);
     (async () => {
       try {
-        let mounted = true;
+        const mounted = true;
         
         const budgetBandId = answers?.budget;
         const limit = 12;
@@ -353,7 +353,7 @@ export default function ResultPage() {
           const fallbackItems = await fetch(`${baseUrl}/api/search-cross?q=枕&limit=${limit}`, { cache: 'no-store' }).then(r => r.json());
           if (!mounted) return;
           
-          let fallbackFiltered = fallbackItems.filter((i: SearchItem) => !isCover(i) && !isFurusato(i));
+          const fallbackFiltered = fallbackItems.filter((i: SearchItem) => !isCover(i) && !isFurusato(i));
           const userBand: BudgetBandKey = (answers?.budget ?? "3k-6k") as BudgetBandKey;
           const decoratedItems = decorateItemsWithPriceAndBudget(fallbackFiltered, userBand);
           
@@ -384,7 +384,7 @@ export default function ResultPage() {
     // 商品候補がなくても、answersから基本的な適合度を計算
     if (answers && Object.keys(answers).length > 0) {
       // より動的で意味のあるスコア計算
-      let baseScore = 30; // 基本スコアを下げる
+      const baseScore = 30; // 基本スコアを下げる
       
       // 回答の充実度に応じてスコアを調整
       const answeredFields = Object.keys(answers).filter(key => 
