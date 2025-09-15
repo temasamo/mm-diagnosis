@@ -8,6 +8,7 @@ import { priceDistanceToBand } from '../../../../lib/price';
 import type { SearchItem } from '../../../../lib/malls/types';
 import { applyFilters } from './filters';
 import { PER_BAND_LIMIT, TOTAL_CAP } from '../../../lib/constants/limits';
+import { warn } from '../../../lib/util/logger';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -30,17 +31,31 @@ export async function GET(req: NextRequest) {
 
   if (debug) console.time('[search-cross total]');
 
-  // 1) 取得
+  // フェーズ4: バンド単位でのPromise.allSettled - 楽天失敗時はYahoo継続
   const [rkt, yho] = await Promise.allSettled([
     searchRakuten(q, limit * 2), // 余裕めに取る
     searchYahoo(q, limit * 2),
   ]);
 
+  // rejected のものは warn ログにバンド名+理由を出力
+  if (rkt.status === 'rejected') {
+    warn(`[mall][band:${bandId || 'all'}] Rakuten failed:`, rkt.reason);
+  }
+  if (yho.status === 'rejected') {
+    warn(`[mall][band:${bandId || 'all'}] Yahoo failed:`, yho.reason);
+  }
+
+  // fulfilled のみ採用
+  const rkItems = rkt.status === 'fulfilled' ? rkt.value : [];
+  const yhItems = yho.status === 'fulfilled' ? yho.value : [];
+
+  // MALLS_DEBUG=1 のときだけデバッグログ
+  if (process.env.MALLS_DEBUG === '1') {
+    warn(`[mall][band:${bandId || 'all'}] R:`, rkItems.length, ' Y:', yhItems.length);
+  }
+
   // 正規化済み: { id, mall, title, url, price:number|null, image, shop }
-  const all: SearchItem[] = [
-    ...(rkt.status === 'fulfilled' ? rkt.value : []),
-    ...(yho.status === 'fulfilled' ? yho.value : []),
-  ];
+  const all: SearchItem[] = [...rkItems, ...yhItems];
 
   // ビジネスルール適用（枕カバー・ふるさと納税を除外）
   const filtered = applyFilters(all);
