@@ -6,6 +6,7 @@ import { dedupeAndPickCheapest } from '../../../../lib/dedupe';
 import { ALL_BANDS, toPriceRange, neighborBand, toBudgetBand, type BudgetBand } from '../../../../lib/budget';
 import type { SearchItem, BandDistance } from '../../../../lib/malls/types';
 import { applyFilters } from './filters';
+import { shouldExclude } from '../../../../src/lib/recommend/exclude';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -107,8 +108,11 @@ export async function GET(req: NextRequest) {
     // 4) 重複排除
     const deduped = dedupeAndPickCheapest(allItems);
 
-    // 5) 基準バンド優先でソート
-    const sorted = deduped.sort((a, b) => {
+    // 5) 除外フィルタ（赤ちゃん枕など）
+    const filtered = deduped.filter(item => !shouldExclude(item.title));
+
+    // 6) 基準バンド優先でソート
+    const sorted = filtered.sort((a, b) => {
       // 基準バンド（distance: 0）を最優先
       if (a.bandDistance !== b.bandDistance) {
         return Math.abs(a.bandDistance || 0) - Math.abs(b.bandDistance || 0);
@@ -117,10 +121,10 @@ export async function GET(req: NextRequest) {
       return (a.price || 0) - (b.price || 0);
     });
 
-    // 6) 指定件数に制限
+    // 7) 指定件数に制限
     const limited = sorted.slice(0, limit);
 
-    // 7) 統計情報をヘッダーに設定
+    // 8) 統計情報をヘッダーに設定
     const inBudgetCount = limited.filter(item => item.bandDistance === 0).length;
     const headers = new Headers();
     headers.set("x-budget-hits", String(inBudgetCount));
@@ -129,6 +133,7 @@ export async function GET(req: NextRequest) {
     if (debug) {
       console.log('[search-cross] total items:', allItems.length);
       console.log('[search-cross] after dedup:', deduped.length);
+      console.log('[search-cross] after exclude:', filtered.length);
       console.log('[search-cross] budget hits:', inBudgetCount);
       console.log('[search-cross] bands:', plan.length);
       console.timeEnd('[search-cross total]');
