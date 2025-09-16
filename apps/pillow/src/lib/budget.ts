@@ -24,3 +24,27 @@ export function adjacentFor30Plus30(primary: BudgetBand): BudgetBand | null {
     ? (idx > 0 ? BANDS[idx - 1] : null)           // ≥20k は下位を補完
     : (idx < BANDS.length - 1 ? BANDS[idx + 1] : null); // それ以外は上位を補完
 }
+
+// フロントエンドの予算帯値をAPIのbandIdにマッピング
+export const BAND_ALIASES: Record<string, string> = {
+  // 2万円以上
+  "20kplus": ">=20k",
+  "20k+": ">=20k",
+  ">=20k": ">=20k",
+  // 1万〜2万
+  "10k-20k": "10k-20k",
+  // 6千〜1万
+  "6k-10k": "6k-10k",
+  // 3千〜6千
+  "3k-6k": "3k-6k",
+  // 3千未満
+  "<3000": "<3000",
+  "<3k": "<3000",
+};
+
+export function resolveBandId(raw?: string | null): string | null {
+  if (!raw) return null;
+  const key = String(raw).trim();
+  // 完全一致 or エイリアス
+  return BAND_ALIASES[key] ?? findBandById(key)?.id ?? null;
+}

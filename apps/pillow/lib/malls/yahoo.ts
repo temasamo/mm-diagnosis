@@ -3,6 +3,8 @@ import { normalizePriceToNumber } from '../price';
 import type { SearchItem } from './types';
 import type { Product } from '../../src/lib/types/product';
 
+type PriceRange = { min?: number; max?: number };
+
 function toSafeImageUrl(u?: string): string | undefined {
   if (!u) return undefined;
   try {
@@ -17,8 +19,8 @@ const YAHOO_ENDPOINT = 'https://shopping.yahooapis.jp/ShoppingWebService/V3/item
 
 export async function searchYahoo(
   q: string,
-  range?: { min: number; max?: number },
-  limit: number = 30,
+  range?: PriceRange,
+  limit = 30,
   meta?: { tag?: "primary" | "adjacent" }
 ): Promise<Product[]> {
   const appid = process.env.YAHOO_APP_ID;
@@ -29,6 +31,15 @@ export async function searchYahoo(
   url.searchParams.set('q', q);
   url.searchParams.set('results', String(Math.min(Math.max(limit, 1), 30)));
   url.searchParams.set('in_stock', '1');
+
+  // ★ 価格レンジの厳密な処理：数値のときだけ付与
+  if (typeof range?.min === "number") {
+    url.searchParams.set('price_from', String(range.min));
+  }
+  if (typeof range?.max === "number") {
+    url.searchParams.set('price_to', String(range.max));
+  }
+  // typeof が number でない（undefined/null）の場合は **絶対に付与しない**
 
   type R = {
     totalResultsAvailable?: number;

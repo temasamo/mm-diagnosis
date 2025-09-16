@@ -7,6 +7,8 @@ import type { Product } from '../../src/lib/types/product';
 const RAKUTEN_ENDPOINT =
   'https://app.rakuten.co.jp/services/api/IchibaItem/Search/20220601';
 
+type PriceRange = { min?: number; max?: number };
+
 function toSafeImageUrl(u?: string): string | undefined {
   if (!u) return undefined;
   try {
@@ -33,8 +35,8 @@ function pickImage(
 
 export async function searchRakuten(
   q: string,
-  range?: { min: number; max?: number },
-  limit: number = 30,
+  range?: PriceRange,
+  limit = 30,
   meta?: { tag?: "primary" | "adjacent" }
 ): Promise<Product[]> {
   const appId = process.env.RAKUTEN_APP_ID;
@@ -50,6 +52,15 @@ export async function searchRakuten(
   // アフィID（任意）
   const aff = process.env.RAKUTEN_AFFILIATE_ID;
   if (aff) url.searchParams.set('affiliateId', aff);
+
+  // ★ 価格レンジの厳密な処理：数値のときだけ付与
+  if (typeof range?.min === "number") {
+    url.searchParams.set('minPrice', String(range.min));
+  }
+  if (typeof range?.max === "number") {
+    url.searchParams.set('maxPrice', String(range.max));
+  }
+  // typeof が number でない（undefined/null）の場合は **絶対に付与しない**
 
   type R = {
     Items: {
