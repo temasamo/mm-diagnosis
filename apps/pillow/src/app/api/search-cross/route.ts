@@ -92,7 +92,18 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  const deduped = dedupeProducts(filtered);
+
+  // 直前に追加
+  function forDedupe<T extends { image?: string | null; imageUrl?: string | null }>(p: T) {
+    // image or imageUrl のどちらかに入っているケースも吸収
+    const img = p.image ?? p.imageUrl ?? undefined;
+    // null を undefined に落として、dedupe が期待する型に合わせる
+    return { ...p, image: img } as Omit<T, "image"> & { image?: string };
+  }
+
+  // これまでの filtered を正規化してから dedupe に渡す
+  const filteredForDedupe = filtered.map(forDedupe);
+  const deduped = dedupeProducts(filteredForDedupe) as typeof filtered; // 必要なら as で戻す
   return NextResponse.json({ items: deduped }, { status: 200 });
 }
 
