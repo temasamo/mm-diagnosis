@@ -61,12 +61,12 @@ PILLOW_ENABLE_AI_REASON=true
 # 枕診断AI / mm-diagnosis-pillow
 
 ## 開発フロー
-- `main` = 開発・検証用（Preview Deploy）
-- `release/pillow-stable` = 本番用（Production Deploy）
+- `main` = 本番用（Production Deploy）
+- `feat/new-development` = 開発・検証用（Preview Deploy）
 
 ## デプロイ
-- Preview: `vercel --cwd apps/pillow`
-- Production: `release/pillow-stable` にマージすると自動デプロイ
+- Preview: `feat/new-development` ブランチにプッシュすると自動デプロイ
+- Production: `main` ブランチにマージすると自動デプロイ
 
 ## ロールバック
 - Vercel Dashboard → Deployments → 安定版を `Promote to Production`
@@ -78,5 +78,5 @@ PILLOW_ENABLE_AI_REASON=true
 - `SUPABASE_SERVICE_ROLE`（任意、無ければ no-op）
 
 ## 注意点
-- `release/*-stable` への直 push 禁止（必ず PR）
+- `main` への直 push 禁止（必ず PR 経由）
 - CI smoke test (items.length >= 3) が通らないと Merge 不可 
