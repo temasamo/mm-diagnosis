@@ -15,7 +15,6 @@ import { track, trackOnce } from "@/lib/analytics/track";
 import { type PriceBandId } from "@/lib/recommend/priceBand";
 import { extractPriceInfo } from "@/lib/recommend/extractPrice";
 import { buildBudgetMeta, BANDS, bandIndexOf, type BudgetBandKey } from "@/lib/recommend/budget";
-import { resolveBandId } from "@/lib/budget";
 import { GROUP_LABEL } from "@/lib/ui/labels";
 import ProductCard, { ProductItem } from '@/components/ProductCard';
 import type { SearchItem } from "../../../../lib/malls/types";
@@ -291,13 +290,13 @@ export default function ResultPage() {
       try {
         let mounted = true;
         
-        const budgetBandId = resolveBandId(answers?.budget) || "10k-20k";
+        const budgetBandId = answers?.budget;
         const limit = 12;
         const baseUrl = typeof window !== 'undefined' ? '' : (process.env.NEXT_PUBLIC_BASE_URL ?? '');
         
         // 実データとモックデータを並行取得
         const [real, mock] = await Promise.all([
-          fetch(`${baseUrl}/api/search-cross`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query: '枕', bandId: budgetBandId || '10k-20k' }), cache: 'no-store' }).then(r => r.json()),
+          fetch(`${baseUrl}/api/search-cross?q=枕&limit=${limit}&band=${budgetBandId || ''}`, { cache: 'no-store' }).then(r => r.json()),
           USE_MOCK
             ? fetch(`${baseUrl}/api/mall-products?limit=${limit}`, { cache: 'no-store' }).then(r => r.json())
             : Promise.resolve([]),
@@ -306,7 +305,7 @@ export default function ResultPage() {
         if (!mounted) return;
 
         // 重複除去と最安値選択
-        let items = dedupeAndPickCheapest([...(real.items || []), ...mock]);
+        let items = dedupeAndPickCheapest([...real, ...mock]);
 
         // 念のためクライアント側でもフィルタ（保険）
         items = items.filter((i: SearchItem) => !isCover(i) && !isFurusato(i));

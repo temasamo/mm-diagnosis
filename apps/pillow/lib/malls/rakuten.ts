@@ -1,10 +1,13 @@
-// apps/pillow/src/lib/malls/rakuten.ts
+// apps/pillow/lib/malls/rakuten.ts
 import { fetchJsonWithRetry } from '../http';
 import { normalizePriceToNumber } from '../price';
 import type { SearchItem, Mall } from './types';
+import type { Product } from '../../src/lib/types/product';
 
 const RAKUTEN_ENDPOINT =
   'https://app.rakuten.co.jp/services/api/IchibaItem/Search/20220601';
+
+type PriceRange = { min?: number; max?: number };
 
 function toSafeImageUrl(u?: string): string | undefined {
   if (!u) return undefined;
@@ -30,13 +33,18 @@ function pickImage(
   return safe ?? null;
 }
 
-export async function searchRakuten(query: string, limit: number): Promise<SearchItem[]> {
+export async function searchRakuten(
+  q: string,
+  range?: PriceRange,
+  limit = 30,
+  meta?: { tag?: "primary" | "adjacent" }
+): Promise<Product[]> {
   const appId = process.env.RAKUTEN_APP_ID;
   if (!appId) return [];
 
   const url = new URL(RAKUTEN_ENDPOINT);
   url.searchParams.set('applicationId', appId);
-  url.searchParams.set('keyword', query);
+  url.searchParams.set('keyword', q);
   url.searchParams.set('hits', String(Math.min(Math.max(limit, 1), 30)));
   url.searchParams.set('imageFlag', '1');
   url.searchParams.set('availability', '1');
@@ -45,17 +53,26 @@ export async function searchRakuten(query: string, limit: number): Promise<Searc
   const aff = process.env.RAKUTEN_AFFILIATE_ID;
   if (aff) url.searchParams.set('affiliateId', aff);
 
+  // ★ 価格レンジの厳密な処理：数値のときだけ付与
+  if (typeof range?.min === "number") {
+    url.searchParams.set('minPrice', String(range.min));
+  }
+  if (typeof range?.max === "number") {
+    url.searchParams.set('maxPrice', String(range.max));
+  }
+  // typeof が number でない（undefined/null）の場合は **絶対に付与しない**
+
   type R = {
     Items: {
       Item: {
         itemCode: string;
         itemName: string;
-        itemUrl?: string;
+        itemUrl: string;
         affiliateUrl?: string;
+        itemPrice: number | string;
+        shopName?: string;
         mediumImageUrls?: { imageUrl: string }[];
         smallImageUrls?: { imageUrl: string }[];
-        shopName?: string;
-        itemPrice?: number | string;
       };
     }[];
   };
@@ -82,5 +99,15 @@ export async function searchRakuten(query: string, limit: number): Promise<Searc
     .filter((v): v is SearchItem => v !== null)
     .filter(i => typeof i.price === 'number' && i.price > 0);
 
-  return items;
+  // 返却時に meta を付与
+  const normalized: Product[] = items.map((n) => ({
+    ...n,
+    meta: {
+      ...(n as any).meta, // 既存にあれば活かす
+      source: "rakuten",
+      bandTag: meta?.tag,
+    },
+  }));
+
+  return normalized.slice(0, limit);
 }
