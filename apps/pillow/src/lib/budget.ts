@@ -40,6 +40,7 @@ export const BAND_ALIASES: Record<string, string> = {
   // 3千未満
   "<3000": "<3000",
   "<3k": "<3000",
+  "lt3000": "<3000",
 };
 
 export function resolveBandId(raw?: string | null): string | null {
