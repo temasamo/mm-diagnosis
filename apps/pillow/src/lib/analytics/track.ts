@@ -40,7 +40,6 @@ export async function track(name: string, payload: Record<string, any> = {}){
     ts: now(),
     session_id: getSessionId(),
     ua: typeof navigator !== 'undefined' ? navigator.userAgent : '',
-    url: typeof window !== 'undefined' ? window.location.href : '',
     ...payload
   };
 
