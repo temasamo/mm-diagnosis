@@ -5,12 +5,37 @@ import type { Product } from '../../src/lib/types/product';
 
 type PriceRange = { min?: number; max?: number };
 
-function toSafeImageUrl(u?: string): string | null {
+function toSafeImageUrl(u?: string | { small?: string; medium?: string }): string | null {
   if (!u) return null;
+  
   try {
-    const url = new URL(u.replace(/^http:/, "https:"));
+    let imageUrl: string;
+    
+    // オブジェクト形式の場合（Yahoo APIの画像データ）
+    if (typeof u === 'object' && u !== null) {
+      // mediumがあればそれを使用、なければsmallを使用
+      imageUrl = u.medium || u.small || '';
+    } else if (typeof u === 'string') {
+      imageUrl = u;
+    } else {
+      return null;
+    }
+    
+    // 空文字列をチェック
+    if (imageUrl.trim() === '') return null;
+    
+    // http:をhttps:に変換
+    const httpsUrl = imageUrl.replace(/^http:/, "https:");
+    
+    // URLの妥当性をチェック
+    const url = new URL(httpsUrl);
+    
+    // 有効な画像URLかチェック
+    if (url.protocol !== 'https:') return null;
+    
     return url.toString();
-  } catch {
+  } catch (error) {
+    console.log('[yahoo] Invalid image URL:', u, error);
     return null;
   }
 }
@@ -77,15 +102,30 @@ export async function searchYahoo(
     console.log('[yahoo] Total items collected:', allItems.length);
 
     // 価格フィルタは適用せず、search-cross API側で価格帯フィルタを適用
-    return allItems.slice(0, limit).map((item: SearchItem): Product => ({
-      id: item.id,
-      title: item.title,
-      url: item.url,
-      price: normalizePriceToNumber(item.price),
-      image: toSafeImageUrl(item.image ?? undefined),
-      mall: 'yahoo',
-      shop: item.shop ?? undefined,
-    }));
+    return allItems.slice(0, limit).map((item: SearchItem): Product => {
+      const originalImage = item.image;
+      const processedImage = toSafeImageUrl(item.image ?? undefined);
+      
+      // デバッグ用ログ
+      if (originalImage && !processedImage) {
+        console.log('[yahoo] Image URL processing failed:', {
+          original: originalImage,
+          processed: processedImage,
+          itemId: item.id,
+          title: item.title?.substring(0, 50)
+        });
+      }
+      
+      return {
+        id: item.id,
+        title: item.title,
+        url: item.url,
+        price: normalizePriceToNumber(item.price),
+        image: processedImage,
+        mall: 'yahoo',
+        shop: item.shop ?? undefined,
+      };
+    });
   } catch (error) {
     console.error('[yahoo] API Error:', error);
     return [];

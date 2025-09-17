@@ -120,8 +120,12 @@ type Item = import('../../../../lib/malls/types').SearchItem;
 export default function ResultPage() {
   const store = useDiagStore();
   
-  // デバッグモードの確認
-  const isDebug = typeof window !== 'undefined' && window.location.search.includes('debug=1');
+  // デバッグモードの確認（クライアントサイドでのみ）
+  const [isDebug, setIsDebug] = useState(false);
+  useEffect(() => {
+    setIsDebug(window.location.search.includes('debug=1'));
+  }, []);
+  
   let { provisional, answers } = store;
   // 既定タブ: diagnosis → recommend
   const [activeTab, setActiveTab] = useState<"diagnosis" | "recommend">("diagnosis");
@@ -148,8 +152,11 @@ export default function ResultPage() {
   // ユーザー予算を取得
   const userBudget: PriceBandId | undefined = (answers?.budget ?? answers?.budgetBandId) as any;
 
-  // 初回インプレッション
+  // 初回インプレッション（クライアントサイドでのみ実行）
   useEffect(() => {
+    // クライアントサイドでのみ実行
+    if (typeof window === 'undefined') return;
+    
     const rec_set_id = (globalThis as any).__REC_SET_ID__ ?? crypto.randomUUID();
     recSetRef.current = rec_set_id;
     trackOnce(`rec_imp_${rec_set_id}`, 'rec_impression', {
@@ -648,7 +655,7 @@ export default function ResultPage() {
                             outOfBudget: (item as any).outOfBudget === true,
                           };
                           return (
-                            <div key={item.id} onClick={() => onCardClick(item.id, index + 3)}>
+                            <div key={`${secondaryOpen}-${item.id}`} onClick={() => onCardClick(item.id, index + 3)}>
                               <ProductCard item={cardItem} />
                             </div>
                           );

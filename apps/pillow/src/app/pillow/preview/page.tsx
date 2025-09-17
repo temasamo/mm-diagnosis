@@ -101,11 +101,13 @@ export default function PreviewPage() {
       if ((store as any).setScores && !(store as any).scores) {
         (store as any).setScores(scores);
       }
-      // 保険: セッション保存（結果側で復旧可能に）
-      sessionStorage.setItem(
-        "pillow_snapshot",
-        JSON.stringify({ answers, scores })
-      );
+      // 保険: セッション保存（結果側で復旧可能に）- クライアントサイドでのみ実行
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem(
+          "pillow_snapshot",
+          JSON.stringify({ answers, scores })
+        );
+      }
       setReady(true);
       setIsProcessing(false);
     } catch (error) {
