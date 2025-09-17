@@ -305,8 +305,20 @@ export default function ResultPage() {
 
         if (!mounted) return;
 
+        console.log("[frontend] Raw API response:", real);
+        // サーバー側でもログ出力
+        if (typeof window === 'undefined') {
+          console.log("[server] Raw API response items count:", (real.items || []).length);
+          console.log("[server] Yahoo items count:", (real.items || []).filter((i: any) => i.mall === "yahoo").length);
+        }
+        console.log("[frontend] Yahoo items before dedupe:", (real.items || []).filter((i: any) => i.mall === "yahoo"));
+        
         // 重複除去と最安値選択
         let items = dedupeAndPickCheapest([...(real.items || []), ...mock]);
+        
+        console.log("[frontend] Items after dedupe:", items.length);
+        console.log("[frontend] Yahoo items after dedupe:", items.filter((i) => i.mall === "yahoo"));
+        console.log("[frontend] All items after dedupe:", items.map(i => ({ mall: i.mall, id: i.id, title: i.title?.substring(0, 50) })));
 
         // 念のためクライアント側でもフィルタ（保険）
         items = items.filter((i: SearchItem) => !isCover(i) && !isFurusato(i) && !isBabyPillow(i) && !isFutonSet(i) && !isHugPillow(i) && !isSpecialUse(i));

@@ -5,17 +5,24 @@ import type { Product } from '../../src/lib/types/product';
 
 type PriceRange = { min?: number; max?: number };
 
-function toSafeImageUrl(u?: string): string | undefined {
-  if (!u) return undefined;
+function toSafeImageUrl(u?: string): string | null {
+  if (!u) return null;
   try {
     const url = new URL(u.replace(/^http:/, "https:"));
     return url.toString();
   } catch {
-    return undefined;
+    return null;
   }
 }
 
 const YAHOO_ENDPOINT = 'https://shopping.yahooapis.jp/ShoppingWebService/V3/itemSearch';
+
+// Yahoo API レスポンスの型定義
+interface YahooApiResponse {
+  totalResultsAvailable: number;
+  totalResultsReturned: number;
+  hits?: SearchItem[];
+}
 
 export async function searchYahoo(
   q: string,
@@ -24,55 +31,63 @@ export async function searchYahoo(
   meta?: { tag?: "primary" | "adjacent" }
 ): Promise<Product[]> {
   const appid = process.env.YAHOO_APP_ID;
-  if (!appid) return [];
-
-  const url = new URL(YAHOO_ENDPOINT);
-  url.searchParams.set('appid', appid);
-  url.searchParams.set('q', q);
-  url.searchParams.set('results', String(Math.min(Math.max(limit, 1), 30)));
-  url.searchParams.set('in_stock', '1');
-
-  // ★ 価格レンジの厳密な処理：数値のときだけ付与
-  if (typeof range?.min === "number") {
-    url.searchParams.set('price_from', String(range.min));
+  if (!appid) {
+    console.log('[yahoo] YAHOO_APP_ID not found');
+    return [];
   }
-  if (typeof range?.max === "number") {
-    url.searchParams.set('price_to', String(range.max));
+
+  try {
+    // Yahoo APIの制限（最大20件）を回避するため、複数回呼び出し
+    const maxPerRequest = 20;
+    const totalRequests = Math.ceil(limit / maxPerRequest);
+    const allItems: SearchItem[] = [];
+
+    for (let i = 0; i < totalRequests; i++) {
+      const offset = i * maxPerRequest;
+      const currentLimit = Math.min(maxPerRequest, limit - offset);
+      
+      if (currentLimit <= 0) break;
+
+      const url = new URL(YAHOO_ENDPOINT);
+      url.searchParams.set('appid', appid);
+      url.searchParams.set('query', q);
+      url.searchParams.set('hits', String(currentLimit));
+      url.searchParams.set('offset', String(offset));
+      url.searchParams.set('in_stock', '1');
+
+      console.log(`[yahoo] API URL (request ${i + 1}/${totalRequests}):`, url.toString());
+
+      const response = await fetchJsonWithRetry(url.toString()) as YahooApiResponse;
+      console.log(`[yahoo] API response (request ${i + 1}):`, {
+        totalResultsAvailable: response.totalResultsAvailable,
+        totalResultsReturned: response.totalResultsReturned,
+        hitsCount: response.hits?.length || 0,
+        offset: offset
+      });
+
+      const items: SearchItem[] = response.hits ?? [];
+      allItems.push(...items);
+      
+      // 取得したアイテム数が要求数に達した場合、またはこれ以上取得できない場合
+      if (items.length < currentLimit || allItems.length >= limit) {
+        break;
+      }
+    }
+
+    console.log('[yahoo] Total items collected:', allItems.length);
+
+    // 価格フィルタは適用せず、search-cross API側で価格帯フィルタを適用
+    return allItems.slice(0, limit).map((item: SearchItem): Product => ({
+      id: item.id,
+      title: item.title,
+      url: item.url,
+      price: normalizePriceToNumber(item.price),
+      image: toSafeImageUrl(item.image ?? undefined),
+      mall: 'yahoo',
+      shop: item.shop ?? undefined,
+    }));
+  } catch (error) {
+    console.error('[yahoo] API Error:', error);
+    return [];
   }
-  // typeof が number でない（undefined/null）の場合は **絶対に付与しない**
-
-  type R = {
-    totalResultsAvailable?: number;
-    hits?: {
-      name: string;
-      url: string;
-      price: number | string;
-      image?: { medium?: string; small?: string; };
-      seller?: { name?: string; id?: string; };
-      code?: string; // ある場合
-    }[];
-  };
-
-  const data = await fetchJsonWithRetry<R>(url.toString());
-  const items: SearchItem[] = (data.hits || []).map(h => ({
-    id: h.code || h.url,
-    mall: 'yahoo' as const,
-    title: h.name,
-    url: h.url,
-    image: toSafeImageUrl(h.image?.medium || h.image?.small) || null, // 安全化
-    price: normalizePriceToNumber(h.price),
-    shop: h.seller?.name ?? null,
-  })).filter(i => i.price > 0);
-
-  // 返却時に meta を付与
-  const normalized: Product[] = items.map((n) => ({
-    ...n,
-    meta: {
-      ...(n as any).meta, // 既存にあれば活かす
-      source: "yahoo",
-      bandTag: meta?.tag,
-    },
-  }));
-
-  return normalized.slice(0, limit);
 }

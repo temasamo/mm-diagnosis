@@ -1,20 +1,17 @@
 import type { SearchItem } from './malls/types';
 
-const STRIP_PARAMS = ['scid','icm_','rafcid','_ex','affiliate','utm_source','utm_medium','utm_campaign'];
-
 export function canonicalUrl(u: string): string {
   try {
     const url = new URL(u);
-    STRIP_PARAMS.forEach(k => url.searchParams.delete(k));
-    url.hash = '';
-    return url.toString();
+    // クエリパラメータを除去して正規化
+    return url.origin + url.pathname;
   } catch { return u; }
 }
 
 export function dedupeAndPickCheapest(items: SearchItem[]): SearchItem[] {
   const map = new Map<string, SearchItem>();
   for (const it of items) {
-    // 優先キー: オリジンid or 正規化URL
+    // モール別に重複除去を行う（異なるモール間では重複除去しない）
     const key = `${it.mall}:${it.id || canonicalUrl(it.url)}`;
     const exist = map.get(key);
     if (!exist || (it.price > 0 && it.price < exist.price)) {
@@ -27,13 +24,11 @@ export function dedupeAndPickCheapest(items: SearchItem[]): SearchItem[] {
 // 商品の重複を除去するユーティリティ
 
 export interface Product {
-  id?: string;
-  title?: string;
-  price?: number;
-  retailer?: string;
-  url?: string;
+  id?: string
+  title?: string
+  url?: string
+  price?: number
   image?: string;
-  [key: string]: any;
 }
 
 /**
@@ -64,41 +59,14 @@ export function dedupeProducts(products: Product[]): Product[] {
  * タイトルを正規化して類似商品を検出
  */
 function generateProductKey(product: Product): string {
-  if (!product.title) return `unknown-${product.id || Math.random()}`;
+  if (!product.title) return Math.random().toString();
   
-  // タイトルを正規化
-  let normalized = product.title
+  // タイトルを正規化（空白除去、小文字化）
+  const normalized = product.title
     .toLowerCase()
-    .replace(/[【】［］()（）]/g, '') // 括弧を除去
-    .replace(/[^\w\s]/g, '') // 特殊文字を除去
-    .replace(/\s+/g, ' ') // 複数スペースを単一スペースに
-    .trim();
+    .replace(/\s+/g, '')
+    .replace(/[【】\[\]()（）]/g, '')
+    .substring(0, 50); // 最初の50文字のみ使用
   
-  // 価格帯も考慮（±20%以内は同じ商品として扱う）
-  const priceKey = product.price ? Math.floor(product.price / 1000) * 1000 : 0;
-  
-  return `${normalized}-${priceKey}`;
+  return normalized;
 }
-
-/**
- * 商品グループの重複を除去
- */
-export function dedupeProductGroups(groups: {
-  primary?: Product[];
-  secondaryA?: Product[];
-  secondaryB?: Product[];
-  secondaryC?: Product[];
-  [key: string]: any;
-}) {
-  const result: any = {};
-  
-  for (const [key, products] of Object.entries(groups)) {
-    if (Array.isArray(products)) {
-      result[key] = dedupeProducts(products);
-    } else {
-      result[key] = products;
-    }
-  }
-  
-  return result;
-} 
