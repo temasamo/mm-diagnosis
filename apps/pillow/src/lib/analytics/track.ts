@@ -10,6 +10,9 @@ export type BaseCtx = {
 function now(){ return Date.now(); }
 
 export function getSessionId(){
+  // クライアントサイドでのみ実行
+  if (typeof window === 'undefined') return 'server-session';
+  
   try{
     const k='mm.session';
     let v = localStorage.getItem(k);
@@ -21,6 +24,9 @@ export function getSessionId(){
 }
 
 export async function track(name: string, payload: Record<string, any> = {}){
+  // クライアントサイドでのみ実行
+  if (typeof window === 'undefined') return;
+  
   const ctx: BaseCtx = {
     ts: now(),
     session_id: getSessionId(),
