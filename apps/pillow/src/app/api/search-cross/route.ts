@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { findBandById, adjacentFor30Plus30, toBandId, resolveBandId } from "../../../lib/budget";
 import { searchRakuten } from "../../../../lib/malls/rakuten";
 import { searchYahoo } from "../../../../lib/malls/yahoo";
-import { dedupeProducts } from "../../../../lib/dedupe";
+import { dedupeAndPickCheapest } from "../../../../lib/dedupe";
 import type { Product } from "../../../lib/types/product";
 
 // 価格帯での後段フィルタ関数
@@ -103,7 +103,13 @@ export async function POST(req: NextRequest) {
 
   // これまでの filtered を正規化してから dedupe に渡す
   const filteredForDedupe = filtered.map(forDedupe);
-  const deduped = dedupeProducts(filteredForDedupe) as typeof filtered; // 必要なら as で戻す
+  console.log("[server] Raw results count:", results.length);
+  console.log("[server] Yahoo items in raw results:", results.filter(item => item.mall === 'yahoo').length);
+  console.log("[server] Filtered results count:", filtered.length);
+  console.log("[server] Yahoo items in filtered:", filtered.filter(item => item.mall === 'yahoo').length);
+  const deduped = dedupeAndPickCheapest(filteredForDedupe) as typeof filtered;
+  console.log("[server] Deduped results count:", deduped.length);
+  console.log("[server] Yahoo items in deduped:", deduped.filter(item => item.mall === 'yahoo').length); // 必要なら as で戻す
   return NextResponse.json({ items: deduped }, { status: 200 });
 }
 
