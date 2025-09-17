@@ -309,9 +309,9 @@ export default function ResultPage() {
         // サーバー側でもログ出力
         if (typeof window === 'undefined') {
           console.log("[server] Raw API response items count:", (real.items || []).length);
-          console.log("[server] Yahoo items count:", (real.items || []).filter((i) => i.mall === "yahoo").length);
+          console.log("[server] Yahoo items count:", (real.items || []).filter((i: any) => i.mall === "yahoo").length);
         }
-        console.log("[frontend] Yahoo items before dedupe:", (real.items || []).filter((i) => i.mall === "yahoo"));
+        console.log("[frontend] Yahoo items before dedupe:", (real.items || []).filter((i: any) => i.mall === "yahoo"));
         
         // 重複除去と最安値選択
         let items = dedupeAndPickCheapest([...(real.items || []), ...mock]);

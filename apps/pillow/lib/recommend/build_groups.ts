@@ -2,7 +2,7 @@ import { CATEGORY_LABEL, type CategoryId } from "../scoring/config";
 import { CATEGORY_QUERIES, buildQueryWords } from "../catalog/category_query";
 import { searchAllMalls, type MallProduct } from "../catalog/mall_search";
 import type { Provisional } from "../scoring/engine";
-import { dedupeProductGroups } from "../dedupe";
+
 
 // --- 予算のワンランク上を計算する関数 ---
 function getExtendedBudgetBandId(budgetBandId?: string | null): string | null {
@@ -530,23 +530,16 @@ export async function buildGroupsFromAPI(
     secondaryB = Array.isArray(secondaryB) ? secondaryB.slice(0, 3) : [];
     secondaryC = Array.isArray(secondaryC) ? secondaryC.slice(0, 3) : [];
 
-    // 重複除去を適用
-    const dedupedGroups = dedupeProductGroups({
-      primary,
-      secondaryA,
-      secondaryB,
-      secondaryC
-    });
-
-    const emptyAll = dedupedGroups.primary.length + dedupedGroups.secondaryA.length + dedupedGroups.secondaryB.length + dedupedGroups.secondaryC.length === 0;
+    // 重複除去は既にsearch-cross APIで実行済み
+    const emptyAll = primary.length + secondaryA.length + secondaryB.length + secondaryC.length === 0;
     const message = emptyAll ? "候補を取得できませんでした" : undefined;
 
     return { 
-      primary: dedupedGroups.primary, 
-      secondaryBuckets: [dedupedGroups.secondaryA, dedupedGroups.secondaryB, dedupedGroups.secondaryC], 
-      secondaryA: dedupedGroups.secondaryA, 
-      secondaryB: dedupedGroups.secondaryB, 
-      secondaryC: dedupedGroups.secondaryC, 
+      primary, 
+      secondaryBuckets: [secondaryA, secondaryB, secondaryC], 
+      secondaryA, 
+      secondaryB, 
+      secondaryC, 
       secondaryLabels,
       message 
     };

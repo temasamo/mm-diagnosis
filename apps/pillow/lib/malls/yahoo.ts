@@ -5,17 +5,24 @@ import type { Product } from '../../src/lib/types/product';
 
 type PriceRange = { min?: number; max?: number };
 
-function toSafeImageUrl(u?: string): string | undefined {
-  if (!u) return undefined;
+function toSafeImageUrl(u?: string): string | null {
+  if (!u) return null;
   try {
     const url = new URL(u.replace(/^http:/, "https:"));
     return url.toString();
   } catch {
-    return undefined;
+    return null;
   }
 }
 
 const YAHOO_ENDPOINT = 'https://shopping.yahooapis.jp/ShoppingWebService/V3/itemSearch';
+
+// Yahoo API レスポンスの型定義
+interface YahooApiResponse {
+  totalResultsAvailable: number;
+  totalResultsReturned: number;
+  hits?: SearchItem[];
+}
 
 export async function searchYahoo(
   q: string,
@@ -50,7 +57,7 @@ export async function searchYahoo(
 
       console.log(`[yahoo] API URL (request ${i + 1}/${totalRequests}):`, url.toString());
 
-      const response = await fetchJsonWithRetry(url.toString());
+      const response = await fetchJsonWithRetry(url.toString()) as YahooApiResponse;
       console.log(`[yahoo] API response (request ${i + 1}):`, {
         totalResultsAvailable: response.totalResultsAvailable,
         totalResultsReturned: response.totalResultsReturned,
@@ -71,13 +78,13 @@ export async function searchYahoo(
 
     // 価格フィルタは適用せず、search-cross API側で価格帯フィルタを適用
     return allItems.slice(0, limit).map((item: SearchItem): Product => ({
-      id: item.code ?? item.index?.toString() ?? '',
-      title: item.name ?? '',
-      url: item.url ?? '',
+      id: item.id,
+      title: item.title,
+      url: item.url,
       price: normalizePriceToNumber(item.price),
-      image: toSafeImageUrl(item.image?.medium ?? item.image?.small),
+      image: toSafeImageUrl(item.image ?? undefined),
       mall: 'yahoo',
-      shop: item.seller?.name ?? undefined,
+      shop: item.shop ?? undefined,
     }));
   } catch (error) {
     console.error('[yahoo] API Error:', error);

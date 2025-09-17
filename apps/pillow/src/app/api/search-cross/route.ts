@@ -98,7 +98,7 @@ export async function POST(req: NextRequest) {
     // image or imageUrl のどちらかに入っているケースも吸収
     const img = p.image ?? p.imageUrl ?? undefined;
     // null を undefined に落として、dedupe が期待する型に合わせる
-    return { ...p, image: img } as Omit<T, "image"> & { image?: string };
+    return { ...p, image: img || null } as Omit<T, "image"> & { image: string | null };
   }
 
   // これまでの filtered を正規化してから dedupe に渡す
