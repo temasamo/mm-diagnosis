@@ -30,3 +30,28 @@ export function isFurusato(
   if (/ふるさと納税/.test(sh)) return true;
   return false;
 }
+
+// 新しい除外条件の判定関数
+export function isBabyPillowTitle(title?: string): boolean {
+  if (!title) return false;
+  const t = title.toLowerCase();
+  return /(ベビー|赤ちゃん|新生児|乳児|子供|キッズ|ジュニア|幼児|ドーナツ枕|ベビー枕|赤ちゃん枕)/i.test(t);
+}
+
+export function isFutonSetTitle(title?: string): boolean {
+  if (!title) return false;
+  const t = title.toLowerCase();
+  return /(布団セット|寝具セット|枕付き|枕込み|セット)/i.test(t);
+}
+
+export function isHugPillowTitle(title?: string): boolean {
+  if (!title) return false;
+  const t = title.toLowerCase();
+  return /(抱き枕|抱きまくら|ボディピロー|ボディ枕|抱き|ボディ)/i.test(t);
+}
+
+export function isSpecialUseTitle(title?: string): boolean {
+  if (!title) return false;
+  const t = title.toLowerCase();
+  return /(医療用|介護用|リハビリ|治療用|車用|旅行用|キャンプ用|アウトドア用)/i.test(t);
+}
