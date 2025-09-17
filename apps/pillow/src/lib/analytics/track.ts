@@ -7,7 +7,12 @@ export type BaseCtx = {
   ua?: string;
 };
 
-function now(){ return Date.now(); }
+// 動的な値の生成をクライアントサイドでのみ実行
+function now(){ 
+  // クライアントサイドでのみ実行
+  if (typeof window === 'undefined') return 0;
+  return Date.now(); 
+}
 
 export function getSessionId(){
   // クライアントサイドでのみ実行
@@ -16,7 +21,11 @@ export function getSessionId(){
   try{
     const k='mm.session';
     let v = localStorage.getItem(k);
-    if(!v){ v = (globalThis.crypto?.randomUUID?.() ?? `${now()}-${Math.random()}`); localStorage.setItem(k,v); }
+    if(!v){ 
+      // クライアントサイドでのみ動的な値を生成
+      v = (globalThis.crypto?.randomUUID?.() ?? `${now()}-${Math.random()}`); 
+      localStorage.setItem(k,v); 
+    }
     return v;
   }catch{
     return 'no-storage';
@@ -30,10 +39,9 @@ export async function track(name: string, payload: Record<string, any> = {}){
   const ctx: BaseCtx = {
     ts: now(),
     session_id: getSessionId(),
-    ua: typeof navigator !== 'undefined' ? navigator.userAgent : 'server',
-    page: typeof location !== 'undefined' ? location.pathname : 'server',
-    diag_id: payload?.diag_id,
-    rec_set_id: payload?.rec_set_id,
+    ua: typeof navigator !== 'undefined' ? navigator.userAgent : '',
+    url: typeof window !== 'undefined' ? window.location.href : '',
+    ...payload
   };
 
   // 開発時の見える化

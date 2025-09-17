@@ -27,9 +27,8 @@ function formatJPY(v?: number | null) {
 }
 
 export default function ProductCard({ item }: { item: ProductItem }) {
-  const href = `/api/out?mall=${encodeURIComponent(item.mall)}&url=${encodeURIComponent(
-    item.url
-  )}`;
+  // すべての商品で直接URLを使用（アフィリエイトURLは各API側で処理済み）
+  const href = item.url;
 
   return (
     <a

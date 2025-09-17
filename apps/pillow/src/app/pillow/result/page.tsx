@@ -300,7 +300,8 @@ export default function ResultPage() {
         
         const budgetBandId = resolveBandId(answers?.budget) || "10k-20k";
         const limit = 12;
-        const baseUrl = typeof window !== 'undefined' ? '' : (process.env.NEXT_PUBLIC_BASE_URL ?? '');
+        // サーバーとクライアントで一貫したbaseUrlを使用
+        const baseUrl = '';
         
         // 実データとモックデータを並行取得
         const [real, mock] = await Promise.all([
