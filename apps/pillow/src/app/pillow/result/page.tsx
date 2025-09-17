@@ -19,7 +19,7 @@ import { resolveBandId } from "@/lib/budget";
 import { GROUP_LABEL } from "@/lib/ui/labels";
 import ProductCard, { ProductItem } from '@/components/ProductCard';
 import type { SearchItem } from "../../../../lib/malls/types";
-import { isCover, isFurusato } from '@/app/api/search-cross/filters';
+import { isCover, isFurusato, isBabyPillow, isFutonSet, isHugPillow, isSpecialUse } from '@/app/api/search-cross/filters';
 
 const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK === '1';
 
@@ -309,7 +309,7 @@ export default function ResultPage() {
         let items = dedupeAndPickCheapest([...(real.items || []), ...mock]);
 
         // 念のためクライアント側でもフィルタ（保険）
-        items = items.filter((i: SearchItem) => !isCover(i) && !isFurusato(i));
+        items = items.filter((i: SearchItem) => !isCover(i) && !isFurusato(i) && !isBabyPillow(i) && !isFutonSet(i) && !isHugPillow(i) && !isSpecialUse(i));
 
         if (items.length > 0) {
           // ユーザーの予算帯キー
@@ -354,7 +354,7 @@ export default function ResultPage() {
           const fallbackItems = await fetch(`${baseUrl}/api/search-cross?q=枕&limit=${limit}`, { cache: 'no-store' }).then(r => r.json());
           if (!mounted) return;
           
-          let fallbackFiltered = fallbackItems.filter((i: SearchItem) => !isCover(i) && !isFurusato(i));
+          let fallbackFiltered = fallbackItems.filter((i: SearchItem) => !isCover(i) && !isFurusato(i) && !isBabyPillow(i) && !isFutonSet(i) && !isHugPillow(i) && !isSpecialUse(i));
           const userBand: BudgetBandKey = (answers?.budget ?? "3k-6k") as BudgetBandKey;
           const decoratedItems = decorateItemsWithPriceAndBudget(fallbackFiltered, userBand);
           
