@@ -19,10 +19,19 @@ export const rakutenAdapter: MallAdapter = {
       const json:any = await res.json();
       const items: RawMallItem[] = (json.Items ?? []).map((wrap:any)=>{
         const it = wrap.Item;
+        
+        // アフィリエイトURLの有効性をチェック
+        let url = '';
+        if (it.affiliateUrl && it.affiliateUrl.includes('item.rakuten.co.jp')) {
+          url = it.affiliateUrl;
+        } else if (it.itemUrl) {
+          url = it.itemUrl;
+        }
+        
         return {
           id: String(it.itemCode),
           title: it.itemName,
-          url: it.itemUrl,
+          url: url,
           price: Number(it.itemPrice),
           image: it.mediumImageUrls?.[0]?.imageUrl?.replace('?_ex=128x128','') ?? undefined,
           mall: 'rakuten'
