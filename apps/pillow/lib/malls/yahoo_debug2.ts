@@ -42,20 +42,11 @@ function toSafeImageUrl(u?: string | { small?: string; medium?: string }): strin
 
 const YAHOO_ENDPOINT = 'https://shopping.yahooapis.jp/ShoppingWebService/V3/itemSearch';
 
-// Yahoo API レスポンスの型定義（実際の構造に合わせて修正）
+// Yahoo API レスポンスの型定義
 interface YahooApiResponse {
   totalResultsAvailable: number;
   totalResultsReturned: number;
-  hits?: YahooItem[];
-}
-
-interface YahooItem {
-  name: string;           // 商品名
-  price: number;          // 価格
-  url: string;            // URL
-  image?: { small?: string; medium?: string }; // 画像
-  seller?: { name?: string }; // 店舗情報
-  code?: string;          // 商品コード
+  hits?: SearchItem[];
 }
 
 export async function searchYahoo(
@@ -78,7 +69,7 @@ export async function searchYahoo(
     // Yahoo APIの制限（最大20件）を回避するため、複数回呼び出し
     const maxPerRequest = 20;
     const totalRequests = Math.ceil(limit / maxPerRequest);
-    const allItems: YahooItem[] = [];
+    const allItems: SearchItem[] = [];
 
     console.log('[yahoo] ★★★ Total requests needed:', totalRequests);
 
@@ -115,7 +106,12 @@ export async function searchYahoo(
         offset: offset
       });
 
-      const items: YahooItem[] = response.hits ?? [];
+      // ★ デバッグログ追加：実際のレスポンス構造を確認
+      if (response.hits && response.hits.length > 0) {
+        console.log('[yahoo] ★★★ First item structure:', JSON.stringify(response.hits[0], null, 2));
+      }
+
+      const items: SearchItem[] = response.hits ?? [];
       allItems.push(...items);
       
       // 取得したアイテム数が要求数に達した場合、またはこれ以上取得できない場合
@@ -126,8 +122,8 @@ export async function searchYahoo(
 
     console.log('[yahoo] ★★★ Total items collected:', allItems.length);
 
-    // Yahoo APIの実際のレスポンス構造に合わせて変換
-    return allItems.slice(0, limit).map((item: YahooItem): Product => {
+    // 価格フィルタは適用せず、search-cross API側で価格帯フィルタを適用
+    return allItems.slice(0, limit).map((item: SearchItem): Product => {
       const originalImage = item.image;
       const processedImage = toSafeImageUrl(item.image ?? undefined);
       
@@ -136,19 +132,19 @@ export async function searchYahoo(
         console.log('[yahoo] Image URL processing failed:', {
           original: originalImage,
           processed: processedImage,
-          itemId: item.code,
-          title: item.name?.substring(0, 50)
+          itemId: item.id,
+          title: item.title?.substring(0, 50)
         });
       }
       
       return {
-        id: item.code || `yahoo_${Math.random()}`, // 商品コードまたはランダムID
-        title: item.name,                          // ★ 修正: name → title
+        id: item.id,
+        title: item.title,
         url: item.url,
         price: normalizePriceToNumber(item.price),
         image: processedImage,
         mall: 'yahoo',
-        shop: item.seller?.name ?? undefined,      // ★ 修正: seller.name → shop
+        shop: item.shop ?? undefined,
       };
     });
   } catch (error) {

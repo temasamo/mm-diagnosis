@@ -42,20 +42,11 @@ function toSafeImageUrl(u?: string | { small?: string; medium?: string }): strin
 
 const YAHOO_ENDPOINT = 'https://shopping.yahooapis.jp/ShoppingWebService/V3/itemSearch';
 
-// Yahoo API レスポンスの型定義（実際の構造に合わせて修正）
+// Yahoo API レスポンスの型定義
 interface YahooApiResponse {
   totalResultsAvailable: number;
   totalResultsReturned: number;
-  hits?: YahooItem[];
-}
-
-interface YahooItem {
-  name: string;           // 商品名
-  price: number;          // 価格
-  url: string;            // URL
-  image?: { small?: string; medium?: string }; // 画像
-  seller?: { name?: string }; // 店舗情報
-  code?: string;          // 商品コード
+  hits?: SearchItem[];
 }
 
 export async function searchYahoo(
@@ -64,23 +55,17 @@ export async function searchYahoo(
   limit = 30,
   meta?: { tag?: "primary" | "adjacent" }
 ): Promise<Product[]> {
-  console.log('[yahoo] ★★★ searchYahoo called with:', { q, range, limit, meta });
-  
   const appid = process.env.YAHOO_APP_ID;
   if (!appid) {
     console.log('[yahoo] YAHOO_APP_ID not found');
     return [];
   }
 
-  console.log('[yahoo] ★★★ YAHOO_APP_ID found, starting API calls...');
-
   try {
     // Yahoo APIの制限（最大20件）を回避するため、複数回呼び出し
     const maxPerRequest = 20;
     const totalRequests = Math.ceil(limit / maxPerRequest);
-    const allItems: YahooItem[] = [];
-
-    console.log('[yahoo] ★★★ Total requests needed:', totalRequests);
+    const allItems: SearchItem[] = [];
 
     for (let i = 0; i < totalRequests; i++) {
       const offset = i * maxPerRequest;
@@ -95,27 +80,17 @@ export async function searchYahoo(
       url.searchParams.set('offset', String(offset));
       url.searchParams.set('in_stock', '1');
 
-      // 価格フィルタを追加
-      if (typeof range?.min === "number") {
-        url.searchParams.set('minPrice', String(range.min));
-        console.log('[yahoo] ★★★ minPrice set:', range.min);
-      }
-      if (typeof range?.max === "number") {
-        url.searchParams.set('maxPrice', String(range.max));
-        console.log('[yahoo] ★★★ maxPrice set:', range.max);
-      }
-
-      console.log(`[yahoo] ★★★ API URL (request ${i + 1}/${totalRequests}):`, url.toString());
+      console.log(`[yahoo] API URL (request ${i + 1}/${totalRequests}):`, url.toString());
 
       const response = await fetchJsonWithRetry(url.toString()) as YahooApiResponse;
-      console.log(`[yahoo] ★★★ API response (request ${i + 1}):`, {
+      console.log(`[yahoo] API response (request ${i + 1}):`, {
         totalResultsAvailable: response.totalResultsAvailable,
         totalResultsReturned: response.totalResultsReturned,
         hitsCount: response.hits?.length || 0,
         offset: offset
       });
 
-      const items: YahooItem[] = response.hits ?? [];
+      const items: SearchItem[] = response.hits ?? [];
       allItems.push(...items);
       
       // 取得したアイテム数が要求数に達した場合、またはこれ以上取得できない場合
@@ -124,10 +99,10 @@ export async function searchYahoo(
       }
     }
 
-    console.log('[yahoo] ★★★ Total items collected:', allItems.length);
+    console.log('[yahoo] Total items collected:', allItems.length);
 
-    // Yahoo APIの実際のレスポンス構造に合わせて変換
-    return allItems.slice(0, limit).map((item: YahooItem): Product => {
+    // 価格フィルタは適用せず、search-cross API側で価格帯フィルタを適用
+    return allItems.slice(0, limit).map((item: SearchItem): Product => {
       const originalImage = item.image;
       const processedImage = toSafeImageUrl(item.image ?? undefined);
       
@@ -136,23 +111,23 @@ export async function searchYahoo(
         console.log('[yahoo] Image URL processing failed:', {
           original: originalImage,
           processed: processedImage,
-          itemId: item.code,
-          title: item.name?.substring(0, 50)
+          itemId: item.id,
+          title: item.title?.substring(0, 50)
         });
       }
       
       return {
-        id: item.code || `yahoo_${Math.random()}`, // 商品コードまたはランダムID
-        title: item.name,                          // ★ 修正: name → title
+        id: item.id,
+        title: item.title,
         url: item.url,
         price: normalizePriceToNumber(item.price),
         image: processedImage,
         mall: 'yahoo',
-        shop: item.seller?.name ?? undefined,      // ★ 修正: seller.name → shop
+        shop: item.shop ?? undefined,
       };
     });
   } catch (error) {
-    console.error('[yahoo] ★★★ API Error:', error);
+    console.error('[yahoo] API Error:', error);
     return [];
   }
 }
