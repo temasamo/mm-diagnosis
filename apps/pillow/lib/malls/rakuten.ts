@@ -84,12 +84,24 @@ export async function searchRakuten(
       // アフィリエイトURLの有効性をチェック
       let link = '';
       
-      // アフィリエイトURLが存在し、有効な形式かチェック
-      if (Item.affiliateUrl && Item.affiliateUrl.includes('item.rakuten.co.jp')) {
+      // デバッグログを追加
+      console.log('[rakuten] URL debug:', {
+        affiliateUrl: Item.affiliateUrl,
+        itemUrl: Item.itemUrl,
+        itemCode: Item.itemCode
+      });
+      
+      // アフィリエイトURLが存在し、有効な形式かチェック（より柔軟に）
+      if (Item.affiliateUrl && 
+          (Item.affiliateUrl.includes('rakuten.co.jp') || 
+           Item.affiliateUrl.includes('item.rakuten.co.jp') ||
+           Item.affiliateUrl.startsWith('http'))) {
         link = Item.affiliateUrl;
+        console.log('[rakuten] Using affiliateUrl:', link);
       } else if (Item.itemUrl) {
         // アフィリエイトURLが無効な場合は通常のitemUrlを使用
         link = Item.itemUrl;
+        console.log('[rakuten] Using itemUrl:', link);
       }
       
       if (!link) return null; // URL が無いものは捨てる
