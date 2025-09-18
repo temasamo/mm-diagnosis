@@ -81,12 +81,22 @@ export async function searchRakuten(
 
   const mappedItems = (data.Items || [])
     .map(({ Item }) => {
-      const link = Item.affiliateUrl || Item.itemUrl || '';
-      if (!link) return null; // ★ URL が無いものは捨てる（/api/out 400 の根本回避）
+      // アフィリエイトURLの有効性をチェック
+      let link = '';
+      
+      // アフィリエイトURLが存在し、有効な形式かチェック
+      if (Item.affiliateUrl && Item.affiliateUrl.includes('item.rakuten.co.jp')) {
+        link = Item.affiliateUrl;
+      } else if (Item.itemUrl) {
+        // アフィリエイトURLが無効な場合は通常のitemUrlを使用
+        link = Item.itemUrl;
+      }
+      
+      if (!link) return null; // URL が無いものは捨てる
 
       return {
         id: Item.itemCode || link,
-        mall: 'rakuten' as Mall, // Mall の union 型に合わせる（小文字想定）
+        mall: 'rakuten' as Mall,
         title: Item.itemName,
         url: link,
         image: pickImage(Item.mediumImageUrls || null, Item.smallImageUrls || null),
