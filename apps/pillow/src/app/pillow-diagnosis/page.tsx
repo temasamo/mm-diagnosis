@@ -8,6 +8,7 @@ import { generateProductRecommendations, filterByBudget } from "../../../lib/sco
 import { generatePersonalizedExplanation } from "../../../lib/scoring/explanations";
 import { generateSearchQueries } from "../../../lib/scoring/search-queries";
 import { buildGroupsFromAPI, type GroupedRecommendations } from "../../../lib/recommend/build_groups";
+import { buildAffUrl } from "../../lib/affOut";
 
 export default function Page() {
   const [q, setQ] = useState<Questionnaire | null>(null);
@@ -157,7 +158,7 @@ export default function Page() {
                         <div className="font-medium">{product.title}</div>
                         <div className="text-xs text-gray-500">[{product.mall}]</div>
                       </div>
-                      <a href={product.url} target="_blank" rel="noopener noreferrer" 
+                      <a href={product.mall === "rakuten" ? buildAffUrl("rakuten", { url: product.url }) : product.mall === "yahoo" ? buildAffUrl("yahoo", { url: product.url }) : product.url} target="_blank" rel="nofollow sponsored noopener" 
                          className="text-blue-500 text-xs underline">
                         詳細
                       </a>
@@ -176,7 +177,7 @@ export default function Page() {
                         <div className="font-medium">{product.title}</div>
                         <div className="text-xs text-gray-500">[{product.mall}]</div>
                       </div>
-                      <a href={product.url} target="_blank" rel="noopener noreferrer" 
+                      <a href={product.mall === "rakuten" ? buildAffUrl("rakuten", { url: product.url }) : product.mall === "yahoo" ? buildAffUrl("yahoo", { url: product.url }) : product.url} target="_blank" rel="nofollow sponsored noopener" 
                          className="text-blue-500 text-xs underline">
                         詳細
                       </a>
