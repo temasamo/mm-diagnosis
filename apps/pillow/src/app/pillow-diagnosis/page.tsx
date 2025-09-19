@@ -8,7 +8,7 @@ import { generateProductRecommendations, filterByBudget } from "../../../lib/sco
 import { generatePersonalizedExplanation } from "../../../lib/scoring/explanations";
 import { generateSearchQueries } from "../../../lib/scoring/search-queries";
 import { buildGroupsFromAPI, type GroupedRecommendations } from "../../../lib/recommend/build_groups";
-import { buildAffUrl } from "../../../lib/affOut";
+import { buildAffUrl } from "../../lib/affOut";
 
 export default function Page() {
   const [q, setQ] = useState<Questionnaire | null>(null);
