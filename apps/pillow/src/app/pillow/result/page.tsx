@@ -20,6 +20,8 @@ import { GROUP_LABEL } from "@/lib/ui/labels";
 import ProductCard, { ProductItem } from '@/components/ProductCard';
 import type { SearchItem } from "../../../../lib/malls/types";
 import { isCover, isFurusato, isBabyPillow, isFutonSet, isHugPillow, isSpecialUse } from '@/app/api/search-cross/filters';
+import AffiliateNotice from "@/components/AffiliateNotice";
+import AffiliateDisclaimer from "@/components/AffiliateDisclaimer";
 
 const USE_MOCK = process.env.NEXT_PUBLIC_USE_MOCK === '1';
 
@@ -552,6 +554,7 @@ export default function ResultPage() {
         </section>
               ) : (
           <section id="recommend-section" aria-label="recommendations" className="scroll-mt-20 space-y-6">
+          <AffiliateNotice className="mb-4" />
           {disableProposals && (
             <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-amber-200">
               まずはプレビューで商品候補の準備を行ってください。
@@ -663,6 +666,7 @@ export default function ResultPage() {
                         })}
                     </div>
                   </div>
+                  <AffiliateDisclaimer className="mt-10" />
                 </div>
               );
             })()
