@@ -583,7 +583,6 @@ export default function ResultPage() {
                     <>
                       <h3 className="text-lg md:text-xl font-semibold mt-8 mb-3">
                         第一候補グループ
-                        {variant && <span className="text-sm font-normal ml-2">(variant: {variant})</span>}
                       </h3>
                       <div className="grid gap-4 sm:grid-cols-3 mb-6">
                         {groups.primary.slice(0, 3).map((item: any, index: number) => {
@@ -614,7 +613,10 @@ export default function ResultPage() {
                   )}
                   
                   {/* --- 第二候補グループ --- */}
-                  <h3 className="text-lg md:text-xl font-semibold mt-10 mb-3">第二候補グループ</h3>
+                  <div className="flex items-center gap-3 mt-10 mb-3">
+                    <h3 className="text-lg md:text-xl font-semibold">第二候補グループ</h3>
+                    <span className="text-sm text-gray-400">（タイプを変更すると合計９種類（最大）表示されます。）</span>
+                  </div>
                   {(() => {
                     const secondaryCount = (groups?.secondaryBuckets ?? []).flat().length;
                     const showAdjNote = secondaryCount > 0 && secondaryCount < 3;
