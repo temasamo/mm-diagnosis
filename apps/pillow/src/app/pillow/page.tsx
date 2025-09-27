@@ -41,19 +41,29 @@ export default function Page() {
         </ul>
       </div>
 
-      <section className="flex justify-end gap-3 mt-8">
-        <Link
-          href="/pillow/diagnosis"
-          className="rounded-xl bg-white/90 px-5 py-3 font-semibold text-black transition-all hover:bg-white/80"
+      <section className="flex justify-between items-center mt-8">
+        <a
+          href="https://www.marketsupporter-ai.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="rounded-xl border border-white/20 px-4 py-2 text-white/80 transition-all hover:bg-white/10"
         >
-          診断を開始する
-        </Link>
-        <button
-          onClick={reset}
-          className="rounded-xl border border-white/20 px-5 py-3 text-white/80 transition-all hover:bg-white/10"
-        >
-          リセット
-        </button>
+          ホームへ戻る
+        </a>
+        <div className="flex gap-3">
+          <Link
+            href="/pillow/diagnosis"
+            className="rounded-xl bg-white/90 px-5 py-3 font-semibold text-black transition-all hover:bg-white/80"
+          >
+            診断を開始する
+          </Link>
+          <button
+            onClick={reset}
+            className="rounded-xl border border-white/20 px-5 py-3 text-white/80 transition-all hover:bg-white/10"
+          >
+            リセット
+          </button>
+        </div>
       </section>
     </main>
   );
