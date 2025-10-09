@@ -40,9 +40,9 @@ export default function ProductCard({ item }: { item: ProductItem }) {
       href={href} 
       target="_blank" 
       rel="nofollow sponsored noopener" 
-      className="block rounded-xl overflow-hidden hover:shadow-lg transition-shadow"
+      className="block rounded-xl overflow-hidden hover:shadow-lg transition-shadow bg-white border border-gray-200 shadow-sm"
     >
-      <div className="aspect-[4/3] bg-black/5">
+      <div className="aspect-[4/3] bg-gray-50">
         {item.image ? (
           <img 
             src={item.image} 
@@ -58,11 +58,11 @@ export default function ProductCard({ item }: { item: ProductItem }) {
         )}
       </div>
       <div className="p-3">
-        <div className="text-sm line-clamp-2 mb-1">{item.title}</div>
+        <div className="text-sm line-clamp-2 mb-1 text-gray-900">{item.title}</div>
         <div className="flex items-center justify-between">
-          <div className="font-semibold text-lg">{formatJPY(item.price)}</div>
+          <div className="font-semibold text-lg text-gray-900">{formatJPY(item.price)}</div>
           {item.shop && (
-            <div className="text-xs text-gray-500">{item.shop}</div>
+            <div className="text-xs text-gray-600">{item.shop}</div>
           )}
         </div>
         {item.outOfBudget && (

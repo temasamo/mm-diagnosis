@@ -290,24 +290,24 @@ export default function UserView({ scores = {}, problems = [], heightKey, firmne
   return (
     <div className="space-y-8">
       {/* 診断結果 */}
-      <section className="rounded-2xl border border-white/15 p-5">
-        <h3 className="text-lg font-semibold mb-3">あなたの診断結果</h3>
+      <section className="rounded-2xl border border-gray-200 p-5 bg-white shadow-sm">
+        <h3 className="text-lg font-semibold mb-3 text-gray-900">あなたの診断結果</h3>
         <div className="flex flex-wrap gap-2">
           {chips.map(c => (
-            <span key={c.key} className="rounded-full border border-white/20 px-3 py-1 text-sm">
+            <span key={c.key} className="rounded-full border border-gray-300 bg-gray-50 px-3 py-1 text-sm text-gray-700">
               {c.label}
             </span>
           ))}
         </div>
-        <p className="mt-4 text-sm text-white/80">
+        <p className="mt-4 text-sm text-gray-700">
           {comment}
         </p>
         
         {/* AI診断の理由 */}
         {aiReasons.length > 0 && (
-          <div className="mt-4 pt-4 border-t border-white/10">
-            <h4 className="text-sm font-medium mb-2 text-white/90">診断理由</h4>
-            <ul className="list-disc list-inside space-y-1 text-xs text-white/70">
+            <div className="mt-4 pt-4 border-t border-gray-200">
+              <h4 className="text-sm font-medium mb-2 text-gray-900">診断理由</h4>
+              <ul className="list-disc list-inside space-y-1 text-xs text-gray-600">
               {aiReasons.map((reason, index) => (
                 <li key={index}>{reason}</li>
               ))}
@@ -318,21 +318,21 @@ export default function UserView({ scores = {}, problems = [], heightKey, firmne
 
       {/* AIからのコメント */}
       {(aiReason || aiReasonLoading) && (
-        <section className="rounded-xl border border-neutral-700 p-6">
-          <h3 className="text-lg font-semibold mb-2">AIからのコメント</h3>
+        <section className="rounded-xl border border-gray-200 p-6 bg-white shadow-sm">
+          <h3 className="text-lg font-semibold mb-2 text-gray-900">AIからのコメント</h3>
           {aiReasonLoading ? (
-            <p className="text-neutral-200 leading-relaxed">AIが診断理由を分析中...</p>
+            <p className="text-gray-600 leading-relaxed">AIが診断理由を分析中...</p>
           ) : (
-            <p className="text-neutral-200 leading-relaxed">{aiReason}</p>
+            <p className="text-gray-700 leading-relaxed">{aiReason}</p>
           )}
         </section>
       )}
 
       {/* あなたのお悩み */}
       {bullets.length > 0 && (
-        <section className="rounded-2xl border border-white/15 p-5">
-          <h3 className="text-lg font-semibold mb-3">あなたのお悩み/使っているマットレス・布団や枕の素材</h3>
-          <ul className="list-disc list-inside space-y-1">
+        <section className="rounded-2xl border border-gray-200 p-5 bg-white shadow-sm">
+          <h3 className="text-lg font-semibold mb-3 text-gray-900">あなたのお悩み/使っているマットレス・布団や枕の素材</h3>
+          <ul className="list-disc list-inside space-y-1 text-gray-700">
             {bullets.map((b, i) => <li key={i}>{b.replace(/^・/,'')}</li>)}
           </ul>
         </section>

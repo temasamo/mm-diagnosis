@@ -6,7 +6,7 @@
 
 :root {
   --background: #ffffff;
-  --foreground: #171717;
+  --foreground: #111827;
 }
 
 @theme inline {
@@ -16,23 +16,16 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #000000;
-    --foreground: #ffffff;
-  }
-}
-
-/* iOS対策: ダーク時の背景を純黒に */
-.dark {
-  --background: 0 0% 0%;         /* #000000 */
-  --foreground: 0 0% 100%;       /* #ffffff */
-  --card: 0 0% 0%;               /* カードも黒に寄せる */
-  --muted: 0 0% 7%;              /* 区切り用のわずかに明るい面 */
+/* ライトテーマを維持 */
+.light {
+  --background: 0 0% 100%;       /* #ffffff */
+  --foreground: 0 0% 7%;         /* #111827 */
+  --card: 0 0% 100%;             /* カードも白 */
+  --muted: 0 0% 96%;             /* 区切り用のわずかに暗い面 */
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }

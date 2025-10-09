@@ -494,17 +494,17 @@ export default function ResultPage() {
 
   return (
     <main className="max-w-3xl mx-auto p-6 space-y-6">
-      <h1 className="text-2xl font-bold">診断結果 ＋ 商品提案</h1>
+      <h1 className="text-2xl font-bold text-gray-900">診断結果 ＋ 商品提案</h1>
 
       <div className="flex gap-2">
         <button
-          className={`rounded-2xl px-4 py-2 ${activeTab==="diagnosis" ? "bg-white/10" : "bg-white/5 hover:bg-white/10"}`}
+          className={`rounded-2xl px-4 py-2 ${activeTab==="diagnosis" ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
           onClick={() => setActiveTab("diagnosis")}
         >
           診断内容
         </button>
         <button
-          className={`rounded-2xl px-4 py-2 ${disableProposals ? "bg-white/5 opacity-50 cursor-not-allowed" : activeTab==="recommend" ? "bg-white/10" : "bg-white/5 hover:bg-white/10"}`}
+          className={`rounded-2xl px-4 py-2 ${disableProposals ? "bg-gray-100 opacity-50 cursor-not-allowed text-gray-400" : activeTab==="recommend" ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
           onClick={() => !disableProposals && setActiveTab("recommend")}
           aria-disabled={disableProposals}
           title={disableProposals ? "プレビューで候補準備中です" : undefined}
@@ -518,12 +518,12 @@ export default function ResultPage() {
           {/* --- Suitability(適合度) Card --- */}
           <section aria-label="suitability-card">
             {score !== null && typeof score === "number" && (
-              <section className="rounded-2xl border p-5">
-                <h3 className="text-lg mb-2">ご提案する枕の適合性</h3>
-                <div className="text-5xl font-bold font-mono">
+              <section className="rounded-2xl border border-gray-200 p-5 bg-white shadow-sm">
+                <h3 className="text-lg mb-2 text-gray-900">ご提案する枕の適合性</h3>
+                <div className="text-5xl font-bold font-mono text-blue-600">
                   {Math.min(85, score)} <span className="text-2xl">%</span>
                 </div>
-                <p className="text-sm mt-3">
+                <p className="text-sm mt-3 text-gray-600">
                   ※数字はあくまでもイメージです。
                 </p>
               </section>
@@ -542,7 +542,7 @@ export default function ResultPage() {
           />
           
           <button
-            className="mt-6 inline-flex items-center rounded-xl border px-4 py-2"
+            className="mt-6 inline-flex items-center rounded-xl border border-gray-300 bg-white text-gray-700 px-4 py-2 hover:bg-gray-50"
             onClick={() => {
               setActiveTab("recommend");
               const el = document.getElementById("recommend-section");
@@ -556,7 +556,7 @@ export default function ResultPage() {
           <section id="recommend-section" aria-label="recommendations" className="scroll-mt-20 space-y-6">
           <AffiliateNotice className="mb-4" />
           {disableProposals && (
-            <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-amber-200">
+            <div className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-amber-800">
               まずはプレビューで商品候補の準備を行ってください。
               <Link href="/pillow/preview" className="underline ml-2">プレビューへ</Link>
             </div>
@@ -568,7 +568,7 @@ export default function ResultPage() {
 
               if (noCandidates) {
                 return (
-                  <div className="text-sm text-gray-400">
+                  <div className="text-sm text-gray-600">
                     候補を取得できませんでした。<br />
                     ・予算条件を緩める／時間をおいて再実行する<br />
                     ・検索語（カテゴリ）が厳しすぎる可能性があります
@@ -615,7 +615,7 @@ export default function ResultPage() {
                   {/* --- 第二候補グループ --- */}
                   <div className="flex items-center gap-3 mt-10 mb-3">
                     <h3 className="text-lg md:text-xl font-semibold">第二候補グループ</h3>
-                    <span className="text-sm text-gray-400">（タイプを変更すると合計９種類（最大）表示されます。）</span>
+                    <span className="text-sm text-gray-600">（タイプを変更すると合計９種類（最大）表示されます。）</span>
                   </div>
                   {(() => {
                     const secondaryCount = (groups?.secondaryBuckets ?? []).flat().length;
@@ -627,19 +627,19 @@ export default function ResultPage() {
                   <div className="space-y-4">
                     <div className="flex gap-2">
                       <button
-                        className={`px-3 py-1 rounded ${secondaryOpen === "a" ? "bg-white/10" : "bg-white/5"}`}
+                        className={`px-3 py-1 rounded ${secondaryOpen === "a" ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
                         onClick={() => setSecondaryOpen("a")}
                       >
                         {GROUP_LABEL.A}
                       </button>
                       <button
-                        className={`px-3 py-1 rounded ${secondaryOpen === "b" ? "bg-white/10" : "bg-white/5"}`}
+                        className={`px-3 py-1 rounded ${secondaryOpen === "b" ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
                         onClick={() => setSecondaryOpen("b")}
                       >
                         {GROUP_LABEL.B}
                       </button>
                       <button
-                        className={`px-3 py-1 rounded ${secondaryOpen === "c" ? "bg-white/10" : "bg-white/5"}`}
+                        className={`px-3 py-1 rounded ${secondaryOpen === "c" ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
                         onClick={() => setSecondaryOpen("c")}
                       >
                         {GROUP_LABEL.C}
@@ -678,7 +678,7 @@ export default function ResultPage() {
       )}
 
       <div className="flex justify-end">
-        <Link href="/pillow" className="px-4 py-2 rounded-xl border">最初に戻る</Link>
+        <Link href="/pillow" className="px-4 py-2 rounded-xl border border-gray-300 bg-white text-gray-700 hover:bg-gray-50">最初に戻る</Link>
       </div>
     </main>
   );

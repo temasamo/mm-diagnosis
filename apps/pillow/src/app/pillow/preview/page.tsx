@@ -141,21 +141,21 @@ export default function PreviewPage() {
 
   return (
     <main className="max-w-3xl mx-auto p-6 space-y-8">
-      <h1 className="text-3xl md:text-4xl font-bold mb-6">一次診断</h1>
+      <h1 className="text-3xl md:text-4xl font-bold mb-6 text-gray-900">一次診断</h1>
       
       {/* ローディング状態の表示 */}
       {isProcessing && (
-        <section className="rounded-2xl border p-6 bg-zinc-900/40">
+        <section className="rounded-2xl border border-gray-200 p-6 bg-white shadow-sm">
           <div className="flex items-center justify-center space-x-3">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
-            <span className="text-lg">診断結果を処理中...</span>
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+            <span className="text-lg text-gray-700">診断結果を処理中...</span>
           </div>
         </section>
       )}
       
-      <section className="rounded-2xl border p-6">
-        <h2 className="text-xl md:text-2xl font-semibold">あなたの診断サマリー</h2>
-        <p className="leading-relaxed">
+      <section className="rounded-2xl border border-gray-200 p-6 bg-white shadow-sm">
+        <h2 className="text-xl md:text-2xl font-semibold text-gray-900">あなたの診断サマリー</h2>
+        <p className="leading-relaxed text-gray-700">
           あなたにおすすめの枕は「中くらい・標準」タイプです。
         </p>
       </section>
@@ -176,11 +176,11 @@ export default function PreviewPage() {
 
       {/* お悩みセクション */}
       {problems.length > 0 && (
-        <section className="rounded-2xl border p-6">
-          <h3 className="text-lg font-semibold mb-3">あなたのお悩み/使っているマットレス・布団や枕の素材</h3>
+        <section className="rounded-2xl border border-gray-200 p-6 bg-white shadow-sm">
+          <h3 className="text-lg font-semibold mb-3 text-gray-900">あなたのお悩み/使っているマットレス・布団や枕の素材</h3>
           <ul className="list-disc pl-5 space-y-1">
             {Array.from(new Set(problems)).map((problem: string, index: number) => (
-              <li key={index} className="text-sm">{problem}</li>
+              <li key={index} className="text-sm text-gray-700">{problem}</li>
             ))}
           </ul>
         </section>
@@ -196,8 +196,8 @@ export default function PreviewPage() {
           disabled={!ready || isProcessing}
           className={`px-6 py-3 rounded-xl transition-all ${
             ready && !isProcessing 
-              ? "bg-white/10 hover:bg-white/20" 
-              : "bg-white/5 cursor-not-allowed opacity-50"
+              ? "bg-blue-600 hover:bg-blue-700 text-white" 
+              : "bg-gray-300 cursor-not-allowed opacity-50 text-gray-500"
           }`}
         >
           {isProcessing ? "処理中..." : ready ? "診断結果へ" : "準備中…"}

@@ -49,16 +49,16 @@ export default function Page() {
 
   return (
     <main className="max-w-4xl mx-auto p-4 md:p-6">
-      <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-6">{APP_NAME}</h1>
+      <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-6 text-gray-900">{APP_NAME}</h1>
       
       {/* A. 体・寝姿勢 */}
-      <section className="rounded-xl border border-zinc-700/60 bg-zinc-900/40 p-5 md:p-6 mb-8">
-        <h2 className="text-xl md:text-2xl font-bold mb-4">A. 体・寝姿勢</h2>
+      <section className="rounded-xl border border-gray-200 bg-white shadow-sm p-5 md:p-6 mb-8">
+        <h2 className="text-xl md:text-2xl font-bold mb-4 text-gray-900">A. 体・寝姿勢</h2>
         <div className="space-y-6">
           {/* 主な寝姿勢 */}
           <div>
-            <div id="posture-label" className="text-lg font-semibold mb-2">
-              主な寝姿勢 <span className="text-neutral-400 text-sm font-normal">※複数選択できます</span>
+            <div id="posture-label" className="text-lg font-semibold mb-2 text-gray-900">
+              主な寝姿勢 <span className="text-gray-500 text-sm font-normal">※複数選択できます</span>
             </div>
             <div className="space-y-2" role="group" aria-labelledby="posture-label">
               {[
@@ -66,13 +66,13 @@ export default function Page() {
                 { key: "prone", label: "うつ伏せ", id: "pos-prone" },
                 { key: "side", label: "横向き", id: "pos-side" },
               ].map(o => (
-                <label key={o.key} htmlFor={o.id} className="flex items-center gap-3 py-2 cursor-pointer hover:bg-zinc-800/50 rounded-lg px-2 transition-colors">
+                <label key={o.key} htmlFor={o.id} className="flex items-center gap-3 py-2 cursor-pointer hover:bg-gray-50 rounded-lg px-2 transition-colors">
                   <input
                     id={o.id}
                     type="checkbox"
                     role="checkbox"
                     aria-checked={Array.isArray(answers?.postures) && answers.postures.includes(o.key)}
-                    className="h-5 w-5 rounded border-zinc-500 text-blue-600 focus:ring-2 focus:ring-blue-500"
+                    className="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500"
                     checked={Array.isArray(answers?.postures) && answers.postures.includes(o.key)}
                     onChange={(e) => {
                       const currentValues = Array.isArray(answers?.postures) ? answers.postures : [];
@@ -82,7 +82,7 @@ export default function Page() {
                       setAnswers({ postures: newValues });
                     }}
                   />
-                  <span className="text-sm md:text-base">{o.label}</span>
+                  <span className="text-sm md:text-base text-gray-700 text-gray-700">{o.label}</span>
                 </label>
               ))}
             </div>
@@ -91,7 +91,7 @@ export default function Page() {
             {Array.isArray(answers?.postures) && answers.postures.length > 0 && (
               <div className="mt-3 flex flex-wrap gap-2">
                 {answers.postures.map((p: string) => (
-                  <span key={p} className="px-2 py-1 text-xs rounded-full bg-zinc-800 border border-zinc-700 text-zinc-200">
+                  <span key={p} className="px-2 py-1 text-xs rounded-full bg-blue-100 border border-blue-200 text-blue-800">
                     {p === "supine" ? "仰向け" : p === "side" ? "横向き" : "うつ伏せ"}
                   </span>
                 ))}
@@ -100,7 +100,7 @@ export default function Page() {
           </div>
           {/* 寝返り頻度 */}
           <div>
-            <label className="text-sm md:text-base font-semibold text-zinc-200 mb-3 block">寝返り頻度</label>
+            <label className="text-sm md:text-base text-gray-700 font-semibold text-gray-900 mb-3 block">寝返り頻度</label>
             <div className="space-y-2">
               <label className="flex items-center gap-3 py-2">
                 <input
@@ -111,7 +111,7 @@ export default function Page() {
                   onChange={(e) => setAnswers({ rollover: e.target.value })}
                   className="h-4 w-4"
                 />
-                <span className="text-sm md:text-base">ほとんどしない</span>
+                <span className="text-sm md:text-base text-gray-700">ほとんどしない</span>
               </label>
               <label className="flex items-center gap-3 py-2">
                 <input
@@ -122,7 +122,7 @@ export default function Page() {
                   onChange={(e) => setAnswers({ rollover: e.target.value })}
                   className="h-4 w-4"
                 />
-                <span className="text-sm md:text-base">普通</span>
+                <span className="text-sm md:text-base text-gray-700">普通</span>
               </label>
               <label className="flex items-center gap-3 py-2">
                 <input
@@ -133,14 +133,14 @@ export default function Page() {
                   onChange={(e) => setAnswers({ rollover: e.target.value })}
                   className="h-4 w-4"
                 />
-                <span className="text-sm md:text-base">よくする</span>
+                <span className="text-sm md:text-base text-gray-700">よくする</span>
               </label>
             </div>
           </div>
 
           {/* 身長 */}
           <div>
-            <label className="text-sm md:text-base font-semibold text-zinc-200 mb-3 block">身長</label>
+            <label className="text-sm md:text-base text-gray-700 font-semibold text-gray-900 mb-3 block">身長</label>
             <div className="space-y-2">
               <label className="flex items-center gap-3 py-2">
                 <input
@@ -151,7 +151,7 @@ export default function Page() {
                   onChange={(e) => setAnswers({ height_band: e.target.value })}
                   className="h-4 w-4"
                 />
-                <span className="text-sm md:text-base">155cm未満</span>
+                <span className="text-sm md:text-base text-gray-700">155cm未満</span>
               </label>
               <label className="flex items-center gap-3 py-2">
                 <input
@@ -162,7 +162,7 @@ export default function Page() {
                   onChange={(e) => setAnswers({ height_band: e.target.value })}
                   className="h-4 w-4"
                 />
-                <span className="text-sm md:text-base">155cm〜170cm</span>
+                <span className="text-sm md:text-base text-gray-700">155cm〜170cm</span>
               </label>
               <label className="flex items-center gap-3 py-2">
                 <input
@@ -173,7 +173,7 @@ export default function Page() {
                   onChange={(e) => setAnswers({ height_band: e.target.value })}
                   className="h-4 w-4"
                 />
-                <span className="text-sm md:text-base">170cm〜180cm</span>
+                <span className="text-sm md:text-base text-gray-700">170cm〜180cm</span>
               </label>
               <label className="flex items-center gap-3 py-2">
                 <input
@@ -184,7 +184,7 @@ export default function Page() {
                   onChange={(e) => setAnswers({ height_band: e.target.value })}
                   className="h-4 w-4"
                 />
-                <span className="text-sm md:text-base">180cm以上</span>
+                <span className="text-sm md:text-base text-gray-700">180cm以上</span>
               </label>
             </div>
           </div>
@@ -192,12 +192,12 @@ export default function Page() {
       </section>
 
       {/* B. 今使っている枕・マットレス/布団 */}
-      <section className="rounded-xl border border-zinc-700/60 bg-zinc-900/40 p-5 md:p-6 mb-8">
-        <h2 className="text-xl md:text-2xl font-bold mb-4">B. 今使っている枕・マットレス/布団</h2>
+      <section className="rounded-xl border border-gray-200 bg-white shadow-sm p-5 md:p-6 mb-8">
+        <h2 className="text-xl md:text-2xl font-bold mb-4 text-gray-900">B. 今使っている枕・マットレス/布団</h2>
         <div className="space-y-6">
           {/* 使用年数 */}
           <div>
-            <label className="text-sm md:text-base font-semibold text-zinc-200 mb-3 block">現在の枕の使用年数</label>
+            <label className="text-sm md:text-base text-gray-700 font-semibold text-gray-900 mb-3 block">現在の枕の使用年数</label>
             <div className="space-y-2">
               <label className="flex items-center gap-3 py-2">
                 <input
@@ -208,7 +208,7 @@ export default function Page() {
                   onChange={(e) => setAnswers({ cur_years: e.target.value })}
                   className="h-4 w-4"
                 />
-                <span className="text-sm md:text-base">1年未満</span>
+                <span className="text-sm md:text-base text-gray-700">1年未満</span>
               </label>
               <label className="flex items-center gap-3 py-2">
                 <input
@@ -219,7 +219,7 @@ export default function Page() {
                   onChange={(e) => setAnswers({ cur_years: e.target.value })}
                   className="h-4 w-4"
                 />
-                <span className="text-sm md:text-base">1〜3年</span>
+                <span className="text-sm md:text-base text-gray-700">1〜3年</span>
               </label>
               <label className="flex items-center gap-3 py-2">
                 <input
@@ -230,7 +230,7 @@ export default function Page() {
                   onChange={(e) => setAnswers({ cur_years: e.target.value })}
                   className="h-4 w-4"
                 />
-                <span className="text-sm md:text-base">3〜5年</span>
+                <span className="text-sm md:text-base text-gray-700">3〜5年</span>
               </label>
               <label className="flex items-center gap-3 py-2">
                 <input
@@ -241,14 +241,14 @@ export default function Page() {
                   onChange={(e) => setAnswers({ cur_years: e.target.value })}
                   className="h-4 w-4"
                 />
-                <span className="text-sm md:text-base">5年以上</span>
+                <span className="text-sm md:text-base text-gray-700">5年以上</span>
               </label>
             </div>
           </div>
 
           {/* 気になる点 */}
           <div>
-            <label className="text-sm md:text-base font-semibold text-zinc-200 mb-3 block">気になる点（複数選択可）</label>
+            <label className="text-sm md:text-base text-gray-700 font-semibold text-gray-900 mb-3 block">気になる点（複数選択可）</label>
             <div className="space-y-2">
               <label className="flex items-center gap-3 py-2">
                 <input
@@ -258,7 +258,7 @@ export default function Page() {
                   onChange={(e) => handleCheckboxChange('concerns', e.target.value, e.target.checked)}
                   className="h-4 w-4"
                 />
-                <span className="text-sm md:text-base">首が痛い</span>
+                <span className="text-sm md:text-base text-gray-700">首が痛い</span>
               </label>
               <label className="flex items-center gap-3 py-2">
                 <input
@@ -268,7 +268,7 @@ export default function Page() {
                   onChange={(e) => handleCheckboxChange('concerns', e.target.value, e.target.checked)}
                   className="h-4 w-4"
                 />
-                <span className="text-sm md:text-base">高さが合わない</span>
+                <span className="text-sm md:text-base text-gray-700">高さが合わない</span>
               </label>
               <label className="flex items-center gap-3 py-2">
                 <input
@@ -278,7 +278,7 @@ export default function Page() {
                   onChange={(e) => handleCheckboxChange('concerns', e.target.value, e.target.checked)}
                   className="h-4 w-4"
                 />
-                <span className="text-sm md:text-base">寝返りしづらい</span>
+                <span className="text-sm md:text-base text-gray-700">寝返りしづらい</span>
               </label>
               <label className="flex items-center gap-3 py-2">
                 <input
@@ -288,7 +288,7 @@ export default function Page() {
                   onChange={(e) => handleCheckboxChange('concerns', e.target.value, e.target.checked)}
                   className="h-4 w-4"
                 />
-                <span className="text-sm md:text-base">蒸れる</span>
+                <span className="text-sm md:text-base text-gray-700">蒸れる</span>
               </label>
               <label className="flex items-center gap-3 py-2">
                 <input
@@ -298,14 +298,14 @@ export default function Page() {
                   onChange={(e) => handleCheckboxChange('concerns', e.target.value, e.target.checked)}
                   className="h-4 w-4"
                 />
-                <span className="text-sm md:text-base">へたる</span>
+                <span className="text-sm md:text-base text-gray-700">へたる</span>
               </label>
             </div>
           </div>
 
           {/* マットレス/布団の硬さ */}
           <div>
-            <label className="text-sm md:text-base font-semibold text-zinc-200 mb-3 block">マットレス/布団の硬さ</label>
+            <label className="text-sm md:text-base text-gray-700 font-semibold text-gray-900 mb-3 block">マットレス/布団の硬さ</label>
             <div className="space-y-2">
               <label className="flex items-center gap-3 py-2">
                 <input
@@ -316,7 +316,7 @@ export default function Page() {
                   onChange={(e) => setAnswers({ mattress_firmness: e.target.value })}
                   className="h-4 w-4"
                 />
-                <span className="text-sm md:text-base">柔らかめ</span>
+                <span className="text-sm md:text-base text-gray-700">柔らかめ</span>
               </label>
               <label className="flex items-center gap-3 py-2">
                 <input
@@ -327,7 +327,7 @@ export default function Page() {
                   onChange={(e) => setAnswers({ mattress_firmness: e.target.value })}
                   className="h-4 w-4"
                 />
-                <span className="text-sm md:text-base">普通</span>
+                <span className="text-sm md:text-base text-gray-700">普通</span>
               </label>
               <label className="flex items-center gap-3 py-2">
                 <input
@@ -338,7 +338,7 @@ export default function Page() {
                   onChange={(e) => setAnswers({ mattress_firmness: e.target.value })}
                   className="h-4 w-4"
                 />
-                <span className="text-sm md:text-base">硬め</span>
+                <span className="text-sm md:text-base text-gray-700">硬め</span>
               </label>
               <label className="flex items-center gap-3 py-2">
                 <input
@@ -349,7 +349,7 @@ export default function Page() {
                   onChange={(e) => setAnswers({ mattress_firmness: e.target.value })}
                   className="h-4 w-4"
                 />
-                <span className="text-sm md:text-base">不明 / 指定なし</span>
+                <span className="text-sm md:text-base text-gray-700">不明 / 指定なし</span>
               </label>
             </div>
           </div>
@@ -357,12 +357,12 @@ export default function Page() {
       </section>
 
       {/* C. 今の悩み */}
-      <section className="rounded-xl border border-zinc-700/60 bg-zinc-900/40 p-5 md:p-6 mb-8">
-        <h2 className="text-xl md:text-2xl font-bold mb-4">C. 今の悩み</h2>
+      <section className="rounded-xl border border-gray-200 bg-white shadow-sm p-5 md:p-6 mb-8">
+        <h2 className="text-xl md:text-2xl font-bold mb-4 text-gray-900">C. 今の悩み</h2>
         <div className="space-y-6">
           {/* 肩まわりで抱えている問題 */}
           <div>
-            <label className="text-sm md:text-base font-semibold text-zinc-200 mb-3 block">・肩まわりで抱えている問題（複数選択可）</label>
+            <label className="text-sm md:text-base text-gray-700 font-semibold text-gray-900 mb-3 block">・肩まわりで抱えている問題（複数選択可）</label>
             <div className="space-y-2">
               <label className="flex items-center gap-3 py-2">
                 <input
@@ -372,7 +372,7 @@ export default function Page() {
                   onChange={(e) => handleCheckboxChange('neck_shoulder_issues', e.target.value, e.target.checked)}
                   className="h-4 w-4"
                 />
-                <span className="text-sm md:text-base">朝起きると首が痛い</span>
+                <span className="text-sm md:text-base text-gray-700">朝起きると首が痛い</span>
               </label>
               <label className="flex items-center gap-3 py-2">
                 <input
@@ -382,7 +382,7 @@ export default function Page() {
                   onChange={(e) => handleCheckboxChange('neck_shoulder_issues', e.target.value, e.target.checked)}
                   className="h-4 w-4"
                 />
-                <span className="text-sm md:text-base">肩こりがひどい</span>
+                <span className="text-sm md:text-base text-gray-700">肩こりがひどい</span>
               </label>
               <label className="flex items-center gap-3 py-2">
                 <input
@@ -392,7 +392,7 @@ export default function Page() {
                   onChange={(e) => handleCheckboxChange('neck_shoulder_issues', e.target.value, e.target.checked)}
                   className="h-4 w-4"
                 />
-                <span className="text-sm md:text-base">頭痛・偏頭痛持ち</span>
+                <span className="text-sm md:text-base text-gray-700">頭痛・偏頭痛持ち</span>
               </label>
               <label className="flex items-center gap-3 py-2">
                 <input
@@ -402,7 +402,7 @@ export default function Page() {
                   onChange={(e) => handleCheckboxChange('neck_shoulder_issues', e.target.value, e.target.checked)}
                   className="h-4 w-4"
                 />
-                <span className="text-sm md:text-base">ストレートネックと診断</span>
+                <span className="text-sm md:text-base text-gray-700">ストレートネックと診断</span>
               </label>
               <label className="flex items-center gap-3 py-2">
                 <input
@@ -412,14 +412,14 @@ export default function Page() {
                   onChange={(e) => handleCheckboxChange('neck_shoulder_issues', e.target.value, e.target.checked)}
                   className="h-4 w-4"
                 />
-                <span className="text-sm md:text-base">特に問題なし</span>
+                <span className="text-sm md:text-base text-gray-700">特に問題なし</span>
               </label>
             </div>
           </div>
 
           {/* いびき */}
           <div>
-            <label className="text-sm md:text-base font-semibold text-zinc-200 mb-3 block">いびき</label>
+            <label className="text-sm md:text-base text-gray-700 font-semibold text-gray-900 mb-3 block">いびき</label>
             <div className="space-y-2">
               <label className="flex items-center gap-3 py-2">
                 <input
@@ -430,7 +430,7 @@ export default function Page() {
                   onChange={(e) => setAnswers({ snore: e.target.value })}
                   className="h-4 w-4"
                 />
-                <span className="text-sm md:text-base">ほとんどない</span>
+                <span className="text-sm md:text-base text-gray-700">ほとんどない</span>
               </label>
               <label className="flex items-center gap-3 py-2">
                 <input
@@ -441,7 +441,7 @@ export default function Page() {
                   onChange={(e) => setAnswers({ snore: e.target.value })}
                   className="h-4 w-4"
                 />
-                <span className="text-sm md:text-base">時々ある</span>
+                <span className="text-sm md:text-base text-gray-700">時々ある</span>
               </label>
               <label className="flex items-center gap-3 py-2">
                 <input
@@ -452,7 +452,7 @@ export default function Page() {
                   onChange={(e) => setAnswers({ snore: e.target.value })}
                   className="h-4 w-4"
                 />
-                <span className="text-sm md:text-base">よくある</span>
+                <span className="text-sm md:text-base text-gray-700">よくある</span>
               </label>
               <label className="flex items-center gap-3 py-2">
                 <input
@@ -463,14 +463,14 @@ export default function Page() {
                   onChange={(e) => setAnswers({ snore: e.target.value })}
                   className="h-4 w-4"
                 />
-                <span className="text-sm md:text-base">わからない</span>
+                <span className="text-sm md:text-base text-gray-700">わからない</span>
               </label>
             </div>
           </div>
 
           {/* 暑がり・汗かき */}
           <div>
-            <label className="text-sm md:text-base font-semibold text-zinc-200 mb-3 block">暑がり・汗かきですか？</label>
+            <label className="text-sm md:text-base text-gray-700 font-semibold text-gray-900 mb-3 block">暑がり・汗かきですか？</label>
             <div className="space-y-2">
               <label className="flex items-center gap-3 py-2">
                 <input
@@ -481,7 +481,7 @@ export default function Page() {
                   onChange={(e) => setAnswers({ heat_sweat: e.target.value })}
                   className="h-4 w-4"
                 />
-                <span className="text-sm md:text-base">はい</span>
+                <span className="text-sm md:text-base text-gray-700">はい</span>
               </label>
               <label className="flex items-center gap-3 py-2">
                 <input
@@ -492,7 +492,7 @@ export default function Page() {
                   onChange={(e) => setAnswers({ heat_sweat: e.target.value })}
                   className="h-4 w-4"
                 />
-                <span className="text-sm md:text-base">いいえ</span>
+                <span className="text-sm md:text-base text-gray-700">いいえ</span>
               </label>
               <label className="flex items-center gap-3 py-2">
                 <input
@@ -503,7 +503,7 @@ export default function Page() {
                   onChange={(e) => setAnswers({ heat_sweat: e.target.value })}
                   className="h-4 w-4"
                 />
-                <span className="text-sm md:text-base">わからない</span>
+                <span className="text-sm md:text-base text-gray-700">わからない</span>
               </label>
             </div>
           </div>
@@ -511,12 +511,12 @@ export default function Page() {
       </section>
 
       {/* D. 好み・希望 */}
-      <section className="rounded-xl border border-zinc-700/60 bg-zinc-900/40 p-5 md:p-6 mb-8">
-        <h2 className="text-xl md:text-2xl font-bold mb-4">D. 好み・希望</h2>
+      <section className="rounded-xl border border-gray-200 bg-white shadow-sm p-5 md:p-6 mb-8">
+        <h2 className="text-xl md:text-2xl font-bold mb-4 text-gray-900">D. 好み・希望</h2>
         <div className="space-y-6">
           {/* 調整可能な枕 */}
           <div>
-            <label className="text-sm md:text-base font-semibold text-zinc-200 mb-3 block">枕の高さや硬さを調整できる方が良いですか？</label>
+            <label className="text-sm md:text-base text-gray-700 font-semibold text-gray-900 mb-3 block">枕の高さや硬さを調整できる方が良いですか？</label>
             <div className="space-y-2">
               <label className="flex items-center gap-3 py-2">
                 <input
@@ -527,7 +527,7 @@ export default function Page() {
                   onChange={(e) => setAnswers({ adjustable_pref: e.target.value })}
                   className="h-4 w-4"
                 />
-                <span className="text-sm md:text-base">はい</span>
+                <span className="text-sm md:text-base text-gray-700">はい</span>
               </label>
               <label className="flex items-center gap-3 py-2">
                 <input
@@ -538,7 +538,7 @@ export default function Page() {
                   onChange={(e) => setAnswers({ adjustable_pref: e.target.value })}
                   className="h-4 w-4"
                 />
-                <span className="text-sm md:text-base">いいえ</span>
+                <span className="text-sm md:text-base text-gray-700">いいえ</span>
               </label>
               <label className="flex items-center gap-3 py-2">
                 <input
@@ -549,14 +549,14 @@ export default function Page() {
                   onChange={(e) => setAnswers({ adjustable_pref: e.target.value })}
                   className="h-4 w-4"
                 />
-                <span className="text-sm md:text-base">不明・指定なし</span>
+                <span className="text-sm md:text-base text-gray-700">不明・指定なし</span>
               </label>
             </div>
           </div>
 
           {/* 好きな枕の素材 */}
           <div>
-            <label className="text-sm md:text-base font-semibold text-zinc-200 mb-3 block">好きな枕の素材</label>
+            <label className="text-sm md:text-base text-gray-700 font-semibold text-gray-900 mb-3 block">好きな枕の素材</label>
             <div className="space-y-2">
               <label className="flex items-center gap-3 py-2">
                 <input
@@ -567,7 +567,7 @@ export default function Page() {
                   onChange={(e) => setAnswers({ material_pref: e.target.value })}
                   className="h-4 w-4"
                 />
-                <span className="text-sm md:text-base">低反発</span>
+                <span className="text-sm md:text-base text-gray-700">低反発</span>
               </label>
               <label className="flex items-center gap-3 py-2">
                 <input
@@ -578,7 +578,7 @@ export default function Page() {
                   onChange={(e) => setAnswers({ material_pref: e.target.value })}
                   className="h-4 w-4"
                 />
-                <span className="text-sm md:text-base">高反発</span>
+                <span className="text-sm md:text-base text-gray-700">高反発</span>
               </label>
               <label className="flex items-center gap-3 py-2">
                 <input
@@ -589,7 +589,7 @@ export default function Page() {
                   onChange={(e) => setAnswers({ material_pref: e.target.value })}
                   className="h-4 w-4"
                 />
-                <span className="text-sm md:text-base">羽毛</span>
+                <span className="text-sm md:text-base text-gray-700">羽毛</span>
               </label>
               <label className="flex items-center gap-3 py-2">
                 <input
@@ -600,7 +600,7 @@ export default function Page() {
                   onChange={(e) => setAnswers({ material_pref: e.target.value })}
                   className="h-4 w-4"
                 />
-                <span className="text-sm md:text-base">そば殻</span>
+                <span className="text-sm md:text-base text-gray-700">そば殻</span>
               </label>
               <label className="flex items-center gap-3 py-2">
                 <input
@@ -611,14 +611,14 @@ export default function Page() {
                   onChange={(e) => setAnswers({ material_pref: e.target.value })}
                   className="h-4 w-4"
                 />
-                <span className="text-sm md:text-base">不明/指定なし</span>
+                <span className="text-sm md:text-base text-gray-700">不明/指定なし</span>
               </label>
             </div>
           </div>
 
           {/* サイズ希望 */}
           <div>
-            <label className="text-sm md:text-base font-semibold text-zinc-200 mb-3 block">サイズ希望</label>
+            <label className="text-sm md:text-base text-gray-700 font-semibold text-gray-900 mb-3 block">サイズ希望</label>
             <div className="space-y-2">
               <label className="flex items-center gap-3 py-2">
                 <input
@@ -629,7 +629,7 @@ export default function Page() {
                   onChange={(e) => setAnswers({ size_pref: e.target.value })}
                   className="h-4 w-4"
                 />
-                <span className="text-sm md:text-base">標準サイズ</span>
+                <span className="text-sm md:text-base text-gray-700">標準サイズ</span>
               </label>
               <label className="flex items-center gap-3 py-2">
                 <input
@@ -640,7 +640,7 @@ export default function Page() {
                   onChange={(e) => setAnswers({ size_pref: e.target.value })}
                   className="h-4 w-4"
                 />
-                <span className="text-sm md:text-base">大きめ</span>
+                <span className="text-sm md:text-base text-gray-700">大きめ</span>
               </label>
               <label className="flex items-center gap-3 py-2">
                 <input
@@ -651,7 +651,7 @@ export default function Page() {
                   onChange={(e) => setAnswers({ size_pref: e.target.value })}
                   className="h-4 w-4"
                 />
-                <span className="text-sm md:text-base">小さめ</span>
+                <span className="text-sm md:text-base text-gray-700">小さめ</span>
               </label>
               <label className="flex items-center gap-3 py-2">
                 <input
@@ -662,7 +662,7 @@ export default function Page() {
                   onChange={(e) => setAnswers({ size_pref: e.target.value })}
                   className="h-4 w-4"
                 />
-                <span className="text-sm md:text-base">不明・指定なし</span>
+                <span className="text-sm md:text-base text-gray-700">不明・指定なし</span>
               </label>
             </div>
           </div>
@@ -708,7 +708,7 @@ export default function Page() {
 
           {/* ご予算 */}
           <div>
-            <label className="text-sm md:text-base font-semibold text-zinc-200 mb-3 block">ご予算</label>
+            <label className="text-sm md:text-base text-gray-700 font-semibold text-gray-900 mb-3 block">ご予算</label>
             <div className="space-y-2">
               <label className="flex items-center gap-3 py-2">
                 <input
@@ -719,7 +719,7 @@ export default function Page() {
                   onChange={(e) => setAnswers({ budget: e.target.value })}
                   className="h-4 w-4"
                 />
-                <span className="text-sm md:text-base">3,000円未満</span>
+                <span className="text-sm md:text-base text-gray-700">3,000円未満</span>
               </label>
               <label className="flex items-center gap-3 py-2">
                 <input
@@ -730,7 +730,7 @@ export default function Page() {
                   onChange={(e) => setAnswers({ budget: e.target.value })}
                   className="h-4 w-4"
                 />
-                <span className="text-sm md:text-base">3,000円〜6,000円</span>
+                <span className="text-sm md:text-base text-gray-700">3,000円〜6,000円</span>
               </label>
               <label className="flex items-center gap-3 py-2">
                 <input
@@ -741,7 +741,7 @@ export default function Page() {
                   onChange={(e) => setAnswers({ budget: e.target.value })}
                   className="h-4 w-4"
                 />
-                <span className="text-sm md:text-base">6,000円〜10,000円</span>
+                <span className="text-sm md:text-base text-gray-700">6,000円〜10,000円</span>
               </label>
               <label className="flex items-center gap-3 py-2">
                 <input
@@ -752,7 +752,7 @@ export default function Page() {
                   onChange={(e) => setAnswers({ budget: e.target.value })}
                   className="h-4 w-4"
                 />
-                <span className="text-sm md:text-base">10,000円〜20,000円</span>
+                <span className="text-sm md:text-base text-gray-700">10,000円〜20,000円</span>
               </label>
               <label className="flex items-center gap-3 py-2">
                 <input
@@ -763,7 +763,7 @@ export default function Page() {
                   onChange={(e) => setAnswers({ budget: e.target.value })}
                   className="h-4 w-4"
                 />
-                <span className="text-sm md:text-base">20,000円以上</span>
+                <span className="text-sm md:text-base text-gray-700">20,000円以上</span>
               </label>
             </div>
           </div>
@@ -771,8 +771,8 @@ export default function Page() {
       </section>
 
       <div className="flex justify-end gap-3 pt-4">
-        <Link href="/pillow" className="px-5 py-2.5 rounded-lg border border-zinc-600 bg-zinc-800 text-zinc-200 font-semibold hover:bg-zinc-700 transition-colors">戻る</Link>
-        <button onClick={handleNext} className="px-5 py-2.5 rounded-lg bg-zinc-100 text-zinc-900 font-semibold hover:bg-zinc-200 transition-colors">一次診断へ</button>
+        <Link href="/pillow" className="px-5 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-700 font-semibold hover:bg-gray-50 transition-colors">戻る</Link>
+        <button onClick={handleNext} className="px-5 py-2.5 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 transition-colors">一次診断へ</button>
       </div>
     </main>
   );
