@@ -93,7 +93,14 @@ function generateSecondaryKeywords(answers: any): { keywords: string[][], labels
   const labels: string[] = [];
   
   // Aセクション（寝姿勢・寝返り）とBセクション（気になる点）を主にマッチング
-  const posture = answers?.posture;
+  // 姿勢情報を正しく取得（複数のフィールド名に対応）
+  let posture = answers?.posture;
+  if (!posture && answers?.postures && Array.isArray(answers.postures) && answers.postures.length > 0) {
+    posture = answers.postures[0]; // 最初の姿勢を使用
+  }
+  if (!posture && answers?.sleepingPosition) {
+    posture = answers.sleepingPosition;
+  }
   const rollover = answers?.rollover;
   const concerns = Array.isArray(answers?.concerns) ? answers.concerns : [];
   const neckIssues = Array.isArray(answers?.neck_shoulder_issues) ? answers.neck_shoulder_issues : [];
@@ -123,38 +130,38 @@ function generateSecondaryKeywords(answers: any): { keywords: string[][], labels
     let postureLabel = "Aタイプ";
     
     if (posture === "side") {
-      postureKeywords = ["横向き 枕", "横向き寝 枕"];
+      postureKeywords = ["横向き 枕", "横向き寝 枕", "波型 枕", "サイドサポート 枕", "横向き専用 枕", "ウェーブ 枕"];
       
       // マットレス硬さと枕の高さの組み合わせ
       if (mattressFirmness && mattressFirmness !== "unknown") {
         if (mattressFirmness === "soft") {
           // 柔らかめマットレス → 低め枕
-          postureKeywords.push("低め 枕", "横向き 低め 枕");
+          postureKeywords.push("低め 枕", "横向き 低め 枕", "波型 低め 枕");
         } else if (mattressFirmness === "firm") {
           // 硬めマットレス → 高め枕
-          postureKeywords.push("高め 枕", "横向き 高め 枕");
+          postureKeywords.push("高め 枕", "横向き 高め 枕", "波型 高め 枕");
         }
       }
     } else if (posture === "supine") {
-      postureKeywords = ["仰向け 枕", "仰向け寝 枕"];
+      postureKeywords = ["仰向け 枕", "仰向け寝 枕", "頸椎 枕", "首サポート 枕", "バックサポート 枕", "頸椎サポート 枕"];
       
       // マットレス硬さを考慮
       if (mattressFirmness && mattressFirmness !== "unknown") {
         if (mattressFirmness === "soft") {
-          postureKeywords.push("仰向け 低め 枕");
+          postureKeywords.push("仰向け 低め 枕", "頸椎 低め 枕");
         } else if (mattressFirmness === "firm") {
-          postureKeywords.push("仰向け 高め 枕");
+          postureKeywords.push("仰向け 高め 枕", "頸椎 高め 枕");
         }
       }
     } else if (posture === "prone") {
-      postureKeywords = ["うつ伏せ 枕", "うつ伏せ寝 枕"];
+      postureKeywords = ["うつ伏せ 枕", "うつ伏せ寝 枕", "薄め 枕", "低め 枕", "うつ伏せ専用 枕"];
       
       // うつ伏せの場合は低め枕が基本
       if (mattressFirmness && mattressFirmness !== "unknown") {
         if (mattressFirmness === "soft") {
-          postureKeywords.push("うつ伏せ 低め 枕");
+          postureKeywords.push("うつ伏せ 低め 枕", "薄め 低め 枕");
         } else if (mattressFirmness === "firm") {
-          postureKeywords.push("うつ伏せ 枕", "薄め 枕");
+          postureKeywords.push("うつ伏せ 枕", "薄め 枕", "低め 枕");
         }
       }
     }

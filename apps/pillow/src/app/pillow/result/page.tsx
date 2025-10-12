@@ -142,10 +142,21 @@ export default function ResultPage() {
   const recSetRef = useRef<string | null>(null);
 
   // バンディット関連の状態
-  const segment = useMemo(() => segmentOf({ 
-    sweaty: !!answers?.heat_sweat || answers?.sweaty, 
-    posture: answers?.posture 
-  }), [answers]);
+  const segment = useMemo(() => {
+    // 姿勢情報を正しく取得（複数のフィールド名に対応）
+    let posture = answers?.posture;
+    if (!posture && answers?.postures && Array.isArray(answers.postures) && answers.postures.length > 0) {
+      posture = answers.postures[0]; // 最初の姿勢を使用
+    }
+    if (!posture && answers?.sleepingPosition) {
+      posture = answers.sleepingPosition;
+    }
+    
+    return segmentOf({ 
+      sweaty: !!answers?.heat_sweat || answers?.sweaty, 
+      posture: posture 
+    });
+  }, [answers]);
   const slot = "1";
   const candidates: string[] = ["A", "B"]; // 1位枠の候補（variant識別子）
   const [armKey, setArmKey] = useState<string | null>(null);
@@ -305,9 +316,28 @@ export default function ResultPage() {
         // サーバーとクライアントで一貫したbaseUrlを使用
         const baseUrl = '';
         
+        // 姿勢情報に基づく検索クエリを生成
+        let searchQuery = '枕';
+        let posture = answers?.posture;
+        if (!posture && answers?.postures && Array.isArray(answers.postures) && answers.postures.length > 0) {
+          posture = answers.postures[0];
+        }
+        if (!posture && answers?.sleepingPosition) {
+          posture = answers.sleepingPosition;
+        }
+        
+        // 姿勢別の検索クエリを生成（OR検索用に単一キーワードに変更）
+        if (posture === 'side') {
+          searchQuery = '横向き 枕';
+        } else if (posture === 'supine') {
+          searchQuery = '仰向け 枕';
+        } else if (posture === 'prone') {
+          searchQuery = 'うつ伏せ 枕';
+        }
+
         // 実データとモックデータを並行取得
         const [real, mock] = await Promise.all([
-          fetch(`${baseUrl}/api/search-cross`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query: '枕', bandId: budgetBandId || '10k-20k' }), cache: 'no-store' }).then(r => r.json()),
+          fetch(`${baseUrl}/api/search-cross`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query: searchQuery, bandId: budgetBandId || '10k-20k' }), cache: 'no-store' }).then(r => r.json()),
           USE_MOCK
             ? fetch(`${baseUrl}/api/mall-products?limit=${limit}`, { cache: 'no-store' }).then(r => r.json())
             : Promise.resolve([]),

@@ -66,7 +66,7 @@ export function recommendMaterial(answers: Answers) {
     } else if (answers.posture === "side") {
       if (["latex","high_rebound","pipe","sobakawa"].includes(m)) s += 0.15;
     } else { // supine
-      if (MATERIAL_PROPS[m].support !== "firm") s += 0.05; // 仰向けは中庸寄り
+      if (["latex","memory","gel","sobakawa"].includes(m)) s += 0.15; // 仰向けは頸椎サポート重視
     }
 
     // (d) 現在素材への"改善方向"

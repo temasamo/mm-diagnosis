@@ -23,26 +23,28 @@ export const CATEGORY_LABEL: Record<CategoryId, string> = {
   "natural-fill": "自然素材（そば殻/羽毛等）",
 };
 
-// 基礎重み（カテゴリのベース人気や汎用性）
+// 基礎重み（カテゴリのベース人気や汎用性）- 姿勢別カテゴリを強化
 export const BASE_WEIGHTS: Partial<Record<CategoryId, number>> = {
-  "mid-loft": 0.2,
-  "adjustable": 0.15,
+  "mid-loft": 0.1,
+  "adjustable": 0.1,
+  "side-contour": 0.05,  // 横向き専用カテゴリを追加
+  "back-contour": 0.05,  // 仰向け専用カテゴリを追加
 };
 
-// 姿勢×寝返りの基礎ルール（最重要）
+// 姿勢×寝返りの基礎ルール（最重要）- 重みを大幅強化
 export const POSTURE_ROLLOVER_WEIGHTS: Record<string, Partial<Record<CategoryId, number>>> = {
   // key: `${posture}|${rollover}`
-  "supine|low":        { "back-contour": 0.35, "mid-loft": 0.2 },
-  "supine|mid":        { "back-contour": 0.3,  "mid-loft": 0.2 },
-  "supine|high":       { "back-contour": 0.25, "mid-loft": 0.15, "adjustable": 0.1 },
+  "supine|low":        { "back-contour": 0.6, "mid-loft": 0.3 },
+  "supine|mid":        { "back-contour": 0.55, "mid-loft": 0.3 },
+  "supine|high":       { "back-contour": 0.5, "mid-loft": 0.25, "adjustable": 0.2 },
 
-  "side|low":          { "side-contour": 0.35, "high-loft": 0.2 },
-  "side|mid":          { "side-contour": 0.4,  "high-loft": 0.2 },
-  "side|high":         { "side-contour": 0.45, "high-loft": 0.2, "adjustable": 0.1 },
+  "side|low":          { "side-contour": 0.6, "high-loft": 0.3 },
+  "side|mid":          { "side-contour": 0.65, "high-loft": 0.3 },
+  "side|high":         { "side-contour": 0.7, "high-loft": 0.3, "adjustable": 0.2 },
 
-  "prone|low":         { "low-loft": 0.35, "soft-plush": 0.15 },
-  "prone|mid":         { "low-loft": 0.3,  "soft-plush": 0.15, "adjustable": 0.1 },
-  "prone|high":        { "low-loft": 0.25, "soft-plush": 0.1,  "adjustable": 0.15 },
+  "prone|low":         { "low-loft": 0.6, "soft-plush": 0.3 },
+  "prone|mid":         { "low-loft": 0.55, "soft-plush": 0.3, "adjustable": 0.2 },
+  "prone|high":        { "low-loft": 0.5, "soft-plush": 0.25, "adjustable": 0.25 },
 };
 
 // 首・肩の状態（複数選択）

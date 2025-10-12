@@ -11,11 +11,11 @@ export type RankedPick = {
 };
 
 function postureScore(sig: ItemSignals, answers: AnswersLite): number {
-  // 姿勢 > 悩み > 素材 の "最重要" を強調するため、マッチ数を返す
+  // 姿勢 > 悩み > 素材 の "最重要" を強調するため、マッチ数を大幅に重み付け
   let m = 0;
-  if (answers.postures.includes("side")   && sig.postures.side) m++;
-  if (answers.postures.includes("supine") && sig.postures.supine) m++;
-  if (answers.postures.includes("prone")  && sig.postures.prone) m++;
+  if (answers.postures.includes("side")   && sig.postures.side) m += 10; // 大幅強化
+  if (answers.postures.includes("supine") && sig.postures.supine) m += 10; // 大幅強化
+  if (answers.postures.includes("prone")  && sig.postures.prone) m += 10; // 大幅強化
   return m;
 }
 function concernScore(sig: ItemSignals, answers: AnswersLite): number {
@@ -66,7 +66,7 @@ export function pickPrimaryAndSecondary(all: SearchItem[], rawAnswers: any) {
   const topRef = sorted[0];
   const secondaryPool = sorted.filter(e => {
     if (!topRef) return false;
-    const similarPosture = e.ps >= Math.max(1, topRef.ps - 0); // 姿勢レベルは維持
+    const similarPosture = e.ps >= Math.max(10, topRef.ps - 5); // 姿勢レベルを大幅に強化
     const diffAxis = (e.cs !== topRef.cs) || (e.ms !== topRef.ms) ||
                      (e.item.mall !== topRef.item.mall) || (e.item.shop !== topRef.item.shop);
     return similarPosture && diffAxis && e.item.id !== topRef.item.id;

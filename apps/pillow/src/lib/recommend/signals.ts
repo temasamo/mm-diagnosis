@@ -42,10 +42,15 @@ export function extractSignals(item: SearchItem): ItemSignals {
   const s = JP(item.shop || "");
   const hay = `${t} ${u} ${s}`;
 
+  // 姿勢分類（頸椎サポート系は明示的な姿勢指定がない限り汎用として扱う）
+  const hasExplicitSide = /(横向き|サイド|side|波型|ウェーブ|側臥|サイドサポート|横向き専用|横向き対応|横向き寝)/.test(hay);
+  const hasExplicitSupine = /(仰向け|あおむけ|supine|背面|仰向け専用|仰向け対応|バックサポート|仰向け寝)/.test(hay);
+  const hasExplicitProne = /(うつ伏せ|俯せ|prone|うつぶせ|うつ伏せ専用|うつ伏せ対応|うつ伏せ寝)/.test(hay);
+  
   const postures = {
-    side:   /(横向き|サイド|side)/.test(hay),
-    supine: /(仰向け|あおむけ|supine|背面)/.test(hay),
-    prone:  /(うつ伏せ|俯せ|prone)/.test(hay),
+    side: hasExplicitSide,
+    supine: hasExplicitSupine,
+    prone: hasExplicitProne,
   };
   const concerns = {
     neck:     /(首|頸椎|ストレートネック)/.test(hay),
