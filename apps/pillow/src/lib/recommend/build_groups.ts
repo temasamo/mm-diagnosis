@@ -390,6 +390,28 @@ export async function buildGroupsFromAPI(
     secondaryB = Array.isArray(secondaryB) ? secondaryB.slice(0, 3) : [];
     secondaryC = Array.isArray(secondaryC) ? secondaryC.slice(0, 3) : [];
 
+    // 第一候補が空の場合のフォールバック処理
+    if (primary.length === 0) {
+      // 第二候補から第一候補に移動
+      const allSecondary = [...secondaryA, ...secondaryB, ...secondaryC];
+      if (allSecondary.length > 0) {
+        primary = allSecondary.slice(0, 3);
+        // 第二候補を再構築（残りの商品から）
+        const remaining = allSecondary.slice(3);
+        secondaryA = remaining.slice(0, 3);
+        secondaryB = remaining.slice(3, 6);
+        secondaryC = remaining.slice(6, 9);
+      } else {
+        // 全て空の場合は汎用検索でフォールバック
+        const fallbackResults = await searchWithFallback({
+          budgetBandId: null,
+          anyOfKeywords: ["枕", "ピロー"],
+          limit: 3
+        });
+        primary = Array.isArray(fallbackResults) ? fallbackResults.slice(0, 3) : [];
+      }
+    }
+
     // 重複除去は既にsearch-cross APIで実行済み
     const emptyAll = primary.length + secondaryA.length + secondaryB.length + secondaryC.length === 0;
     const message = emptyAll ? "候補を取得できませんでした" : undefined;

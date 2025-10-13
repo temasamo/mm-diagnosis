@@ -326,14 +326,41 @@ export default function ResultPage() {
           posture = answers.sleepingPosition;
         }
         
-        // 姿勢別の検索クエリを生成（OR検索用に単一キーワードに変更）
+        // 姿勢×寝返り頻度に基づく検索クエリを生成（単一キーワードでOR検索）
+        const turnFreq = answers?.turnFreq || answers?.rollover;
         if (posture === 'side') {
-          searchQuery = '横向き 枕';
+          if (turnFreq === 'often' || turnFreq === 'high') {
+            searchQuery = '横向き 枕 調整可能';
+          } else {
+            searchQuery = '横向き 枕';
+          }
         } else if (posture === 'supine') {
-          searchQuery = '仰向け 枕';
+          if (turnFreq === 'often' || turnFreq === 'high') {
+            searchQuery = '仰向け 枕 調整可能';
+          } else {
+            searchQuery = '仰向け 枕';
+          }
         } else if (posture === 'prone') {
-          searchQuery = 'うつ伏せ 枕';
+          if (turnFreq === 'often' || turnFreq === 'high') {
+            searchQuery = 'うつ伏せ 枕 調整可能';
+          } else {
+            searchQuery = 'うつ伏せ 枕';
+          }
         }
+
+        // デバッグ用ログ出力
+        console.log('[result] searchQuery generated:', { 
+          posture, 
+          turnFreq, 
+          searchQuery, 
+          answers: { 
+            posture: answers?.posture, 
+            postures: answers?.postures, 
+            sleepingPosition: answers?.sleepingPosition,
+            turnFreq: answers?.turnFreq,
+            rollover: answers?.rollover 
+          } 
+        });
 
         // 実データとモックデータを並行取得
         const [real, mock] = await Promise.all([
@@ -609,95 +636,131 @@ export default function ResultPage() {
               return (
                 <div>
                   {/* --- 第一候補グループ --- */}
-                  {Array.isArray(groups.primary) && groups.primary.length > 0 && (
-                    <>
-                      <h3 className="text-lg md:text-xl font-semibold mt-8 mb-3">
-                        第一候補グループ
-                      </h3>
-                      <div className="grid gap-4 sm:grid-cols-3 mb-6">
-                        {groups.primary.slice(0, 3).map((item: any, index: number) => {
-                          const cardItem: ProductItem = {
-                            id: item.id,
-                            mall: item.mall,
-                            title: item.title,
-                            url: item.url,
-                            image: item.image ?? null,
-                            price: item.price ?? null,
-                            shop: item.shop ?? null,
-                            outOfBudget: false,
-                          };
-                          return (
-                            <div key={item.id} onClick={() => {
-                              onCardClick(item.id, index);
-                              // バンディットクリック（1位のみ）
-                              if (index === 0) {
-                                onTop1Click(item.id);
-                              }
-                            }}>
-                              <ProductCard item={cardItem} />
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </>
-                  )}
-                  
-                  {/* --- 第二候補グループ --- */}
-                  <div className="flex items-center gap-3 mt-10 mb-3">
-                    <h3 className="text-lg md:text-xl font-semibold">第二候補グループ</h3>
-                    <span className="text-sm text-gray-600">（タイプを変更すると合計９種類（最大）表示されます。）</span>
-                  </div>
                   {(() => {
-                    const secondaryCount = (groups?.secondaryBuckets ?? []).flat().length;
-                    const showAdjNote = secondaryCount > 0 && secondaryCount < 3;
-                    return showAdjNote && (
-                      <div className="text-sm text-gray-500 mb-3">該当が少ないため、近い価格帯（±1レンジ）も表示しています。</div>
+                    // 第一候補が空の場合は第二候補から商品を取得
+                    let primaryItems = groups.primary || [];
+                    if (primaryItems.length === 0) {
+                      const allSecondary = [...(groups.secondaryA || []), ...(groups.secondaryB || []), ...(groups.secondaryC || [])];
+                      primaryItems = allSecondary.slice(0, 3);
+                    }
+                    
+                    return Array.isArray(primaryItems) && primaryItems.length > 0 && (
+                      <>
+                        <h3 className="text-lg md:text-xl font-semibold mt-8 mb-3">
+                          第一候補グループ
+                        </h3>
+                        <div className="grid gap-4 sm:grid-cols-3 mb-6">
+                          {primaryItems.slice(0, 3).map((item: any, index: number) => {
+                            const cardItem: ProductItem = {
+                              id: item.id,
+                              mall: item.mall,
+                              title: item.title,
+                              url: item.url,
+                              image: item.image ?? null,
+                              price: item.price ?? null,
+                              shop: item.shop ?? null,
+                              outOfBudget: false,
+                            };
+                            return (
+                              <div key={item.id} onClick={() => {
+                                onCardClick(item.id, index);
+                                // バンディットクリック（1位のみ）
+                                if (index === 0) {
+                                  onTop1Click(item.id);
+                                }
+                              }}>
+                                <ProductCard item={cardItem} />
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </>
                     );
                   })()}
-                  <div className="space-y-4">
-                    <div className="flex gap-2">
-                      <button
-                        className={`px-3 py-1 rounded ${secondaryOpen === "a" ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
-                        onClick={() => setSecondaryOpen("a")}
-                      >
-                        {GROUP_LABEL.A}
-                      </button>
-                      <button
-                        className={`px-3 py-1 rounded ${secondaryOpen === "b" ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
-                        onClick={() => setSecondaryOpen("b")}
-                      >
-                        {GROUP_LABEL.B}
-                      </button>
-                      <button
-                        className={`px-3 py-1 rounded ${secondaryOpen === "c" ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
-                        onClick={() => setSecondaryOpen("c")}
-                      >
-                        {GROUP_LABEL.C}
-                      </button>
-                    </div>
+                  
+                  {/* --- 第二候補グループ --- */}
+                  {(() => {
+                    // 第一候補が空だった場合、第二候補から商品を移動したので、残りの商品のみ表示
+                    const originalPrimaryLength = (groups.primary || []).length;
+                    let displaySecondaryA = groups.secondaryA || [];
+                    let displaySecondaryB = groups.secondaryB || [];
+                    let displaySecondaryC = groups.secondaryC || [];
                     
-                    <div className="grid gap-4 sm:grid-cols-3">
-                      {(secondaryOpen === "a" ? groups.secondaryA : 
-                        secondaryOpen === "b" ? groups.secondaryB : 
-                        groups.secondaryC)?.map((item: any, index: number) => {
-                          const cardItem: ProductItem = {
-                            id: item.id,
-                            mall: item.mall,
-                            title: item.title,
-                            url: item.url,
-                            image: item.image ?? null,
-                            price: item.price ?? null,
-                            shop: item.shop ?? null,
-                            outOfBudget: (item as any).outOfBudget === true,
-                          };
-                          return (
-                            <div key={`${secondaryOpen}-${item.id}`} onClick={() => onCardClick(item.id, index + 3)}>
-                              <ProductCard item={cardItem} />
-                            </div>
+                    // 第一候補が空だった場合は、既に第一候補に移動済みなので、第二候補は空または残りを表示
+                    if (originalPrimaryLength === 0) {
+                      const allSecondary = [...(groups.secondaryA || []), ...(groups.secondaryB || []), ...(groups.secondaryC || [])];
+                      const remaining = allSecondary.slice(3); // 最初の3つは第一候補に移動済み
+                      displaySecondaryA = remaining.slice(0, 3);
+                      displaySecondaryB = remaining.slice(3, 6);
+                      displaySecondaryC = remaining.slice(6, 9);
+                    }
+                    
+                    const hasSecondaryItems = displaySecondaryA.length > 0 || displaySecondaryB.length > 0 || displaySecondaryC.length > 0;
+                    
+                    if (!hasSecondaryItems) {
+                      return null; // 第二候補がない場合は表示しない
+                    }
+                    
+                    return (
+                      <>
+                        <div className="flex items-center gap-3 mt-10 mb-3">
+                          <h3 className="text-lg md:text-xl font-semibold">第二候補グループ</h3>
+                          <span className="text-sm text-gray-600">（タイプを変更すると合計９種類（最大）表示されます。）</span>
+                        </div>
+                        {(() => {
+                          const secondaryCount = displaySecondaryA.length + displaySecondaryB.length + displaySecondaryC.length;
+                          const showAdjNote = secondaryCount > 0 && secondaryCount < 3;
+                          return showAdjNote && (
+                            <div className="text-sm text-gray-500 mb-3">該当が少ないため、近い価格帯（±1レンジ）も表示しています。</div>
                           );
-                        })}
-                    </div>
-                  </div>
+                        })()}
+                        <div className="space-y-4">
+                          <div className="flex gap-2">
+                            <button
+                              className={`px-3 py-1 rounded ${secondaryOpen === "a" ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
+                              onClick={() => setSecondaryOpen("a")}
+                            >
+                              {GROUP_LABEL.A}
+                            </button>
+                            <button
+                              className={`px-3 py-1 rounded ${secondaryOpen === "b" ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
+                              onClick={() => setSecondaryOpen("b")}
+                            >
+                              {GROUP_LABEL.B}
+                            </button>
+                            <button
+                              className={`px-3 py-1 rounded ${secondaryOpen === "c" ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
+                              onClick={() => setSecondaryOpen("c")}
+                            >
+                              {GROUP_LABEL.C}
+                            </button>
+                          </div>
+                          
+                          <div className="grid gap-4 sm:grid-cols-3">
+                            {(secondaryOpen === "a" ? displaySecondaryA : 
+                              secondaryOpen === "b" ? displaySecondaryB : 
+                              displaySecondaryC)?.map((item: any, index: number) => {
+                              const cardItem: ProductItem = {
+                                id: item.id,
+                                mall: item.mall,
+                                title: item.title,
+                                url: item.url,
+                                image: item.image ?? null,
+                                price: item.price ?? null,
+                                shop: item.shop ?? null,
+                                outOfBudget: (item as any).outOfBudget === true,
+                              };
+                              return (
+                                <div key={`${secondaryOpen}-${item.id}`} onClick={() => onCardClick(item.id, index + 3)}>
+                                  <ProductCard item={cardItem} />
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </>
+                    );
+                  })()}
                   <AffiliateDisclaimer className="mt-10" />
                 </div>
               );
