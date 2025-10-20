@@ -33,7 +33,7 @@ export default function Page() {
         <p className="mt-6">
           枕診断AIでは、そんなお悩みを解決するために、あなたにぴったりの枕を診断します。
         </p>
-        <h2 className="mt-8 text-xl font-bold text-gray-900">枕診断AIの流れ</h2>
+        <h2 className="mt-8 text-xl font-bold text-gray-900">枕診断AIの主な流れ</h2>
         <ul className="list-decimal space-y-2 pl-5">
           <li>Step 1: 簡単な質問に回答（１分）</li>
           <li>Step 2: あなたの睡眠スタイルを分析</li>
