@@ -562,23 +562,56 @@ export default function Page() {
                 <input
                   type="radio"
                   name="material_pref"
-                  value="LR"
-                  checked={answers?.material_pref === "LR"}
+                  value="low_rebound"
+                  checked={answers?.material_pref === "low_rebound"}
                   onChange={(e) => setAnswers({ material_pref: e.target.value })}
                   className="h-4 w-4"
                 />
-                <span className="text-sm md:text-base text-gray-700">低反発</span>
+                <span className="text-sm md:text-base text-gray-700">低反発ウレタン</span>
               </label>
               <label className="flex items-center gap-3 py-2">
                 <input
                   type="radio"
                   name="material_pref"
-                  value="HR"
-                  checked={answers?.material_pref === "HR"}
+                  value="high_rebound"
+                  checked={answers?.material_pref === "high_rebound"}
                   onChange={(e) => setAnswers({ material_pref: e.target.value })}
                   className="h-4 w-4"
                 />
-                <span className="text-sm md:text-base text-gray-700">高反発</span>
+                <span className="text-sm md:text-base text-gray-700">高反発ウレタン</span>
+              </label>
+              <label className="flex items-center gap-3 py-2">
+                <input
+                  type="radio"
+                  name="material_pref"
+                  value="latex"
+                  checked={answers?.material_pref === "latex"}
+                  onChange={(e) => setAnswers({ material_pref: e.target.value })}
+                  className="h-4 w-4"
+                />
+                <span className="text-sm md:text-base text-gray-700">ラテックス</span>
+              </label>
+              <label className="flex items-center gap-3 py-2">
+                <input
+                  type="radio"
+                  name="material_pref"
+                  value="pipe"
+                  checked={answers?.material_pref === "pipe"}
+                  onChange={(e) => setAnswers({ material_pref: e.target.value })}
+                  className="h-4 w-4"
+                />
+                <span className="text-sm md:text-base text-gray-700">パイプ</span>
+              </label>
+              <label className="flex items-center gap-3 py-2">
+                <input
+                  type="radio"
+                  name="material_pref"
+                  value="beads"
+                  checked={answers?.material_pref === "beads"}
+                  onChange={(e) => setAnswers({ material_pref: e.target.value })}
+                  className="h-4 w-4"
+                />
+                <span className="text-sm md:text-base text-gray-700">ビーズ(マイクロビーズ含む)</span>
               </label>
               <label className="flex items-center gap-3 py-2">
                 <input
@@ -589,7 +622,18 @@ export default function Page() {
                   onChange={(e) => setAnswers({ material_pref: e.target.value })}
                   className="h-4 w-4"
                 />
-                <span className="text-sm md:text-base text-gray-700">羽毛</span>
+                <span className="text-sm md:text-base text-gray-700">羽毛・フェザー</span>
+              </label>
+              <label className="flex items-center gap-3 py-2">
+                <input
+                  type="radio"
+                  name="material_pref"
+                  value="poly_cotton"
+                  checked={answers?.material_pref === "poly_cotton"}
+                  onChange={(e) => setAnswers({ material_pref: e.target.value })}
+                  className="h-4 w-4"
+                />
+                <span className="text-sm md:text-base text-gray-700">ポリエステル綿</span>
               </label>
               <label className="flex items-center gap-3 py-2">
                 <input
@@ -606,12 +650,12 @@ export default function Page() {
                 <input
                   type="radio"
                   name="material_pref"
-                  value="unknown"
-                  checked={answers?.material_pref === "unknown"}
+                  value="other"
+                  checked={answers?.material_pref === "other"}
                   onChange={(e) => setAnswers({ material_pref: e.target.value })}
                   className="h-4 w-4"
                 />
-                <span className="text-sm md:text-base text-gray-700">不明/指定なし</span>
+                <span className="text-sm md:text-base text-gray-700">その他 / 不明</span>
               </label>
             </div>
           </div>
