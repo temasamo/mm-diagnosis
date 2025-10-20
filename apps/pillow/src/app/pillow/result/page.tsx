@@ -19,7 +19,7 @@ import { resolveBandId } from "@/lib/budget";
 import { GROUP_LABEL } from "@/lib/ui/labels";
 import ProductCard, { ProductItem } from '@/components/ProductCard';
 import type { SearchItem } from "../../../../lib/malls/types";
-import { isCover, isFurusato, isBabyPillow, isFutonSet, isHugPillow, isSpecialUse } from '@/app/api/search-cross/filters';
+import { isCover, isFurusato, isBabyPillow, isFutonSet, isHugPillow, isLumbarPillow, isSpecialUse } from '@/app/api/search-cross/filters';
 import AffiliateNotice from "@/components/AffiliateNotice";
 import AffiliateDisclaimer from "@/components/AffiliateDisclaimer";
 
@@ -388,7 +388,7 @@ export default function ResultPage() {
         console.log("[frontend] All items after dedupe:", items.map(i => ({ mall: i.mall, id: i.id, title: i.title?.substring(0, 50) })));
 
         // 念のためクライアント側でもフィルタ（保険）
-        items = items.filter((i: SearchItem) => !isCover(i) && !isFurusato(i) && !isBabyPillow(i) && !isFutonSet(i) && !isHugPillow(i) && !isSpecialUse(i));
+        items = items.filter((i: SearchItem) => !isCover(i) && !isFurusato(i) && !isBabyPillow(i) && !isFutonSet(i) && !isHugPillow(i) && !isLumbarPillow(i) && !isSpecialUse(i));
 
         if (items.length > 0) {
           // ユーザーの予算帯キー
